@@ -7,7 +7,7 @@
   "compatibility_date": "2026-09-07",
   "compatibility_flags": ["python_workers"],
   "vars": {
-    "MUSICBRAINZ_USER_AGENT": "timbre-palette-api/0.3 (rosagus.contato@protonmail.com)"
+    "MUSICBRAINZ_USER_AGENT": "timbre-palette-api/0.3.1 (rosagus.contato@protonmail.com)"
   },
   "observability": {
     "enabled": true,

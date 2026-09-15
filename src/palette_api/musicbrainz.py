@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import json
+import re
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
 from typing import Any, Protocol
 import unicodedata
-from urllib.parse import quote, urlencode
+from urllib.parse import quote, urlencode, urlsplit
 
 from palette_api.domain import ListeningHistory, Track
 from palette_api.lastfm import JsonHttpResponse
@@ -14,19 +16,37 @@ from palette_api.lastfm import JsonHttpResponse
 
 MUSICBRAINZ_API_URL = "https://musicbrainz.org/ws/2"
 RESOLVER_VERSION = "musicbrainz-0.2.0"
-DEFAULT_USER_AGENT = "timbre-palette-api/0.2"
+DEFAULT_USER_AGENT = "timbre-palette-api/0.3.1"
 
 
 class MusicBrainzError(Exception):
     """Base error for MusicBrainz adapter failures."""
 
+    service = "musicbrainz"
+    default_reason_code = "musicbrainz_error"
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        reason_code: str | None = None,
+        operation: str | None = None,
+        status_code: int | None = None,
+        retry_after_seconds: int | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.reason_code = reason_code or self.default_reason_code
+        self.operation = operation
+        self.status_code = status_code
+        self.retry_after_seconds = retry_after_seconds
+
 
 class MusicBrainzUnavailableError(MusicBrainzError):
-    pass
+    default_reason_code = "upstream_unavailable"
 
 
 class MusicBrainzInvalidResponseError(MusicBrainzError):
-    pass
+    default_reason_code = "invalid_response"
 
 
 class AsyncJsonTransport(Protocol):
@@ -50,6 +70,7 @@ class WorkersFetchJsonTransport:
     async def get_json(self, url: str) -> JsonHttpResponse:
         from workers import fetch
 
+        operation = _operation_from_url(url)
         await self._pace()
         try:
             response = await fetch(
@@ -59,12 +80,50 @@ class WorkersFetchJsonTransport:
                     "User-Agent": self._user_agent,
                 },
             )
+        except Exception as error:
+            wrapped = MusicBrainzUnavailableError(
+                "Could not access MusicBrainz.",
+                reason_code="transport_error",
+                operation=operation,
+            )
+            _log_event(
+                "musicbrainz_transport_error",
+                **_error_fields(wrapped, cause=error),
+            )
+            raise wrapped from error
+
+        status_code = int(response.status)
+        retry_after_seconds = _retry_after_seconds(response)
+        if status_code >= 400:
+            # Error responses do not need to be decoded. Returning the status
+            # lets the resolver classify 429/5xx without hiding it behind a
+            # JSON decoding error (MusicBrainz may return HTML on failures).
+            return JsonHttpResponse(
+                status_code=status_code,
+                body=None,
+                retry_after_seconds=retry_after_seconds,
+            )
+
+        try:
             body = await response.json()
         except Exception as error:
-            raise MusicBrainzUnavailableError(
-                "Could not access MusicBrainz."
-            ) from error
-        return JsonHttpResponse(status_code=int(response.status), body=body)
+            wrapped = MusicBrainzInvalidResponseError(
+                "MusicBrainz returned invalid JSON.",
+                reason_code="invalid_json",
+                operation=operation,
+                status_code=status_code,
+            )
+            _log_event(
+                "musicbrainz_response_error",
+                operation=operation,
+                **_error_fields(wrapped, cause=error),
+            )
+            raise wrapped from error
+        return JsonHttpResponse(
+            status_code=status_code,
+            body=body,
+            retry_after_seconds=retry_after_seconds,
+        )
 
     async def _pace(self) -> None:
         if self._minimum_interval_ms <= 0:
@@ -249,6 +308,7 @@ class MusicBrainzResolver:
                     confidence=1.0,
                     source_mbid=track.mbid,
                     source_entity_type="recording",
+                    operation="recording_lookup",
                 )
 
             recording_id = await self._get_recording_from_track(track.mbid)
@@ -261,27 +321,33 @@ class MusicBrainzResolver:
                         confidence=0.98,
                         source_mbid=track.mbid,
                         source_entity_type="track",
+                        operation="recording_lookup",
                     )
 
         return await self._search_recording(track)
 
     async def _get_recording(self, mbid: str) -> Mapping[str, object] | None:
         response = await self._request(
-            f"/recording/{quote(mbid, safe='')}?inc=artist-credits+artist-rels"
+            f"/recording/{quote(mbid, safe='')}?inc=artist-credits+artist-rels",
+            operation="recording_lookup",
         )
         if response.status_code == 404:
             return None
-        payload = self._valid_mapping(response)
+        payload = self._valid_mapping(response, operation="recording_lookup")
         if "id" not in payload:
             raise MusicBrainzInvalidResponseError(
-                "MusicBrainz did not return a recording identifier."
+                "MusicBrainz did not return a recording identifier.",
+                operation="recording_lookup",
+                status_code=response.status_code,
             )
         return payload
 
     async def _get_recording_from_track(self, mbid: str) -> str | None:
         query = urlencode({"query": f"tid:{mbid}", "limit": "5"})
-        response = await self._request(f"/recording/?{query}")
-        payload = self._valid_mapping(response)
+        response = await self._request(
+            f"/recording/?{query}", operation="recording_track_lookup"
+        )
+        payload = self._valid_mapping(response, operation="recording_track_lookup")
         recordings = payload.get("recordings")
         if not isinstance(recordings, list):
             return None
@@ -299,13 +365,16 @@ class MusicBrainzResolver:
             f'AND artist:"{_escape_search_value(track.artist)}"'
         )
         response = await self._request(
-            f"/recording/?{urlencode({'query': query, 'limit': '5'})}"
+            f"/recording/?{urlencode({'query': query, 'limit': '5'})}",
+            operation="recording_search",
         )
-        payload = self._valid_mapping(response)
+        payload = self._valid_mapping(response, operation="recording_search")
         recordings = payload.get("recordings")
         if not isinstance(recordings, list):
             raise MusicBrainzInvalidResponseError(
-                "MusicBrainz did not return the expected recording collection."
+                "MusicBrainz did not return the expected recording collection.",
+                operation="recording_search",
+                status_code=response.status_code,
             )
 
         normalized_title = _normalize(track.title)
@@ -335,7 +404,9 @@ class MusicBrainzResolver:
         candidate_mbid = _text(candidate.get("id"))
         if not candidate_mbid:
             raise MusicBrainzInvalidResponseError(
-                "The matched recording does not contain a valid MBID."
+                "The matched recording does not contain a valid MBID.",
+                operation="recording_search",
+                status_code=response.status_code,
             )
         complete_recording = await self._get_recording(candidate_mbid)
         if complete_recording is None:
@@ -350,28 +421,26 @@ class MusicBrainzResolver:
             confidence=0.95,
             source_mbid=track.mbid,
             source_entity_type="track" if track.mbid else None,
+            operation="recording_lookup",
         )
 
-    async def _request(self, path: str) -> JsonHttpResponse:
+    async def _request(self, path: str, *, operation: str) -> JsonHttpResponse:
         separator = "?" if "?" not in path else "&"
-        response = await self._transport.get_json(
-            f"{self._api_url}{path}{separator}fmt=json"
+        return await _request_json(
+            self._transport,
+            f"{self._api_url}{path}{separator}fmt=json",
+            operation=operation,
         )
-        if response.status_code >= 500:
-            raise MusicBrainzUnavailableError(
-                f"MusicBrainz responded with HTTP {response.status_code}."
-            )
-        if response.status_code >= 400 and response.status_code != 404:
-            raise MusicBrainzUnavailableError(
-                f"MusicBrainz responded with HTTP {response.status_code}."
-            )
-        return response
 
     @staticmethod
-    def _valid_mapping(response: JsonHttpResponse) -> Mapping[str, object]:
+    def _valid_mapping(
+        response: JsonHttpResponse, *, operation: str
+    ) -> Mapping[str, object]:
         if not isinstance(response.body, Mapping):
             raise MusicBrainzInvalidResponseError(
-                "MusicBrainz returned an unexpected JSON document."
+                "MusicBrainz returned an unexpected JSON document.",
+                operation=operation,
+                status_code=response.status_code,
             )
         return response.body
 
@@ -383,13 +452,15 @@ class MusicBrainzResolver:
         confidence: float,
         source_mbid: str | None,
         source_entity_type: str | None,
+        operation: str,
     ) -> ResolvedRecording:
         mbid = _text(entity.get("id"))
         title = _text(entity.get("title"))
         artist = _artist_name(entity)
         if not mbid or not title or not artist:
             raise MusicBrainzInvalidResponseError(
-                "The MusicBrainz recording does not contain a complete identity."
+                "The MusicBrainz recording does not contain a complete identity.",
+                operation=operation,
             )
         return ResolvedRecording(
             mbid=mbid,
@@ -428,36 +499,37 @@ class MusicBrainzAlbumCollector:
         self._api_url = api_url.rstrip("/")
 
     async def collect(self, release_mbid: str) -> PreparedAlbum | None:
-        response = await self._transport.get_json(
+        response = await _request_json(
+            self._transport,
             f"{self._api_url}/release/{quote(release_mbid, safe='')}"
-            f"?inc={self.RELEASE_INCLUDES}&fmt=json"
+            f"?inc={self.RELEASE_INCLUDES}&fmt=json",
+            operation="release_collect",
         )
         if response.status_code == 404:
             return None
-        if response.status_code >= 500:
-            raise MusicBrainzUnavailableError(
-                f"MusicBrainz responded with HTTP {response.status_code}."
-            )
-        if response.status_code >= 400:
-            raise MusicBrainzUnavailableError(
-                f"MusicBrainz responded with HTTP {response.status_code}."
-            )
         if not isinstance(response.body, Mapping):
             raise MusicBrainzInvalidResponseError(
-                "MusicBrainz returned an unexpected release."
+                "MusicBrainz returned an unexpected release.",
+                operation="release_collect",
+                status_code=response.status_code,
             )
         return self._parse_release(response.body, release_mbid)
 
     @classmethod
     def _parse_release(
-        cls, entity: Mapping[str, object], requested_mbid: str
+        cls,
+        entity: Mapping[str, object],
+        requested_mbid: str,
+        *,
+        operation: str = "release_collect",
     ) -> PreparedAlbum:
         release_mbid = _text(entity.get("id")) or requested_mbid
         title = _text(entity.get("title"))
         artist = _artist_name(entity)
         if not title or not artist:
             raise MusicBrainzInvalidResponseError(
-                "The MusicBrainz release does not contain a complete identity."
+                "The MusicBrainz release does not contain a complete identity.",
+                operation=operation,
             )
         group = entity.get("release-group")
         group_mbid = (
@@ -468,7 +540,8 @@ class MusicBrainzAlbumCollector:
         media = entity.get("media")
         if not isinstance(media, list):
             raise MusicBrainzInvalidResponseError(
-                "The MusicBrainz release does not contain media."
+                "The MusicBrainz release does not contain media.",
+                operation=operation,
             )
         tracks: list[PreparedAlbumTrack] = []
         for media_index, medium in enumerate(media, start=1):
@@ -520,6 +593,115 @@ class MusicBrainzAlbumCollector:
             tracks=tuple(tracks),
             artist_mbid=_artist_mbid(entity),
         )
+
+
+async def _request_json(
+    transport: AsyncJsonTransport,
+    url: str,
+    *,
+    operation: str,
+) -> JsonHttpResponse:
+    try:
+        response = await transport.get_json(url)
+    except MusicBrainzError as error:
+        if not error.operation:
+            error.operation = operation
+        raise
+    except Exception as error:
+        wrapped = MusicBrainzUnavailableError(
+            "Could not access MusicBrainz.",
+            reason_code="transport_error",
+            operation=operation,
+        )
+        _log_event(
+            "musicbrainz_transport_error",
+            **_error_fields(wrapped, cause=error),
+        )
+        raise wrapped from error
+
+    status_code = int(response.status_code)
+    if status_code == 404:
+        return response
+    if status_code >= 400:
+        reason_code = (
+            "rate_limited"
+            if status_code == 429
+            else "upstream_server_error"
+            if status_code >= 500
+            else "upstream_client_error"
+        )
+        error = MusicBrainzUnavailableError(
+            f"MusicBrainz responded with HTTP {status_code}.",
+            reason_code=reason_code,
+            operation=operation,
+            status_code=status_code,
+            retry_after_seconds=getattr(response, "retry_after_seconds", None),
+        )
+        _log_event("musicbrainz_upstream_error", **_error_fields(error))
+        raise error
+    return response
+
+
+def _operation_from_url(url: str) -> str:
+    parsed = urlsplit(url)
+    path = parsed.path.rstrip("/")
+    if "/release/" in path:
+        return "release_collect"
+    if "/recording/" not in f"{path}/":
+        return "musicbrainz_request"
+    if path.endswith("/recording"):
+        return (
+            "recording_track_lookup"
+            if "tid%3A" in parsed.query or "tid:" in parsed.query
+            else "recording_search"
+        )
+    return "recording_lookup"
+
+
+def _retry_after_seconds(response: object) -> int | None:
+    headers = getattr(response, "headers", None)
+    get_header = getattr(headers, "get", None)
+    if not callable(get_header):
+        return None
+    try:
+        value = get_header("retry-after") or get_header("Retry-After")
+        seconds = int(str(value).strip())
+    except (TypeError, ValueError):
+        return None
+    return max(0, min(24 * 60 * 60, seconds))
+
+
+def _error_fields(
+    error: MusicBrainzError,
+    *,
+    cause: Exception | None = None,
+) -> dict[str, object]:
+    fields: dict[str, object] = {
+        "service": error.service,
+        "error_type": type(error).__name__,
+        "error_message": _safe_error_message(error),
+        "reason_code": error.reason_code,
+    }
+    if error.operation:
+        fields["operation"] = error.operation
+    if error.status_code is not None:
+        fields["status_code"] = error.status_code
+    if error.retry_after_seconds is not None:
+        fields["retry_after_seconds"] = error.retry_after_seconds
+    if cause is not None:
+        fields["cause_type"] = type(cause).__name__
+        fields["cause_message"] = _safe_error_message(cause)
+    return fields
+
+
+def _safe_error_message(error: object) -> str | None:
+    message = " ".join(str(error).split())
+    message = re.sub(r"https?://\S+", "<url>", message)
+    return message[:300] or None
+
+
+def _log_event(event: str, **fields: object) -> None:
+    print(json.dumps({"event": event, **fields}, ensure_ascii=False, sort_keys=True))
 
 
 class D1IdentityRepository:

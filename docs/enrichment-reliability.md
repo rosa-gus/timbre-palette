@@ -121,7 +121,15 @@ FROM enrichment_jobs
 GROUP BY job_type, stage, status;
 ```
 
-Structured logs use these events: `enrichment_dispatched`,
-`enrichment_dispatch_failed`, `enrichment_retry`,
-`enrichment_dead_lettered`, `enrichment_stale_message`, and
-`enrichment_outbox_sweep`.
+Structured logs use these events: `enrichment_started`,
+`enrichment_processed`, `enrichment_dispatched`, `enrichment_dispatch_failed`,
+`enrichment_retry`, `enrichment_dead_lettered`, `enrichment_stale_message`,
+and `enrichment_outbox_sweep`. MusicBrainz failures additionally emit
+`musicbrainz_transport_error`, `musicbrainz_response_error`, or
+`musicbrainz_upstream_error`.
+
+Retry and upstream events include `job_key`, `message_id`, `job_type`,
+`target_mbid`, `attempt`, `operation`, `reason_code`, and `duration_ms` when
+available. HTTP failures also include `status_code` and
+`retry_after_seconds`; response bodies and complete URLs are intentionally not
+logged.

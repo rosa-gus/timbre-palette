@@ -1,3 +1,4 @@
+import json
 import sqlite3
 import sys
 from pathlib import Path
@@ -7,7 +8,10 @@ import pytest
 
 from palette_api.domain import Track
 from palette_api.enrichment import D1QueueEnrichmentScheduler, _job_key
-from palette_api.musicbrainz import MusicBrainzUnavailableError
+from palette_api.musicbrainz import (
+    D1EnrichmentJobRepository,
+    MusicBrainzUnavailableError,
+)
 
 
 if "workers" not in sys.modules:
@@ -263,6 +267,50 @@ async def test_musicbrainz_unavailable_is_retryable(
     assert seeded_db.execute(
         "SELECT status FROM enrichment_jobs"
     ).fetchone()[0] == "failed"
+
+
+@pytest.mark.anyio
+async def test_retry_log_preserves_upstream_context(
+    seeded_db: sqlite3.Connection,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    track = Track("Song", "Artist", 1, mbid="track-mbid")
+    job_key = seed_job(seeded_db, track)
+    worker = make_worker(D1Database(seeded_db))
+    message = Message(
+        {"schema_version": 2, "job_key": job_key, "generation": 1},
+        attempts=2,
+    )
+    error = MusicBrainzUnavailableError(
+        "MusicBrainz responded with HTTP 429.",
+        reason_code="rate_limited",
+        operation="recording_lookup",
+        status_code=429,
+        retry_after_seconds=120,
+    )
+
+    await worker._retry_message(
+        message,
+        D1EnrichmentJobRepository(D1Database(seeded_db)),
+        job_key,
+        1,
+        error,
+        message_id="message-2",
+        job_type="recording",
+        target_mbid=track.mbid,
+    )
+
+    events = [
+        json.loads(line)
+        for line in capsys.readouterr().out.splitlines()
+        if line.strip()
+    ]
+    retry_event = next(event for event in events if event["event"] == "enrichment_retry")
+    assert retry_event["reason_code"] == "rate_limited"
+    assert retry_event["operation"] == "recording_lookup"
+    assert retry_event["status_code"] == 429
+    assert retry_event["retry_after_seconds"] == 120
+    assert retry_event["delay_seconds"] >= 120
 
 
 @pytest.mark.anyio

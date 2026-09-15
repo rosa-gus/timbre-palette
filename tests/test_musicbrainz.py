@@ -9,7 +9,9 @@ from palette_api.musicbrainz import (
     D1IdentityRepository,
     InstrumentCredit,
     MusicBrainzEnricher,
+    MusicBrainzInvalidResponseError,
     MusicBrainzResolver,
+    MusicBrainzUnavailableError,
     ResolvedRecording,
 )
 
@@ -54,6 +56,69 @@ class D1Database:
 
     def prepare(self, query: str) -> D1Statement:
         return D1Statement(self.conn, query)
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    ("status_code", "reason_code"),
+    ((429, "rate_limited"), (503, "upstream_server_error")),
+)
+async def test_resolver_preserves_upstream_error_context(
+    status_code: int,
+    reason_code: str,
+) -> None:
+    transport = StubTransport(
+        {
+            "/recording/recording-mbid": JsonHttpResponse(
+                status_code,
+                None,
+                retry_after_seconds=120 if status_code == 429 else None,
+            )
+        }
+    )
+
+    with pytest.raises(MusicBrainzUnavailableError) as raised:
+        await MusicBrainzResolver(transport).resolve(
+            Track("Song", "Artist", 1, mbid="recording-mbid")
+        )
+
+    error = raised.value
+    assert error.reason_code == reason_code
+    assert error.operation == "recording_lookup"
+    assert error.status_code == status_code
+    assert error.retry_after_seconds == (120 if status_code == 429 else None)
+
+
+@pytest.mark.anyio
+async def test_resolver_wraps_transport_error_with_operation() -> None:
+    class FailingTransport:
+        async def get_json(self, url: str) -> JsonHttpResponse:
+            raise TimeoutError("socket closed")
+
+    with pytest.raises(MusicBrainzUnavailableError) as raised:
+        await MusicBrainzResolver(FailingTransport()).resolve(
+            Track("Song", "Artist", 1, mbid="recording-mbid")
+        )
+
+    error = raised.value
+    assert error.reason_code == "transport_error"
+    assert error.operation == "recording_lookup"
+    assert isinstance(error.__cause__, TimeoutError)
+
+
+@pytest.mark.anyio
+async def test_resolver_marks_invalid_payload_with_operation() -> None:
+    transport = StubTransport(
+        {"/recording/recording-mbid": JsonHttpResponse(200, {"title": "Song"})}
+    )
+
+    with pytest.raises(MusicBrainzInvalidResponseError) as raised:
+        await MusicBrainzResolver(transport).resolve(
+            Track("Song", "Artist", 1, mbid="recording-mbid")
+        )
+
+    assert raised.value.reason_code == "invalid_response"
+    assert raised.value.operation == "recording_lookup"
 
 
 def seeded_db() -> sqlite3.Connection:

@@ -38,6 +38,7 @@ class LastFmInvalidResponseError(LastFmError):
 class JsonHttpResponse:
     status_code: int
     body: object
+    retry_after_seconds: int | None = None
 
 
 class AsyncJsonTransport(Protocol):

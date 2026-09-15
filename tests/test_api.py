@@ -51,6 +51,7 @@ async def test_palette_returns_a_mocked_but_computed_report(
 
     assert response.status_code == 200
     body = response.json()
+    assert app.version == "0.3.1"
     assert body["profile"]["username"] == "ouvinte-exemplo"
     assert body["profile"]["period"] == "12month"
     assert body["analysis"]["data_source"] == "mock"
