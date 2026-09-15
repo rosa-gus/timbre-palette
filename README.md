@@ -203,6 +203,6 @@ The full editorial policy is documented in [docs/editorial-policy.md](docs/edito
 
 ## License
 
-The original source code in this repository is licensed under the [GNU General Public License, version 3](LICENSE.txt).
+The original source code in this repository is licensed under the [GNU General Public License, version 3](LICENSE.txt);
 
 Third-party software remains subject to the licenses and copyrights of its respective authors. Photographs, videos, fonts, and other third-party media are not relicensed under the GPL; their respective authors and rights holders retain all applicable rights. Asset-specific attribution and licensing information is available in [assets/CREDITS.md](assets/CREDITS.md).
