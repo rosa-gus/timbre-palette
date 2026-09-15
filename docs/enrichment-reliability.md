@@ -93,10 +93,10 @@ yarn dev:enrichment:recover
 curl --fail 'http://localhost:8788/cdn-cgi/local/scheduled?cron=*+*+*+*+*'
 ```
 
-Recovery respects `next_dispatch_at`, limits each invocation to 20 eligible
-jobs, and uses a five-minute post-publication confirmation window. Do not run
-both local sessions against the same storage. Production runs the scheduled
-recovery every minute.
+Recovery respects `next_dispatch_at`, plans one prepared album and dispatches
+up to three eligible outbox jobs per invocation, and uses a five-minute
+post-publication confirmation window. Do not run both local sessions against
+the same storage. Production runs the scheduled recovery every minute.
 
 Alias migrations do not reprocess existing candidates or rewrite evidence;
 legacy maintenance must be explicit and separate.

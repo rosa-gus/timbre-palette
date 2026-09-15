@@ -26,6 +26,10 @@ from palette_api.queue_contract import parse_enrichment_message, retry_delay_sec
 MAIN_QUEUE_NAME = "timbre-palette-enrichment"
 DLQ_QUEUE_NAME = "timbre-palette-enrichment-dlq"
 JOB_KEY_PATTERN = re.compile(r"^[0-9a-f]{64}$")
+# Keep the scheduled sweep small: every row requires several sequential D1 and
+# Queue operations, and the cron invocation has its own CPU budget.
+CRON_ALBUM_PLAN_LIMIT = 1
+CRON_DISPATCH_LIMIT = 3
 
 
 class Default(WorkerEntrypoint):
@@ -163,12 +167,14 @@ class Default(WorkerEntrypoint):
         )
         planned_albums = await D1PreparedAlbumPlanner(
             self.env.DB, scheduler
-        ).enqueue_due()
-        dispatched = await scheduler.recover_pending()
+        ).enqueue_due(limit=CRON_ALBUM_PLAN_LIMIT)
+        dispatched = await scheduler.recover_pending(limit=CRON_DISPATCH_LIMIT)
         _log_event(
             "enrichment_outbox_sweep",
             dispatched=dispatched,
             planned_albums=planned_albums,
+            album_plan_limit=CRON_ALBUM_PLAN_LIMIT,
+            dispatch_limit=CRON_DISPATCH_LIMIT,
         )
 
     async def _retry_message(
