@@ -1,0 +1,93 @@
+name: Publish editorial catalog
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - editorial/src/instruments.json
+      - migrations/0014_editorial_publication.sql
+      - src/palette_api/tools/publish_editorial.py
+      - package.json
+      - yarn.lock
+      - .github/workflows/publish-editorial.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: editorial-publication
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Validate and publish editorial snapshot
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      EDITORIAL_REVISION: editorial-${{ github.sha }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: yarn
+          cache-dependency-path: yarn.lock
+
+      - name: Install JavaScript dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Validate publication credentials
+        run: |
+          if [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::Configure the CLOUDFLARE_ACCOUNT_ID repository secret."
+            exit 1
+          fi
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error::Configure the CLOUDFLARE_API_TOKEN repository secret."
+            exit 1
+          fi
+
+      - name: Validate editorial manifest
+        run: yarn editorial:validate
+
+      - name: Apply pending D1 schema migrations
+        run: yarn db:migrate:remote
+
+      - name: Render D1 publication SQL
+        run: |
+          manifest_hash="$(python src/palette_api/tools/publish_editorial.py editorial/src/instruments.json | awk '/Manifest SHA-256:/ { print $3 }')"
+          test -n "$manifest_hash"
+          echo "EDITORIAL_MANIFEST_HASH=$manifest_hash" >> "$GITHUB_ENV"
+          python src/palette_api/tools/publish_editorial.py editorial/src/instruments.json \
+            --sql \
+            --revision "$EDITORIAL_REVISION" \
+            --commit-sha "$GITHUB_SHA" \
+            --published-by "github-actions" \
+            --output /tmp/timbre-palette-editorial.sql
+
+      - name: Apply editorial snapshot to D1
+        run: |
+          yarn wrangler d1 execute DB --remote \
+            --file=/tmp/timbre-palette-editorial.sql \
+            --yes \
+            --config wrangler.jsonc
+
+      - name: Verify active publication
+        run: |
+          publication="$(yarn wrangler d1 execute DB --remote --json \
+            --command="SELECT revision, manifest_hash, status FROM editorial_publications WHERE status = 'active';" \
+            --config wrangler.jsonc)"
+          echo "$publication"
+          echo "$publication" | grep -F "$EDITORIAL_REVISION"
+          echo "$publication" | grep -F "$EDITORIAL_MANIFEST_HASH"

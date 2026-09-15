@@ -1,0 +1,43 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "timbre-palette-api",
+  "main": "src/worker.py",
+  "compatibility_date": "2026-09-12",
+  "compatibility_flags": ["python_workers"],
+  "rules": [
+    {
+      "type": "Text",
+      "globs": ["**/_generated_image_catalog.json"],
+      "fallthrough": true
+    }
+  ],
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "head_sampling_rate": 1
+    }
+  },
+  "cache": {
+    "enabled": true,
+    "cross_version_cache": false
+  },
+  "vars": {
+    "IMAGE_ASSET_BASE_URL": "https://rosa-gus.github.io/timbre-palette/"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "timbre-palette",
+      "database_id": "local",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "ENRICHMENT_QUEUE",
+        "queue": "timbre-palette-enrichment"
+      }
+    ]
+  }
+}

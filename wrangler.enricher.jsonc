@@ -1,0 +1,52 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "timbre-palette-enricher",
+  "main": "src/enrichment_worker.py",
+  "compatibility_date": "2026-09-12",
+  "compatibility_flags": ["python_workers"],
+  "vars": {
+    "MUSICBRAINZ_USER_AGENT": "timbre-palette-api/0.2 (rosagus.contato@protonmail.com)"
+  },
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "head_sampling_rate": 1
+    }
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "timbre-palette",
+      "database_id": "local",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "triggers": {
+    "crons": ["* * * * *"]
+  },
+  "queues": {
+    "producers": [
+      {
+        "binding": "ENRICHMENT_QUEUE",
+        "queue": "timbre-palette-enrichment"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "timbre-palette-enrichment",
+        "max_batch_size": 1,
+        "max_batch_timeout": 0,
+        "max_retries": 5,
+        "dead_letter_queue": "timbre-palette-enrichment-dlq",
+        "max_concurrency": 1
+      },
+      {
+        "queue": "timbre-palette-enrichment-dlq",
+        "max_batch_size": 1,
+        "max_batch_timeout": 0,
+        "max_retries": 5,
+        "max_concurrency": 1
+      }
+    ]
+  }
+}

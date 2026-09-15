@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "description": "Álbuns de referência de MPB, samba-rock, bossa nova, jazz, folk, soul, música cubana, indie rock e K-pop usados para preparar o catálogo instrumental.",
+  "albums": [
+    {
+      "release_mbid": "e32a3f0b-1c19-3170-bb1c-650893774744",
+      "artist": "Miles Davis",
+      "title": "Kind of Blue",
+      "genre": "jazz",
+      "priority": 100
+    },
+    {
+      "release_mbid": "b7cf6ab3-1fab-45cd-97a2-8e684ffcada1",
+      "artist": "Miles Davis",
+      "title": "Bitches Brew",
+      "genre": "jazz",
+      "priority": 95
+    },
+    {
+      "release_mbid": "b087b874-1a0b-4df6-99e1-4beb58ebecf3",
+      "artist": "BLACKPINK",
+      "title": "BORN PINK",
+      "genre": "kpop",
+      "priority": 90
+    },
+    {
+      "release_mbid": "f4427ccd-140f-4bfa-8f3f-9ad24222e77a",
+      "artist": "BTS",
+      "title": "Dynamite",
+      "genre": "kpop",
+      "priority": 85
+    },
+    {
+      "release_mbid": "6aff8f36-d807-4e22-aafe-f65859ce1d71",
+      "artist": "Milton Nascimento & Lô Borges",
+      "title": "Clube da Esquina",
+      "genre": "mpb",
+      "priority": 100
+    },
+    {
+      "release_mbid": "2b7fa52f-2123-4d14-b84e-f8a8b23e4cbd",
+      "artist": "Novos Baianos",
+      "title": "Acabou Chorare",
+      "genre": "samba-rock",
+      "priority": 100
+    },
+    {
+      "release_mbid": "34f5ca0c-8112-4625-9142-169412566b7a",
+      "artist": "Elis Regina & Tom Jobim",
+      "title": "Elis & Tom",
+      "genre": "mpb",
+      "priority": 95
+    },
+    {
+      "release_mbid": "2408c96c-a716-412b-9337-7efc485d1895",
+      "artist": "Stan Getz / João Gilberto featuring Antônio Carlos Jobim",
+      "title": "Getz / Gilberto",
+      "genre": "bossa-nova",
+      "priority": 95
+    },
+    {
+      "release_mbid": "4e03b3a5-8e95-4e7e-ba35-05eb0af25c83",
+      "artist": "Buena Vista Social Club",
+      "title": "Buena Vista Social Club",
+      "genre": "son-cubano",
+      "priority": 90
+    },
+    {
+      "release_mbid": "5cdb03e2-1abf-4030-b18e-1824a31a25c0",
+      "artist": "Stevie Wonder",
+      "title": "Innervisions",
+      "genre": "soul",
+      "priority": 90
+    },
+    {
+      "release_mbid": "a712cf75-1e80-4ea6-84d9-8eb8798a0edd",
+      "artist": "Joni Mitchell",
+      "title": "Blue",
+      "genre": "folk",
+      "priority": 90
+    },
+    {
+      "release_mbid": "322ec2d8-0179-4194-b052-90c5817dd4ed",
+      "artist": "The Dave Brubeck Quartet",
+      "title": "Time Out",
+      "genre": "jazz",
+      "priority": 85
+    },
+    {
+      "release_mbid": "38057097-d52d-4494-a92d-dd1582f9cc8a",
+      "artist": "The Strokes",
+      "title": "The New Abnormal",
+      "genre": "indie-rock",
+      "priority": 85
+    }
+  ]
+}

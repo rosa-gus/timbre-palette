@@ -1,0 +1,538 @@
+{
+  "schema_version": 1,
+  "treatment_version": "duotone-bayer4-v1",
+  "catalog_version": "images-0.1.0",
+  "family_names": {
+    "plucked-strings": "Cordas dedilhadas",
+    "percussion": "Percussão",
+    "synthesizers": "Sintetizadores",
+    "acoustic-keys": "Teclas acústicas",
+    "bowed-strings": "Cordas friccionadas",
+    "sampled-sounds": "Sons sampleados",
+    "woodwinds": "Madeiras",
+    "brass": "Metais",
+    "voice": "Voz",
+    "electric-keys": "Teclas elétricas e eletrônicas"
+  },
+  "path_base": "repository_root",
+  "asset_base_urls": {
+    "local": "http://127.0.0.1:5173/",
+    "github_pages": "https://rosa-gus.github.io/timbre-palette/"
+  },
+  "family_tones": {
+    "acoustic-keys": {
+      "shadow": "#000000",
+      "highlight": "#F29191"
+    },
+    "plucked-strings": {
+      "shadow": "#000000",
+      "highlight": "#E7AE86"
+    },
+    "percussion": {
+      "shadow": "#000000",
+      "highlight": "#D5C18D"
+    },
+    "bowed-strings": {
+      "shadow": "#000000",
+      "highlight": "#A9C4AE"
+    },
+    "sampled-sounds": {
+      "shadow": "#000000",
+      "highlight": "#9EBBD1"
+    },
+    "synthesizers": {
+      "shadow": "#000000",
+      "highlight": "#B7A5CC"
+    },
+    "woodwinds": {
+      "shadow": "#000000",
+      "highlight": "#9FC4B0"
+    },
+    "brass": {
+      "shadow": "#000000",
+      "highlight": "#D9B56D"
+    },
+    "voice": {
+      "shadow": "#000000",
+      "highlight": "#D6A8C8"
+    },
+    "electric-keys": {
+      "shadow": "#000000",
+      "highlight": "#9FB7D9"
+    }
+  },
+  "defaults": {
+    "shadow": "#000000",
+    "highlight": "#f29191",
+    "levels": 8,
+    "strength": 0.35,
+    "width": 1200,
+    "contrast": 1.1,
+    "gamma": 1.0
+  },
+  "images": [
+    {
+      "slug": "piano-alin-gavriliuc-01",
+      "kind": "instrument",
+      "instrument_slug": "piano",
+      "family_slug": "acoustic-keys",
+      "input": "assets/piano.jpeg",
+      "output": "assets/treated/piano.png",
+      "alt": "Detalhe de teclas brancas e pretas de um piano.",
+      "variants": [
+        {
+          "name": "detail",
+          "url": "instruments/piano-alin-gavriliuc-01/<hash>/detail.png",
+          "width": 1200,
+          "height": 675
+        }
+      ],
+      "credit": {
+        "photographer": "Alin Gavriliuc",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/um-close-up-de-um-piano-com-teclas-preto-e-branco-_iS9ma5vLD8",
+        "photographer_url": "https://unsplash.com/@alingavriliuc",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license",
+        "note": "Autoria, plataforma e links da fotografia, do fotógrafo e da licença informados pelo responsável pelo projeto."
+      },
+      "treatment": {},
+      "publication": {
+        "status": "approved",
+        "url": null
+      }
+    },
+    {
+      "slug": "electric-guitar-nikolas-mitsiggas-01",
+      "kind": "instrument",
+      "instrument_slug": "electric-guitar",
+      "family_slug": "plucked-strings",
+      "depicted_name": "Guitarra elétrica",
+      "input": "assets/electric-guitar.jpeg",
+      "output": "assets/treated/electric-guitar.png",
+      "alt": "Guitarra elétrica escura com reflexos azulados sobre um fundo preto.",
+      "variants": [
+        {
+          "name": "detail",
+          "url": "instruments/electric-guitar-nikolas-mitsiggas-01/<hash>/detail.png",
+          "width": 1200,
+          "height": 800
+        }
+      ],
+      "credit": {
+        "photographer": "Nikolas Mitsiggas",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/uma-guitarra-eletrica-preto-e-azul-em-um-fundo-preto-Y2qugjxmw0g",
+        "photographer_url": "https://unsplash.com/@nikolasmitsiggas",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license",
+        "note": "Créditos e licença gratuita informados pelo responsável pelo projeto."
+      },
+      "treatment": {},
+      "publication": {
+        "status": "approved",
+        "url": null
+      }
+    },
+    {
+      "slug": "drums-laura-rivera-01",
+      "kind": "instrument",
+      "instrument_slug": "drums",
+      "family_slug": "percussion",
+      "depicted_name": "Bateria",
+      "input": "assets/drum.jpeg",
+      "output": "assets/treated/drums.png",
+      "alt": "Detalhe de mãos tocando tambores com baquetas, em uma fotografia em preto e branco.",
+      "variants": [
+        {
+          "name": "detail",
+          "url": "instruments/drums-laura-rivera-01/<hash>/detail.png",
+          "width": 1200,
+          "height": 800
+        }
+      ],
+      "credit": {
+        "photographer": "Laura Rivera",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/uma-pessoa-esta-tocando-bateria-em-uma-foto-em-preto-e-branco-YtZCf35EcZQ",
+        "photographer_url": "https://unsplash.com/@laurar1vera",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license",
+        "note": "Créditos e licença gratuita informados pelo responsável pelo projeto."
+      },
+      "treatment": {},
+      "publication": {
+        "status": "approved",
+        "url": null
+      }
+    },
+    {
+      "slug": "synthesizer-anton-shuvalov-01",
+      "kind": "instrument",
+      "instrument_slug": "synthesizer",
+      "family_slug": "synthesizers",
+      "depicted_name": "Sintetizadores",
+      "input": "assets/synthesizer.jpeg",
+      "output": "assets/treated/synthesizer.png",
+      "alt": "Sintetizadores com controles giratórios, luzes e cabos sobre uma mesa.",
+      "variants": [
+        {
+          "name": "detail",
+          "url": "instruments/synthesizer-anton-shuvalov-01/<hash>/detail.png",
+          "width": 1200,
+          "height": 750
+        }
+      ],
+      "credit": {
+        "photographer": "Anton Shuvalov",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/mixer-de-audio-preto-e-cinza-WFIoD6zWn98",
+        "photographer_url": "https://unsplash.com/@a8ka",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license",
+        "note": "Créditos e licença gratuita informados pelo responsável pelo projeto."
+      },
+      "treatment": {},
+      "publication": {
+        "status": "approved",
+        "url": null
+      }
+    },
+    {
+      "slug": "cello-jon-tyson-01",
+      "kind": "instrument",
+      "instrument_slug": "cello",
+      "family_slug": "bowed-strings",
+      "depicted_name": "Violoncelo",
+      "input": "assets/cello.jpeg",
+      "output": "assets/treated/cello.png",
+      "alt": "Detalhe de um instrumento de cordas friccionadas sendo tocado com arco, em preto e branco.",
+      "variants": [
+        {
+          "name": "detail",
+          "url": "instruments/cello-jon-tyson-01/<hash>/detail.png",
+          "width": 1200,
+          "height": 800
+        }
+      ],
+      "credit": {
+        "photographer": "Jon Tyson",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/violino-marrom-no-textil-preto-VLJutLyscKw",
+        "photographer_url": "https://unsplash.com/@jontyson",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license",
+        "note": "Créditos e licença gratuita informados pelo responsável pelo projeto; instrumento associado a violoncelo conforme a seleção editorial."
+      },
+      "treatment": {},
+      "publication": {
+        "status": "approved",
+        "url": null
+      }
+    },
+    {
+      "slug": "sampled-sounds-christian-agbede-01",
+      "kind": "family",
+      "instrument_slug": null,
+      "family_slug": "sampled-sounds",
+      "depicted_name": "Discos de vinil em uma loja",
+      "input": "assets/family_sampled_sounds.jpeg",
+      "output": "assets/treated/sampled-sounds.png",
+      "alt": "Mulher examinando um disco de vinil em uma loja com prateleiras de discos.",
+      "variants": [
+        {
+          "name": "detail",
+          "url": "instruments/sampled-sounds-christian-agbede-01/<hash>/detail.png",
+          "width": 1200,
+          "height": 800
+        }
+      ],
+      "credit": {
+        "photographer": "Christian Agbede",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/jovem-mulher-navegando-discos-em-uma-loja-TxVYEUHd-2s",
+        "photographer_url": "https://unsplash.com/pt-br/@chriscreations__",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license",
+        "note": "Créditos e licença gratuita informados pelo responsável pelo projeto. Representação conceitual de fontes de samples; a fotografia não mostra um sampler físico."
+      },
+      "treatment": {},
+      "publication": {
+        "status": "approved",
+        "url": null
+      }
+    },
+    {
+      "slug": "woodwinds-dorothee-kraemer-01",
+      "kind": "family",
+      "instrument_slug": null,
+      "family_slug": "woodwinds",
+      "depicted_name": "Flautas doces",
+      "input": "assets/family_woodwinds.jpeg",
+      "output": "assets/treated/family_woodwinds.png",
+      "alt": "Flautas doces de cores claras e escuras sobre uma superfície branca.",
+      "variants": [
+        {
+          "name": "detail",
+          "url": "instruments/woodwinds-dorothee-kraemer-01/<hash>/detail.png",
+          "width": 1200,
+          "height": 800
+        }
+      ],
+      "credit": {
+        "photographer": "Dorothee Kraemer",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/flauta-de-madeira-marrom-na-mesa-branca-Y6Hn79vRcXU",
+        "photographer_url": "https://unsplash.com/@doro_t",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license",
+        "note": "Autoria, URLs e licença gratuita informadas pelo responsável pelo projeto. Fotografia ilustrativa da família; não constitui evidência de participação em gravações."
+      },
+      "treatment": {},
+      "publication": {
+        "status": "approved",
+        "url": null
+      }
+    },
+    {
+      "slug": "brass-miguel-alcantara-01",
+      "kind": "family",
+      "instrument_slug": null,
+      "family_slug": "brass",
+      "depicted_name": "Trompete",
+      "input": "assets/family_brass.jpeg",
+      "output": "assets/treated/family_brass.png",
+      "alt": "Detalhe da campânula e dos tubos de um trompete dourado sobre fundo escuro.",
+      "variants": [
+        {
+          "name": "detail",
+          "url": "instruments/brass-miguel-alcantara-01/<hash>/detail.png",
+          "width": 1200,
+          "height": 800
+        }
+      ],
+      "credit": {
+        "photographer": "Miguel Alcântara",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/um-close-up-de-um-trompete-de-latao-em-um-fundo-preto-OLyrzpirrds",
+        "photographer_url": "https://unsplash.com/@miguelalcantara",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license",
+        "note": "Autoria, URLs e licença gratuita informadas pelo responsável pelo projeto. Fotografia ilustrativa da família; não constitui evidência de participação em gravações."
+      },
+      "treatment": {},
+      "publication": {
+        "status": "approved",
+        "url": null
+      }
+    },
+    {
+      "slug": "voice-josh-rocklage-01",
+      "kind": "family",
+      "instrument_slug": null,
+      "family_slug": "voice",
+      "depicted_name": "Cantora ao microfone",
+      "input": "assets/family_voice.jpeg",
+      "output": "assets/treated/family_voice.png",
+      "alt": "Mulher cantando diante de um microfone no palco, com luzes ao fundo.",
+      "variants": [
+        {
+          "name": "detail",
+          "url": "instruments/voice-josh-rocklage-01/<hash>/detail.png",
+          "width": 1200,
+          "height": 800
+        }
+      ],
+      "credit": {
+        "photographer": "Josh Rocklage",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/mulher-se-apresentando-no-palco-HAAsKeZbHAc",
+        "photographer_url": "https://unsplash.com/@joshrocklage",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license",
+        "note": "Autoria, URLs e licença gratuita informadas pelo responsável pelo projeto. Fotografia ilustrativa da família; não constitui evidência de participação em gravações."
+      },
+      "treatment": {},
+      "publication": {
+        "status": "approved",
+        "url": null
+      }
+    },
+    {
+      "slug": "electric-keys-seth-gerak-01",
+      "kind": "family",
+      "instrument_slug": null,
+      "family_slug": "electric-keys",
+      "depicted_name": "Teclado eletrônico",
+      "input": "assets/family_electric_keys.jpeg",
+      "output": "assets/treated/family_electric_keys.png",
+      "alt": "Detalhe das mãos de uma pessoa tocando um teclado eletrônico com visor e controles.",
+      "variants": [
+        {
+          "name": "detail",
+          "url": "instruments/electric-keys-seth-gerak-01/<hash>/detail.png",
+          "width": 1200,
+          "height": 675
+        }
+      ],
+      "credit": {
+        "photographer": "Seth Gerak",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/um-homem-esta-tocando-um-teclado-com-as-maos-PwT9HOd2JsA",
+        "photographer_url": "https://unsplash.com/@true_films",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license",
+        "note": "Autoria, URLs e licença gratuita informadas pelo responsável pelo projeto. Fotografia ilustrativa da família; não constitui evidência de participação em gravações."
+      },
+      "treatment": {},
+      "publication": {
+        "status": "approved",
+        "url": null
+      }
+    },
+    {
+      "slug": "acoustic-guitar-tom-analogicus-01",
+      "kind": "instrument",
+      "instrument_slug": "acoustic-guitar",
+      "family_slug": "plucked-strings",
+      "depicted_name": "Violão",
+      "input": "assets/guitar.jpg",
+      "output": "assets/treated/acoustic-guitar.png",
+      "alt": "Detalhe das cordas, da boca e do tampo de madeira de um violão.",
+      "variants": [
+        {
+          "name": "detail",
+          "url": "instruments/acoustic-guitar-tom-analogicus-01/<hash>/detail.png",
+          "width": 1200,
+          "height": 744
+        }
+      ],
+      "credit": {
+        "photographer": "tom analogicus",
+        "provider": "Pexels",
+        "photo_url": "https://www.pexels.com/pt-br/foto/instrumento-musical-violao-cordas-instrumento-de-cordas-6145550/",
+        "photographer_url": "https://www.pexels.com/@analogicus/",
+        "license": "Pexels License",
+        "license_url": "https://www.pexels.com/license/",
+        "note": "Créditos e licença gratuita informados pelo responsável pelo projeto."
+      },
+      "treatment": {},
+      "publication": { "status": "approved", "url": null }
+    },
+    {
+      "slug": "pandeiro-sebastian-brito-01",
+      "kind": "instrument",
+      "instrument_slug": "pandeiro",
+      "family_slug": "percussion",
+      "depicted_name": "Pandeiro",
+      "input": "assets/pandeiro.jpeg",
+      "output": "assets/treated/pandeiro.png",
+      "alt": "Músico tocando um pandeiro com as mãos sob luz fraca, em preto e branco.",
+      "variants": [
+        {
+          "name": "detail",
+          "url": "instruments/pandeiro-sebastian-brito-01/<hash>/detail.png",
+          "width": 1200,
+          "height": 758
+        }
+      ],
+      "credit": {
+        "photographer": "Sebastián Brito",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/musico-tocando-pandeiro-na-luz-fraca-YVxbyvV2sWI",
+        "photographer_url": "https://unsplash.com/@britosebastian",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license",
+        "note": "Créditos e licença gratuita informados pelo responsável pelo projeto."
+      },
+      "treatment": {},
+      "publication": { "status": "approved", "url": null }
+    },
+    {
+      "slug": "sampler-ricardo-abreu-01",
+      "kind": "instrument",
+      "instrument_slug": "sampler",
+      "family_slug": "sampled-sounds",
+      "depicted_name": "Controlador de pads",
+      "input": "assets/sampler.jpeg",
+      "output": "assets/treated/sampler.png",
+      "alt": "Controlador preto com uma grade de pads iluminados, visor, botões e cabos, visto de cima.",
+      "variants": [
+        {
+          "name": "detail",
+          "url": "instruments/sampler-ricardo-abreu-01/<hash>/detail.png",
+          "width": 1200,
+          "height": 800
+        }
+      ],
+      "credit": {
+        "photographer": "Ricardo Abreu",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/ativada-a-barra-de-lancamento-digital-dZPp5ZVMcN0",
+        "photographer_url": "https://unsplash.com/@txbrown",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license",
+        "note": "Autoria, URLs e licença gratuita informadas pelo responsável pelo projeto. A fotografia mostra um controlador de pads associado à prática de sampling; não comprova um sampler autônomo."
+      },
+      "treatment": {},
+      "publication": {
+        "status": "approved",
+        "url": null
+      }
+    }
+  ],
+  "family_images": {
+    "plucked-strings": {
+      "representative_instrument_slug": "electric-guitar",
+      "asset_id": "electric-guitar-nikolas-mitsiggas-01"
+    },
+    "percussion": {
+      "representative_instrument_slug": "drums",
+      "asset_id": "drums-laura-rivera-01"
+    },
+    "synthesizers": {
+      "representative_instrument_slug": "synthesizer",
+      "asset_id": "synthesizer-anton-shuvalov-01"
+    },
+    "acoustic-keys": {
+      "representative_instrument_slug": "piano",
+      "asset_id": "piano-alin-gavriliuc-01"
+    },
+    "bowed-strings": {
+      "representative_instrument_slug": "cello",
+      "asset_id": "cello-jon-tyson-01"
+    },
+    "sampled-sounds": {
+      "representative_instrument_slug": null,
+      "asset_id": "sampled-sounds-christian-agbede-01"
+    },
+    "woodwinds": {
+      "representative_instrument_slug": null,
+      "asset_id": "woodwinds-dorothee-kraemer-01"
+    },
+    "brass": {
+      "representative_instrument_slug": null,
+      "asset_id": "brass-miguel-alcantara-01"
+    },
+    "voice": {
+      "representative_instrument_slug": null,
+      "asset_id": "voice-josh-rocklage-01"
+    },
+    "electric-keys": {
+      "representative_instrument_slug": null,
+      "asset_id": "electric-keys-seth-gerak-01"
+    }
+  },
+  "instrument_images": {
+    "acoustic-guitar": "acoustic-guitar-tom-analogicus-01",
+    "pandeiro": "pandeiro-sebastian-brito-01",
+    "piano": "piano-alin-gavriliuc-01",
+    "electric-guitar": "electric-guitar-nikolas-mitsiggas-01",
+    "drums": "drums-laura-rivera-01",
+    "synthesizer": "synthesizer-anton-shuvalov-01",
+    "cello": "cello-jon-tyson-01"
+  },
+  "instrument_fallbacks": {
+    "sampler": "sampler-ricardo-abreu-01"
+  }
+}

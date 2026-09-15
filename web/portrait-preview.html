@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Retratos ASCII / Timbre Palette</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 32px;
+      background: #171515;
+      color: #f3efec;
+      font-family: "Instrument Sans", sans-serif;
+    }
+
+    header {
+      max-width: 760px;
+      margin-bottom: 32px;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: 32px;
+      font-weight: 500;
+    }
+
+    p {
+      color: #b5adaa;
+      line-height: 1.5;
+    }
+
+    a {
+      color: #f29191;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+      gap: 28px;
+    }
+
+    section {
+      min-width: 0;
+    }
+
+    h2 {
+      font-size: 18px;
+      font-weight: 500;
+    }
+
+    img {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 4 / 5;
+      border: 1px solid #403b3a;
+    }
+
+    section a {
+      display: inline-block;
+      margin-top: 12px;
+      font-size: 14px;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+      color: #f3efec;
+      background: #000;
+      border: 1px solid #6a6260;
+      border-radius: 0;
+    }
+
+    button,
+    select {
+      padding: 8px 12px;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: .4;
+      cursor: default;
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    textarea:focus-visible {
+      outline: 2px solid #f29191;
+      outline-offset: 2px;
+    }
+
+    .editor {
+      margin-bottom: 40px;
+      padding: 24px;
+      border: 1px solid #403b3a;
+    }
+
+    .editor-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: end;
+      margin-bottom: 20px;
+    }
+
+    .editor-toolbar label {
+      display: grid;
+      gap: 6px;
+      font-size: 14px;
+    }
+
+    .editor-toolbar .editor-toggle {
+      display: flex;
+      align-items: center;
+      padding-bottom: 8px;
+    }
+
+    .editor-character {
+      width: 60px;
+      padding: 8px;
+      text-align: center;
+      font-family: "IBM Plex Mono", monospace;
+    }
+
+    .editor-body {
+      display: grid;
+      grid-template-columns: minmax(0, 520px) minmax(0, 1fr);
+      gap: 28px;
+    }
+
+    .editor-grid {
+      display: grid;
+      grid-template-columns: repeat(20, minmax(0, 1fr));
+      align-self: start;
+      touch-action: none;
+      user-select: none;
+      border: 1px solid #6a6260;
+    }
+
+    .editor-cell {
+      padding: 0;
+      aspect-ratio: 1;
+      min-width: 0;
+      font: 500 clamp(10px, 1.5vw, 20px) "IBM Plex Mono", monospace;
+      border: 0;
+      border-right: 1px solid #403b3a;
+      border-bottom: 1px solid #403b3a;
+      color: var(--drawing-tone);
+    }
+
+    .editor-cell:nth-child(20n + 10) {
+      border-right-color: #f29191;
+    }
+
+    .editor-cell:hover {
+      background: #352629;
+    }
+
+    .editor-output {
+      width: 100%;
+      min-height: 340px;
+      padding: 16px;
+      resize: vertical;
+      white-space: pre;
+      font: 14px/1.3 "IBM Plex Mono", monospace;
+    }
+
+    .editor-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .editor-status {
+      min-height: 24px;
+      font-size: 14px;
+    }
+
+    @media (max-width:850px) {
+      .editor-body {
+        grid-template-columns: 1fr;
+      }
+
+      .editor-cell {
+        font-size: clamp(10px, 3vw, 20px);
+      }
+
+      .editor {
+        padding: 16px;
+      }
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Retratos ASCII</h1>
+    <p>Prévia de desenvolvimento com dados demonstrativos. A composição de caracteres é provisória; os desenhos serão definidos depois.</p>
+    <a href="/">Voltar ao Timbre Palette</a>
+  </header>
+  <section id="ascii-editor" hidden></section>
+  <main id="portraits" aria-live="polite">Preparando retratos…</main>
+  <script type="module" src="/src/sharing/preview.ts"></script>
+</body>
+
+</html>

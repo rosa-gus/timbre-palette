@@ -1,0 +1,29 @@
+{
+  "user1": {
+    "total_tracks": 50,
+    "covered_tracks": 10,
+    "coverage_tracks": 0.2,
+    "coverage_plays": 0.2067,
+    "total_artists": 20,
+    "covered_artists": 6,
+    "expected_gate": "palette"
+  },
+  "user2": {
+    "total_tracks": 50,
+    "covered_tracks": 4,
+    "coverage_tracks": 0.08,
+    "coverage_plays": 0.0646,
+    "total_artists": 20,
+    "covered_artists": 3,
+    "expected_gate": "none"
+  },
+  "user3": {
+    "total_tracks": 50,
+    "covered_tracks": 2,
+    "coverage_tracks": 0.04,
+    "coverage_plays": 0.0536,
+    "total_artists": 20,
+    "covered_artists": 1,
+    "expected_gate": "none"
+  }
+}

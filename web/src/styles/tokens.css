@@ -1,0 +1,3 @@
+/* Entry point for design tokens. Component styles consume semantic names. */
+@import "./tokens/typography.css";
+@import "./tokens/colors.css";

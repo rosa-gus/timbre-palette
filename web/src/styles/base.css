@@ -1,0 +1,238 @@
+* {
+  box-sizing: border-box;
+}
+html {
+  min-width: 320px;
+  background: var(--paper);
+  scrollbar-color: var(--accent) transparent;
+  scrollbar-width: thin;
+}
+
+/* Use native scrollbar styling where custom geometry is unavailable. */
+@supports selector(::-webkit-scrollbar) {
+  html {
+    scrollbar-color: auto;
+    scrollbar-width: auto;
+  }
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border-radius: 0;
+  }
+  ::-webkit-scrollbar-track,
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+}
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+button,
+input {
+  font: inherit;
+}
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+button {
+  color: inherit;
+}
+button:focus-visible,
+input:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent-soft);
+  outline-offset: 4px;
+}
+a {
+  color: inherit;
+}
+h1,
+h2,
+h3 {
+  margin-top: 0;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  overflow-wrap: anywhere;
+}
+main {
+  display: grid;
+  min-height: 0;
+}
+.site-shell {
+  position: relative;
+  min-height: 100svh;
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  padding: 22px 40px 24px;
+  isolation: isolate;
+}
+.site-header {
+  display: grid;
+  align-items: center;
+  grid-template-columns: 1fr auto;
+  column-gap: 24px;
+}
+.site-header {
+  min-height: 28px;
+}
+.header-identity {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  min-width: 0;
+}
+.header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+.site-footer {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 24px;
+  min-height: 42px;
+  margin-top: 8px;
+}
+.wordmark,
+.header-meta,
+.header-status,
+.theme-toggle,
+.footer-credit,
+.footer-powered,
+.eyebrow,
+.metadata-note,
+.field-help,
+.section-note,
+.loading-detail,
+.report-stamp,
+.preview-label {
+  font-family: var(--meta);
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.065em;
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  justify-self: start;
+  color: var(--ink);
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-decoration: none;
+}
+.wordmark img {
+  display: block;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--line-strong);
+  object-fit: cover;
+}
+.header-status,
+.footer-credit,
+.footer-powered {
+  margin: 0;
+  color: var(--muted);
+  text-align: left;
+}
+.theme-toggle {
+  justify-self: end;
+  padding: 5px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+.theme-toggle:hover,
+.theme-toggle:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.footer-credit,
+.footer-powered {
+  color: var(--quiet);
+  font-size: 12px;
+  text-transform: none;
+}
+.footer-credit,
+.footer-powered {
+  white-space: nowrap;
+}
+.footer-credit {
+  text-align: left;
+}
+.footer-powered {
+  margin-left: auto;
+  text-align: right;
+}
+.site-footer a {
+  text-decoration: none;
+  text-underline-offset: 3px;
+}
+.site-footer a:hover,
+.site-footer a:focus-visible {
+  color: var(--ink);
+  text-decoration: underline;
+}
+.footer-separator {
+  display: inline-block;
+  margin: 0 9px;
+  color: var(--quiet);
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+[hidden] {
+  display: none !important;
+}
+@media (max-width: 800px) {
+  .site-shell {
+    min-height: 100svh;
+    padding: 18px 20px 20px;
+  }
+  .site-header {
+    grid-template-columns: 1fr auto;
+  }
+  .header-status,
+  .theme-toggle {
+    font-size: 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

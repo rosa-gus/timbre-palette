@@ -1,0 +1,2346 @@
+{
+  "schema_version": 1,
+  "exported_at": "2026-09-15T17:52:40.673Z",
+  "instruments": [
+    {
+      "resource": {
+        "data_source": "catalog",
+        "catalog_version": "0.1.6",
+        "image_catalog_version": "images-0.1.0",
+        "slug": "acoustic-keys",
+        "name": "Teclas acústicas",
+        "kind": "family",
+        "family_slug": null,
+        "description": "Instrumentos acústicos acionados por um sistema de teclas.",
+        "sound_production": "A tecla transmite o gesto a outro mecanismo ressonante.",
+        "common_roles": [
+          "harmonia",
+          "melodia",
+          "acompanhamento"
+        ],
+        "related_slugs": [
+          "piano"
+        ],
+        "sections": [
+          {
+            "id": "family-acoustic-keys-curiosity",
+            "kind": "curiosity",
+            "text": "A mesma tecla pode pinçar uma corda no cravo, lançar um martelo no piano ou abrir uma passagem de ar no órgão.",
+            "content_type": "editorial_summary",
+            "status": "sourced",
+            "review": {
+              "source_metadata_verified": true,
+              "claim_support_verified": true,
+              "reviewed_at": "2026-09-15",
+              "reviewer": "Luis Gustavo R.C.",
+              "editorial_note": null
+            },
+            "citations": [
+              {
+                "source_id": "met-musical-terms",
+                "locator": null,
+                "note": "Ação de teclas em cordas e tubos."
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "id": "met-musical-terms",
+            "title": "Musical Terms for the Seventeenth and Eighteenth Centuries",
+            "contributors": [
+              "The Metropolitan Museum of Art"
+            ],
+            "publisher": "The Metropolitan Museum of Art",
+            "publication_date": null,
+            "url": "https://www.metmuseum.org/essays/musical-terms-for-the-seventeenth-and-eighteenth-centuries",
+            "accessed_at": "2026-09-12",
+            "verified_at": "2026-09-12",
+            "locator": null,
+            "source_type": "museum",
+            "language": "en",
+            "license": null,
+            "note": null,
+            "metadata_verified": true
+          }
+        ],
+        "further_reading": [],
+        "image": {
+          "asset_id": "piano-alin-gavriliuc-01",
+          "resolution": "family",
+          "depicted_instrument_slug": "piano",
+          "alt": "Detalhe de teclas brancas e pretas de um piano.",
+          "caption": "Imagem ilustrativa da família Teclas acústicas: piano.",
+          "variants": [
+            {
+              "name": "detail",
+              "url": "http://127.0.0.1:5173/instruments/piano-alin-gavriliuc-01/907486e78cad/detail.png",
+              "width": 1200,
+              "height": 675
+            }
+          ],
+          "tone": {
+            "shadow": "#000000",
+            "highlight": "#F29191"
+          },
+          "credit": {
+            "photographer": "Alin Gavriliuc",
+            "provider": "Unsplash",
+            "photo_url": "https://unsplash.com/pt-br/fotografias/um-close-up-de-um-piano-com-teclas-preto-e-branco-_iS9ma5vLD8",
+            "photographer_url": "https://unsplash.com/@alingavriliuc",
+            "license": "Unsplash License",
+            "license_url": "https://unsplash.com/license"
+          }
+        },
+        "tone": {
+          "shadow": "#000000",
+          "highlight": "#F29191"
+        }
+      },
+      "review": {
+        "source_metadata_verified": true,
+        "claim_support_verified": true,
+        "reviewed_at": "2026-09-15",
+        "reviewer": "Luis Gustavo R.C.",
+        "editorial_note": null
+      },
+      "text_citations": {
+        "description": [
+          "met-musical-terms"
+        ],
+        "sound_production": [
+          "met-musical-terms"
+        ]
+      }
+    },
+    {
+      "resource": {
+        "data_source": "catalog",
+        "catalog_version": "0.1.6",
+        "image_catalog_version": "images-0.1.0",
+        "slug": "bowed-strings",
+        "name": "Cordas friccionadas",
+        "kind": "family",
+        "family_slug": null,
+        "description": "Cordas mantidas em vibração principalmente pela fricção de um arco.",
+        "sound_production": "O arco adere e solta a corda repetidamente, sustentando o som.",
+        "common_roles": [
+          "melodia",
+          "sustentação",
+          "textura"
+        ],
+        "related_slugs": [
+          "cello"
+        ],
+        "sections": [
+          {
+            "id": "family-bowed-strings-curiosity",
+            "kind": "curiosity",
+            "text": "O arco sustenta a vibração e permite prolongar uma nota; os dedos também podem pinçar a corda, numa técnica chamada pizzicato.",
+            "content_type": "editorial_summary",
+            "status": "sourced",
+            "review": {
+              "source_metadata_verified": true,
+              "claim_support_verified": true,
+              "reviewed_at": "2026-09-15",
+              "reviewer": "Luis Gustavo R.C.",
+              "editorial_note": null
+            },
+            "citations": [
+              {
+                "source_id": "met-cello",
+                "locator": null,
+                "note": "Arco e pinçamento em cordas friccionadas."
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "id": "met-cello",
+            "title": "Amaryllis Fleming Cello",
+            "contributors": [
+              "The Metropolitan Museum of Art"
+            ],
+            "publisher": "The Metropolitan Museum of Art",
+            "publication_date": null,
+            "url": "https://www.metmuseum.org/art/collection/search/898377",
+            "accessed_at": "2026-09-12",
+            "verified_at": "2026-09-12",
+            "locator": null,
+            "source_type": "museum",
+            "language": "en",
+            "license": null,
+            "note": null,
+            "metadata_verified": true
+          }
+        ],
+        "further_reading": [],
+        "image": {
+          "asset_id": "cello-jon-tyson-01",
+          "resolution": "family",
+          "depicted_instrument_slug": "cello",
+          "alt": "Detalhe de um instrumento de cordas friccionadas sendo tocado com arco, em preto e branco.",
+          "caption": "Imagem ilustrativa da família Cordas friccionadas: Violoncelo.",
+          "variants": [
+            {
+              "name": "detail",
+              "url": "http://127.0.0.1:5173/instruments/cello-jon-tyson-01/324cd9e20607/detail.png",
+              "width": 1200,
+              "height": 800
+            }
+          ],
+          "tone": {
+            "shadow": "#000000",
+            "highlight": "#A9C4AE"
+          },
+          "credit": {
+            "photographer": "Jon Tyson",
+            "provider": "Unsplash",
+            "photo_url": "https://unsplash.com/pt-br/fotografias/violino-marrom-no-textil-preto-VLJutLyscKw",
+            "photographer_url": "https://unsplash.com/@jontyson",
+            "license": "Unsplash License",
+            "license_url": "https://unsplash.com/license"
+          }
+        },
+        "tone": {
+          "shadow": "#000000",
+          "highlight": "#A9C4AE"
+        }
+      },
+      "review": {
+        "source_metadata_verified": true,
+        "claim_support_verified": true,
+        "reviewed_at": "2026-09-15",
+        "reviewer": "Luis Gustavo R.C.",
+        "editorial_note": null
+      },
+      "text_citations": {
+        "description": [
+          "met-cello"
+        ],
+        "sound_production": [
+          "met-cello"
+        ]
+      }
+    },
+    {
+      "resource": {
+        "data_source": "catalog",
+        "catalog_version": "0.1.6",
+        "image_catalog_version": "images-0.1.0",
+        "slug": "cello",
+        "name": "Violoncelo",
+        "kind": "instrument",
+        "family_slug": "bowed-strings",
+        "description": "Instrumento de cordas friccionadas de registro grave e médio.",
+        "sound_production": "O arco ou os dedos colocam suas cordas em vibração.",
+        "common_roles": [
+          "linha grave",
+          "melodia",
+          "sustentação"
+        ],
+        "related_slugs": [
+          "bowed-strings"
+        ],
+        "sections": [
+          {
+            "id": "instrument-cello-curiosity",
+            "kind": "curiosity",
+            "text": "Alguns dos primeiros violoncelos tinham três, quatro ou cinco cordas. Exemplares menores podiam ser sustentados por uma correia e tocados em pé ou em movimento.",
+            "content_type": "editorial_summary",
+            "status": "sourced",
+            "review": {
+              "source_metadata_verified": true,
+              "claim_support_verified": true,
+              "reviewed_at": "2026-09-15",
+              "reviewer": "Luis Gustavo R.C.",
+              "editorial_note": null
+            },
+            "citations": [
+              {
+                "source_id": "met-cello",
+                "locator": null,
+                "note": "Variação histórica de cordas e tamanhos."
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "id": "met-cello",
+            "title": "Amaryllis Fleming Cello",
+            "contributors": [
+              "The Metropolitan Museum of Art"
+            ],
+            "publisher": "The Metropolitan Museum of Art",
+            "publication_date": null,
+            "url": "https://www.metmuseum.org/art/collection/search/898377",
+            "accessed_at": "2026-09-12",
+            "verified_at": "2026-09-12",
+            "locator": null,
+            "source_type": "museum",
+            "language": "en",
+            "license": null,
+            "note": null,
+            "metadata_verified": true
+          }
+        ],
+        "further_reading": [],
+        "image": {
+          "asset_id": "cello-jon-tyson-01",
+          "resolution": "exact",
+          "depicted_instrument_slug": "cello",
+          "alt": "Detalhe de um instrumento de cordas friccionadas sendo tocado com arco, em preto e branco.",
+          "caption": "Imagem do instrumento Violoncelo.",
+          "variants": [
+            {
+              "name": "detail",
+              "url": "http://127.0.0.1:5173/instruments/cello-jon-tyson-01/324cd9e20607/detail.png",
+              "width": 1200,
+              "height": 800
+            }
+          ],
+          "tone": {
+            "shadow": "#000000",
+            "highlight": "#A9C4AE"
+          },
+          "credit": {
+            "photographer": "Jon Tyson",
+            "provider": "Unsplash",
+            "photo_url": "https://unsplash.com/pt-br/fotografias/violino-marrom-no-textil-preto-VLJutLyscKw",
+            "photographer_url": "https://unsplash.com/@jontyson",
+            "license": "Unsplash License",
+            "license_url": "https://unsplash.com/license"
+          }
+        },
+        "tone": {
+          "shadow": "#000000",
+          "highlight": "#A9C4AE"
+        }
+      },
+      "review": {
+        "source_metadata_verified": true,
+        "claim_support_verified": true,
+        "reviewed_at": "2026-09-15",
+        "reviewer": "Luis Gustavo R.C.",
+        "editorial_note": null
+      },
+      "text_citations": {
+        "description": [
+          "met-cello"
+        ],
+        "sound_production": [
+          "met-cello"
+        ]
+      }
+    },
+    {
+      "resource": {
+        "data_source": "catalog",
+        "catalog_version": "0.1.6",
+        "image_catalog_version": "images-0.1.0",
+        "slug": "drums",
+        "name": "Bateria",
+        "kind": "instrument",
+        "family_slug": "percussion",
+        "description": "Conjunto de tambores e pratos organizado para um único intérprete.",
+        "sound_production": "Baquetas, pedais e mãos acionam superfícies de diferentes materiais.",
+        "common_roles": [
+          "pulso",
+          "dinâmica",
+          "articulação formal"
+        ],
+        "related_slugs": [
+          "percussion"
+        ],
+        "sections": [
+          {
+            "id": "instrument-drums-curiosity",
+            "kind": "curiosity",
+            "text": "Um único corpo de bateria pode articular pulso, contratempo, síncope e textura em todo o conjunto.",
+            "content_type": "editorial_summary",
+            "status": "sourced",
+            "review": {
+              "source_metadata_verified": true,
+              "claim_support_verified": true,
+              "reviewed_at": "2026-09-15",
+              "reviewer": "Luis Gustavo R.C.",
+              "editorial_note": null
+            },
+            "citations": [
+              {
+                "source_id": "smithsonian-drum-set",
+                "locator": null,
+                "note": "Funções simultâneas de uma bateria."
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "id": "smithsonian-drum-set",
+            "title": "The Birth of the Drum Set",
+            "contributors": [
+              "Smithsonian Institution"
+            ],
+            "publisher": "Smithsonian Institution",
+            "publication_date": null,
+            "url": "https://music.si.edu/story/birth-drum-set",
+            "accessed_at": "2026-09-12",
+            "verified_at": "2026-09-12",
+            "locator": null,
+            "source_type": "institution",
+            "language": "en",
+            "license": null,
+            "note": null,
+            "metadata_verified": true
+          }
+        ],
+        "further_reading": [],
+        "image": {
+          "asset_id": "drums-laura-rivera-01",
+          "resolution": "exact",
+          "depicted_instrument_slug": "drums",
+          "alt": "Detalhe de mãos tocando tambores com baquetas, em uma fotografia em preto e branco.",
+          "caption": "Imagem do instrumento Bateria.",
+          "variants": [
+            {
+              "name": "detail",
+              "url": "http://127.0.0.1:5173/instruments/drums-laura-rivera-01/10848ed0b8e3/detail.png",
+              "width": 1200,
+              "height": 800
+            }
+          ],
+          "tone": {
+            "shadow": "#000000",
+            "highlight": "#D5C18D"
+          },
+          "credit": {
+            "photographer": "Laura Rivera",
+            "provider": "Unsplash",
+            "photo_url": "https://unsplash.com/pt-br/fotografias/uma-pessoa-esta-tocando-bateria-em-uma-foto-em-preto-e-branco-YtZCf35EcZQ",
+            "photographer_url": "https://unsplash.com/@laurar1vera",
+            "license": "Unsplash License",
+            "license_url": "https://unsplash.com/license"
+          }
+        },
+        "tone": {
+          "shadow": "#000000",
+          "highlight": "#D5C18D"
+        }
+      },
+      "review": {
+        "source_metadata_verified": true,
+        "claim_support_verified": true,
+        "reviewed_at": "2026-09-15",
+        "reviewer": "Luis Gustavo R.C.",
+        "editorial_note": null
+      },
+      "text_citations": {
+        "description": [
+          "smithsonian-drum-set"
+        ],
+        "sound_production": []
+      }
+    },
+    {
+      "resource": {
+        "data_source": "catalog",
+        "catalog_version": "0.1.6",
+        "image_catalog_version": "images-0.1.0",
+        "slug": "electric-bass",
+        "name": "Baixo elétrico",
+        "kind": "instrument",
+        "family_slug": "plucked-strings",
+        "description": "Instrumento elétrico de registro grave ligado ao pulso e à harmonia.",
+        "sound_production": "Captadores transformam a vibração de cordas graves em sinal elétrico.",
+        "common_roles": [
+          "base rítmica",
+          "fundamento harmônico",
+          "contracanto"
+        ],
+        "related_slugs": [
+          "plucked-strings",
+          "electric-guitar"
+        ],
+        "sections": [
+          {
+            "id": "instrument-electric-bass-curiosity",
+            "kind": "curiosity",
+            "text": "O Fender Precision Bass, lançado em 1951, ajudou a tornar o baixo com trastes uma peça central do pulso em bandas elétricas.",
+            "content_type": "editorial_summary",
+            "status": "sourced",
+            "review": {
+              "source_metadata_verified": true,
+              "claim_support_verified": true,
+              "reviewed_at": "2026-09-13",
+              "reviewer": "Luis Gustavo R.C.",
+              "editorial_note": null
+            },
+            "citations": [
+              {
+                "source_id": "smithsonian-precision-bass",
+                "locator": null,
+                "note": "Precision Bass de 1951."
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "id": "smithsonian-precision-bass",
+            "title": "Fender Precision Bass",
+            "contributors": [
+              "Smithsonian National Museum of American History"
+            ],
+            "publisher": "Smithsonian National Museum of American History",
+            "publication_date": null,
+            "url": "https://americanhistory.si.edu/collections/object/nmah_607619",
+            "accessed_at": "2026-09-12",
+            "verified_at": "2026-09-12",
+            "locator": null,
+            "source_type": "museum",
+            "language": "en",
+            "license": null,
+            "note": null,
+            "metadata_verified": true
+          }
+        ],
+        "further_reading": [],
+        "image": {
+          "asset_id": "electric-guitar-nikolas-mitsiggas-01",
+          "resolution": "family",
+          "depicted_instrument_slug": "electric-guitar",
+          "alt": "Guitarra elétrica escura com reflexos azulados sobre um fundo preto.",
+          "caption": "Imagem ilustrativa da família Cordas dedilhadas: Guitarra elétrica.",
+          "variants": [
+            {
+              "name": "detail",
+              "url": "http://127.0.0.1:5173/instruments/electric-guitar-nikolas-mitsiggas-01/b05745d5fad8/detail.png",
+              "width": 1200,
+              "height": 800
+            }
+          ],
+          "tone": {
+            "shadow": "#000000",
+            "highlight": "#E7AE86"
+          },
+          "credit": {
+            "photographer": "Nikolas Mitsiggas",
+            "provider": "Unsplash",
+            "photo_url": "https://unsplash.com/pt-br/fotografias/uma-guitarra-eletrica-preto-e-azul-em-um-fundo-preto-Y2qugjxmw0g",
+            "photographer_url": "https://unsplash.com/@nikolasmitsiggas",
+            "license": "Unsplash License",
+            "license_url": "https://unsplash.com/license"
+          }
+        },
+        "tone": {
+          "shadow": "#000000",
+          "highlight": "#E7AE86"
+        }
+      },
+      "review": {
+        "source_metadata_verified": false,
+        "claim_support_verified": true,
+        "reviewed_at": "2026-09-14",
+        "reviewer": "Luis Gustavo R.C.",
+        "editorial_note": null
+      },
+      "text_citations": {
+        "description": [],
+        "sound_production": []
+      }
+    },
+    {
+      "resource": {
+        "data_source": "catalog",
+        "catalog_version": "0.1.6",
+        "image_catalog_version": "images-0.1.0",
+        "slug": "electric-guitar",
+        "name": "Guitarra elétrica",
+        "kind": "instrument",
+        "family_slug": "plucked-strings",
+        "description": "Instrumento de cordas amplificado e aberto a amplo processamento.",
+        "sound_production": "Captadores convertem a vibração das cordas em sinal elétrico.",
+        "common_roles": [
+          "harmonia",
+          "melodia",
+          "textura"
+        ],
+        "related_slugs": [
+          "plucked-strings",
+          "electric-bass"
+        ],
+        "sections": [
+          {
+            "id": "instrument-electric-guitar-curiosity",
+            "kind": "curiosity",
+            "text": "O captador não produz o som sozinho: ele converte a vibração da corda em sinal, que ainda pode ser filtrado, distorcido e espacializado.",
+            "content_type": "editorial_summary",
+            "status": "sourced",
+            "review": {
+              "source_metadata_verified": true,
+              "claim_support_verified": true,
+              "reviewed_at": "2026-09-14",
+              "reviewer": "Luis Gustavo R.C.",
+              "editorial_note": null
+            },
+            "citations": [
+              {
+                "source_id": "smithsonian-electric-guitar",
+                "locator": null,
+                "note": "Conversão da vibração em sinal elétrico."
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "id": "smithsonian-electric-guitar",
+            "title": "5 Intriguing Electric Guitars in Our Collections",
+            "contributors": [
+              "Smithsonian National Museum of American History"
+            ],
+            "publisher": "Smithsonian National Museum of American History",
+            "publication_date": null,
+            "url": "https://americanhistory.si.edu/blog/5-intriguing-electric-guitars-our-collections",
+            "accessed_at": "2026-09-12",
+            "verified_at": "2026-09-12",
+            "locator": null,
+            "source_type": "museum",
+            "language": "en",
+            "license": null,
+            "note": null,
+            "metadata_verified": true
+          }
+        ],
+        "further_reading": [],
+        "image": {
+          "asset_id": "electric-guitar-nikolas-mitsiggas-01",
+          "resolution": "exact",
+          "depicted_instrument_slug": "electric-guitar",
+          "alt": "Guitarra elétrica escura com reflexos azulados sobre um fundo preto.",
+          "caption": "Imagem do instrumento Guitarra elétrica.",
+          "variants": [
+            {
+              "name": "detail",
+              "url": "http://127.0.0.1:5173/instruments/electric-guitar-nikolas-mitsiggas-01/b05745d5fad8/detail.png",
+              "width": 1200,
+              "height": 800
+            }
+          ],
+          "tone": {
+            "shadow": "#000000",
+            "highlight": "#E7AE86"
+          },
+          "credit": {
+            "photographer": "Nikolas Mitsiggas",
+            "provider": "Unsplash",
+            "photo_url": "https://unsplash.com/pt-br/fotografias/uma-guitarra-eletrica-preto-e-azul-em-um-fundo-preto-Y2qugjxmw0g",
+            "photographer_url": "https://unsplash.com/@nikolasmitsiggas",
+            "license": "Unsplash License",
+            "license_url": "https://unsplash.com/license"
+          }
+        },
+        "tone": {
+          "shadow": "#000000",
+          "highlight": "#E7AE86"
+        }
+      },
+      "review": {
+        "source_metadata_verified": false,
+        "claim_support_verified": true,
+        "reviewed_at": "2026-09-15",
+        "reviewer": "Luis Gustavo R.C.",
+        "editorial_note": null
+      },
+      "text_citations": {
+        "description": [],
+        "sound_production": []
+      }
+    },
+    {
+      "resource": {
+        "data_source": "catalog",
+        "catalog_version": "0.1.6",
+        "image_catalog_version": "images-0.1.0",
+        "slug": "percussion",
+        "name": "Percussão",
+        "kind": "family",
+        "family_slug": null,
+        "description": "Família de instrumentos acionados principalmente por impacto, agitação ou raspagem.",
+        "sound_production": "Uma superfície ou corpo ressoa depois de receber energia.",
+        "common_roles": [
+          "pulso",
+          "textura",
+          "acentuação"
+        ],
+        "related_slugs": [
+          "drums",
+          "pandeiro",
+          "surdo",
+          "tamborim",
+          "cuica"
+        ],
+        "sections": [
+          {
+            "id": "family-percussion-curiosity",
+            "kind": "curiosity",
+            "text": "Instrumentos de percussão nem sempre servem apenas para marcar o tempo. Entre os Mexica, o teponaztli participava de cerimônias religiosas, eventos reais, atividades militares e formas de comunicação.",
+            "content_type": "editorial_summary",
+            "status": "sourced",
+            "review": {
+              "source_metadata_verified": true,
+              "claim_support_verified": true,
+              "reviewed_at": "2026-09-13",
+              "reviewer": "Luis Gustavo R.C.",
+              "editorial_note": null
+            },
+            "citations": [
+              {
+                "source_id": "met-teponaztli",
+                "locator": null,
+                "note": "Usos cerimoniais, militares e comunicacionais."
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "id": "met-teponaztli",
+            "title": "Drum (Teponaztli)",
+            "contributors": [
+              "The Metropolitan Museum of Art"
+            ],
+            "publisher": "The Metropolitan Museum of Art",
+            "publication_date": null,
+            "url": "https://www.metmuseum.org/art/collection/search/312583",
+            "accessed_at": "2026-09-12",
+            "verified_at": "2026-09-12",
+            "locator": null,
+            "source_type": "museum",
+            "language": "en",
+            "license": null,
+            "note": null,
+            "metadata_verified": true
+          }
+        ],
+        "further_reading": [],
+        "image": {
+          "asset_id": "drums-laura-rivera-01",
+          "resolution": "family",
+          "depicted_instrument_slug": "drums",
+          "alt": "Detalhe de mãos tocando tambores com baquetas, em uma fotografia em preto e branco.",
+          "caption": "Imagem ilustrativa da família Percussão: Bateria.",
+          "variants": [
+            {
+              "name": "detail",
+              "url": "http://127.0.0.1:5173/instruments/drums-laura-rivera-01/10848ed0b8e3/detail.png",
+              "width": 1200,
+              "height": 800
+            }
+          ],
+          "tone": {
+            "shadow": "#000000",
+            "highlight": "#D5C18D"
+          },
+          "credit": {
+            "photographer": "Laura Rivera",
+            "provider": "Unsplash",
+            "photo_url": "https://unsplash.com/pt-br/fotografias/uma-pessoa-esta-tocando-bateria-em-uma-foto-em-preto-e-branco-YtZCf35EcZQ",
+            "photographer_url": "https://unsplash.com/@laurar1vera",
+            "license": "Unsplash License",
+            "license_url": "https://unsplash.com/license"
+          }
+        },
+        "tone": {
+          "shadow": "#000000",
+          "highlight": "#D5C18D"
+        }
+      },
+      "review": {
+        "source_metadata_verified": false,
+        "claim_support_verified": true,
+        "reviewed_at": "2026-09-15",
+        "reviewer": "Luis Gustavo R.C.",
+        "editorial_note": null
+      },
+      "text_citations": {
+        "description": [],
+        "sound_production": []
+      }
+    },
+    {
+      "resource": {
+        "data_source": "catalog",
+        "catalog_version": "0.1.6",
+        "image_catalog_version": "images-0.1.0",
+        "slug": "piano",
+        "name": "Piano",
+        "kind": "instrument",
+        "family_slug": "acoustic-keys",
+        "description": "Instrumento de teclas em que martelos percutem cordas afinadas.",
+        "sound_production": "Cada tecla lança um martelo contra uma corda e libera seu abafador.",
+        "common_roles": [
+          "harmonia",
+          "melodia",
+          "acompanhamento"
+        ],
+        "related_slugs": [
+          "acoustic-keys"
+        ],
+        "sections": [
+          {
+            "id": "instrument-piano-curiosity",
+            "kind": "curiosity",
+            "text": "Apenas três pianos construídos por Cristofori são conhecidos atualmente. O exemplar de 1720 preservado pelo Metropolitan Museum é o mais antigo deles.",
+            "content_type": "editorial_summary",
+            "status": "sourced",
+            "review": {
+              "source_metadata_verified": true,
+              "claim_support_verified": true,
+              "reviewed_at": "2026-09-15",
+              "reviewer": "Luis Gustavo R.C.",
+              "editorial_note": null
+            },
+            "citations": [
+              {
+                "source_id": "met-cristofori-piano",
+                "locator": null,
+                "note": "Três pianos de Cristofori preservados."
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "id": "met-cristofori-piano",
+            "title": "The Piano: The Pianofortes of Bartolomeo Cristofori",
+            "contributors": [
+              "The Metropolitan Museum of Art"
+            ],
+            "publisher": "The Metropolitan Museum of Art",
+            "publication_date": null,
+            "url": "https://www.metmuseum.org/essays/the-piano-the-pianofortes-of-bartolomeo-cristofori-1655-1731",
+            "accessed_at": "2026-09-12",
+            "verified_at": "2026-09-12",
+            "locator": null,
+            "source_type": "museum",
+            "language": "en",
+            "license": null,
+            "note": null,
+            "metadata_verified": true
+          }
+        ],
+        "further_reading": [],
+        "image": {
+          "asset_id": "piano-alin-gavriliuc-01",
+          "resolution": "exact",
+          "depicted_instrument_slug": "piano",
+          "alt": "Detalhe de teclas brancas e pretas de um piano.",
+          "caption": "Imagem do instrumento piano.",
+          "variants": [
+            {
+              "name": "detail",
+              "url": "http://127.0.0.1:5173/instruments/piano-alin-gavriliuc-01/907486e78cad/detail.png",
+              "width": 1200,
+              "height": 675
+            }
+          ],
+          "tone": {
+            "shadow": "#000000",
+            "highlight": "#F29191"
+          },
+          "credit": {
+            "photographer": "Alin Gavriliuc",
+            "provider": "Unsplash",
+            "photo_url": "https://unsplash.com/pt-br/fotografias/um-close-up-de-um-piano-com-teclas-preto-e-branco-_iS9ma5vLD8",
+            "photographer_url": "https://unsplash.com/@alingavriliuc",
+            "license": "Unsplash License",
+            "license_url": "https://unsplash.com/license"
+          }
+        },
+        "tone": {
+          "shadow": "#000000",
+          "highlight": "#F29191"
+        }
+      },
+      "review": {
+        "source_metadata_verified": true,
+        "claim_support_verified": true,
+        "reviewed_at": "2026-09-15",
+        "reviewer": "Luis Gustavo R.C.",
+        "editorial_note": null
+      },
+      "text_citations": {
+        "description": [],
+        "sound_production": [
+          "met-cristofori-piano"
+        ]
+      }
+    },
+    {
+      "resource": {
+        "data_source": "catalog",
+        "catalog_version": "0.1.6",
+        "image_catalog_version": "images-0.1.0",
+        "slug": "plucked-strings",
+        "name": "Cordas dedilhadas",
+        "kind": "family",
+        "family_slug": null,
+        "description": "Família em que a corda vibra depois de ser puxada com dedos, palheta ou mecanismo equivalente.",
+        "sound_production": "A corda é deslocada e solta, iniciando uma vibração livre.",
+        "common_roles": [
+          "harmonia",
+          "melodia",
+          "base rítmica"
+        ],
+        "related_slugs": [
+          "electric-guitar",
+          "electric-bass",
+          "acoustic-guitar",
+          "cavaquinho"
+        ],
+        "sections": [
+          {
+            "id": "family-plucked-strings-curiosity",
+            "kind": "curiosity",
+            "text": "Dedilhar uma corda não exige contato direto dos dedos: no cravo, pressionar uma tecla levanta um pequeno plectro que pinça a corda.",
+            "content_type": "editorial_summary",
+            "status": "sourced",
+            "review": {
+              "source_metadata_verified": true,
+              "claim_support_verified": true,
+              "reviewed_at": "2026-09-15",
+              "reviewer": "Luis Gustavo R.C.",
+              "editorial_note": null
+            },
+            "citations": [
+              {
+                "source_id": "met-musical-terms",
+                "locator": null,
+                "note": "Mecanismo de plectro do cravo."
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "id": "met-musical-terms",
+            "title": "Musical Terms for the Seventeenth and Eighteenth Centuries",
+            "contributors": [
+              "The Metropolitan Museum of Art"
+            ],
+            "publisher": "The Metropolitan Museum of Art",
+            "publication_date": null,
+            "url": "https://www.metmuseum.org/essays/musical-terms-for-the-seventeenth-and-eighteenth-centuries",
+            "accessed_at": "2026-09-12",
+            "verified_at": "2026-09-12",
+            "locator": null,
+            "source_type": "museum",
+            "language": "en",
+            "license": null,
+            "note": null,
+            "metadata_verified": true
+          }
+        ],
+        "further_reading": [],
+        "image": {
+          "asset_id": "electric-guitar-nikolas-mitsiggas-01",
+          "resolution": "family",
+          "depicted_instrument_slug": "electric-guitar",
+          "alt": "Guitarra elétrica escura com reflexos azulados sobre um fundo preto.",
+          "caption": "Imagem ilustrativa da família Cordas dedilhadas: Guitarra elétrica.",
+          "variants": [
+            {
+              "name": "detail",
+              "url": "http://127.0.0.1:5173/instruments/electric-guitar-nikolas-mitsiggas-01/b05745d5fad8/detail.png",
+              "width": 1200,
+              "height": 800
+            }
+          ],
+          "tone": {
+            "shadow": "#000000",
+            "highlight": "#E7AE86"
+          },
+          "credit": {
+            "photographer": "Nikolas Mitsiggas",
+            "provider": "Unsplash",
+            "photo_url": "https://unsplash.com/pt-br/fotografias/uma-guitarra-eletrica-preto-e-azul-em-um-fundo-preto-Y2qugjxmw0g",
+            "photographer_url": "https://unsplash.com/@nikolasmitsiggas",
+            "license": "Unsplash License",
+            "license_url": "https://unsplash.com/license"
+          }
+        },
+        "tone": {
+          "shadow": "#000000",
+          "highlight": "#E7AE86"
+        }
+      },
+      "review": {
+        "source_metadata_verified": false,
+        "claim_support_verified": true,
+        "reviewed_at": "2026-09-15",
+        "reviewer": "Luis Gustavo R.C.",
+        "editorial_note": null
+      },
+      "text_citations": {
+        "description": [],
+        "sound_production": []
+      }
+    },
+    {
+      "resource": {
+        "data_source": "catalog",
+        "catalog_version": "0.1.6",
+        "image_catalog_version": "images-0.1.0",
+        "slug": "sampled-sounds",
+        "name": "Sons sampleados",
+        "kind": "family",
+        "family_slug": null,
+        "description": "Gravações reutilizadas como matéria para uma nova composição.",
+        "sound_production": "Um trecho gravado é recortado, disparado e transformado.",
+        "common_roles": [
+          "ritmo",
+          "textura",
+          "memória sonora"
+        ],
+        "related_slugs": [
+          "sampler",
+          "synthesizers"
+        ],
+        "sections": [
+          {
+            "id": "family-sampled-sounds-curiosity",
+            "kind": "curiosity",
+            "text": "Um sample pode vir de música, fala, paisagem sonora, ruído ou arquivo público; a Biblioteca do Congresso reúne essas possibilidades no projeto Citizen DJ.",
+            "content_type": "editorial_summary",
+            "status": "sourced",
+            "review": {
+              "source_metadata_verified": true,
+              "claim_support_verified": true,
+              "reviewed_at": "2026-09-15",
+              "reviewer": "Luis Gustavo R.C.",
+              "editorial_note": null
+            },
+            "citations": [
+              {
+                "source_id": "loc-citizen-dj",
+                "locator": null,
+                "note": "Música, fala, campo e arquivos como material."
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "id": "loc-citizen-dj",
+            "title": "Citizen DJ: About the Project",
+            "contributors": [
+              "Library of Congress"
+            ],
+            "publisher": "Library of Congress",
+            "publication_date": null,
+            "url": "https://citizen-dj.labs.loc.gov/about/",
+            "accessed_at": "2026-09-12",
+            "verified_at": "2026-09-12",
+            "locator": null,
+            "source_type": "archive",
+            "language": "en",
+            "license": null,
+            "note": null,
+            "metadata_verified": true
+          }
+        ],
+        "further_reading": [],
+        "image": {
+          "asset_id": "sampled-sounds-christian-agbede-01",
+          "resolution": "family",
+          "depicted_instrument_slug": "sampled-sounds-christian-agbede-01",
+          "alt": "Mulher examinando um disco de vinil em uma loja com prateleiras de discos.",
+          "caption": "Imagem ilustrativa da família Sons sampleados: Discos de vinil em uma loja.",
+          "variants": [
+            {
+              "name": "detail",
+              "url": "http://127.0.0.1:5173/instruments/sampled-sounds-christian-agbede-01/10bc7cbe5d7d/detail.png",
+              "width": 1200,
+              "height": 800
+            }
+          ],
+          "tone": {
+            "shadow": "#000000",
+            "highlight": "#9EBBD1"
+          },
+          "credit": {
+            "photographer": "Christian Agbede",
+            "provider": "Unsplash",
+            "photo_url": "https://unsplash.com/pt-br/fotografias/jovem-mulher-navegando-discos-em-uma-loja-TxVYEUHd-2s",
+            "photographer_url": "https://unsplash.com/pt-br/@chriscreations__",
+            "license": "Unsplash License",
+            "license_url": "https://unsplash.com/license"
+          }
+        },
+        "tone": {
+          "shadow": "#000000",
+          "highlight": "#9EBBD1"
+        }
+      },
+      "review": {
+        "source_metadata_verified": true,
+        "claim_support_verified": true,
+        "reviewed_at": "2026-09-15",
+        "reviewer": "Luis Gustavo R.C.",
+        "editorial_note": null
+      },
+      "text_citations": {
+        "description": [
+          "loc-citizen-dj"
+        ],
+        "sound_production": [
+          "loc-citizen-dj"
+        ]
+      }
+    },
+    {
+      "resource": {
+        "data_source": "catalog",
+        "catalog_version": "0.1.6",
+        "image_catalog_version": "images-0.1.0",
+        "slug": "sampler",
+        "name": "Sampler",
+        "kind": "instrument",
+        "family_slug": "sampled-sounds",
+        "description": "Instrumento que grava ou reproduz trechos sonoros controláveis.",
+        "sound_production": "Áudio armazenado é disparado, recortado, repetido ou transformado.",
+        "common_roles": [
+          "ritmo",
+          "textura",
+          "colagem"
+        ],
+        "related_slugs": [
+          "sampled-sounds",
+          "synthesizer"
+        ],
+        "sections": [
+          {
+            "id": "instrument-sampler-curiosity",
+            "kind": "curiosity",
+            "text": "O som de vidro quebrando em “Babooshka”, de Kate Bush, veio de um Fairlight CMI e é citado como um dos primeiros usos marcantes do instrumento.",
+            "content_type": "editorial_summary",
+            "status": "sourced",
+            "review": {
+              "source_metadata_verified": true,
+              "claim_support_verified": true,
+              "reviewed_at": "2026-09-15",
+              "reviewer": "Luis Gustavo R.C.",
+              "editorial_note": null
+            },
+            "citations": [
+              {
+                "source_id": "nfsa-fairlight",
+                "locator": null,
+                "note": "Uso de vidro quebrando em “Babooshka”."
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "id": "nfsa-fairlight",
+            "title": "Fairlight CMI",
+            "contributors": [
+              "National Film and Sound Archive of Australia"
+            ],
+            "publisher": "National Film and Sound Archive of Australia",
+            "publication_date": null,
+            "url": "https://www.nfsa.gov.au/collection/item/103332-fairlight-cmi",
+            "accessed_at": "2026-09-12",
+            "verified_at": "2026-09-12",
+            "locator": null,
+            "source_type": "archive",
+            "language": "en",
+            "license": null,
+            "note": null,
+            "metadata_verified": true
+          }
+        ],
+        "further_reading": [],
+        "image": {
+          "asset_id": "sampler-ricardo-abreu-01",
+          "resolution": "related",
+          "depicted_instrument_slug": "sampler",
+          "alt": "Controlador preto com uma grade de pads iluminados, visor, botões e cabos, visto de cima.",
+          "caption": "Imagem relacionada ao instrumento Controlador de pads.",
+          "variants": [
+            {
+              "name": "detail",
+              "url": "http://127.0.0.1:5173/instruments/sampler-ricardo-abreu-01/09f355997477/detail.png",
+              "width": 1200,
+              "height": 800
+            }
+          ],
+          "tone": {
+            "shadow": "#000000",
+            "highlight": "#9EBBD1"
+          },
+          "credit": {
+            "photographer": "Ricardo Abreu",
+            "provider": "Unsplash",
+            "photo_url": "https://unsplash.com/pt-br/fotografias/ativada-a-barra-de-lancamento-digital-dZPp5ZVMcN0",
+            "photographer_url": "https://unsplash.com/@txbrown",
+            "license": "Unsplash License",
+            "license_url": "https://unsplash.com/license"
+          }
+        },
+        "tone": {
+          "shadow": "#000000",
+          "highlight": "#9EBBD1"
+        }
+      },
+      "review": {
+        "source_metadata_verified": false,
+        "claim_support_verified": true,
+        "reviewed_at": "2026-09-15",
+        "reviewer": "Luis Gustavo R.C.",
+        "editorial_note": null
+      },
+      "text_citations": {
+        "description": [],
+        "sound_production": []
+      }
+    },
+    {
+      "resource": {
+        "data_source": "catalog",
+        "catalog_version": "0.1.6",
+        "image_catalog_version": "images-0.1.0",
+        "slug": "synthesizer",
+        "name": "Sintetizador",
+        "kind": "instrument",
+        "family_slug": "synthesizers",
+        "description": "Instrumento eletrônico voltado à criação e transformação de timbres.",
+        "sound_production": "Sinais são gerados ou reproduzidos e depois moldados por controles.",
+        "common_roles": [
+          "textura",
+          "harmonia",
+          "melodia",
+          "efeitos"
+        ],
+        "related_slugs": [
+          "synthesizers",
+          "sampler"
+        ],
+        "sections": [
+          {
+            "id": "instrument-synthesizer-curiosity",
+            "kind": "curiosity",
+            "text": "O Minimoog popularizou a roda de pitch bend (pitch wheel), uma das invenções mais marcantes da música moderna. Ela foi criada especificamente para que os tecladistas pudessem dobrar a afinação das notas em tempo real e rivalizar com a expressividade e os solos das guitarras elétricas no palco.",
+            "content_type": "editorial_summary",
+            "status": "sourced",
+            "review": {
+              "source_metadata_verified": true,
+              "claim_support_verified": true,
+              "reviewed_at": "2026-09-15",
+              "reviewer": "Luis Gustavo R.C.",
+              "editorial_note": null
+            },
+            "citations": [
+              {
+                "source_id": "8694d43a-ab6e-4ce6-99b3-265933fcb716",
+                "locator": null,
+                "note": null
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "id": "8694d43a-ab6e-4ce6-99b3-265933fcb716",
+            "title": "Minimoog: The First Truly Portable Synthesizer",
+            "contributors": [],
+            "publisher": "Red Bull Music Academy",
+            "publication_date": null,
+            "url": "https://daily.redbullmusicacademy.com/2017/10/instrumental-instruments-minimoog",
+            "accessed_at": "2026-09-15",
+            "verified_at": "2026-09-15",
+            "locator": null,
+            "source_type": "article",
+            "language": "pt-BR",
+            "license": null,
+            "note": null,
+            "metadata_verified": true
+          }
+        ],
+        "further_reading": [
+          {
+            "title": "History of the Synthesizer, Part 1",
+            "url": "https://hub.yamaha.com/keyboards/synthesizers/history-of-the-synthesizer-part-1/",
+            "publisher": "Jerry Kovarsky",
+            "status": "reviewed",
+            "reviewer": "Luis Gustavo R.C.",
+            "reviewed_at": "2026-09-15"
+          }
+        ],
+        "image": {
+          "asset_id": "synthesizer-anton-shuvalov-01",
+          "resolution": "exact",
+          "depicted_instrument_slug": "synthesizer",
+          "alt": "Sintetizadores com controles giratórios, luzes e cabos sobre uma mesa.",
+          "caption": "Imagem do instrumento Sintetizadores.",
+          "variants": [
+            {
+              "name": "detail",
+              "url": "http://127.0.0.1:5173/instruments/synthesizer-anton-shuvalov-01/141d575021f1/detail.png",
+              "width": 1200,
+              "height": 750
+            }
+          ],
+          "tone": {
+            "shadow": "#000000",
+            "highlight": "#B7A5CC"
+          },
+          "credit": {
+            "photographer": "Anton Shuvalov",
+            "provider": "Unsplash",
+            "photo_url": "https://unsplash.com/pt-br/fotografias/mixer-de-audio-preto-e-cinza-WFIoD6zWn98",
+            "photographer_url": "https://unsplash.com/@a8ka",
+            "license": "Unsplash License",
+            "license_url": "https://unsplash.com/license"
+          }
+        },
+        "tone": {
+          "shadow": "#000000",
+          "highlight": "#B7A5CC"
+        }
+      },
+      "review": {
+        "source_metadata_verified": false,
+        "claim_support_verified": true,
+        "reviewed_at": "2026-09-15",
+        "reviewer": "Luis Gustavo R.C.",
+        "editorial_note": null
+      },
+      "text_citations": {
+        "description": [],
+        "sound_production": []
+      }
+    },
+    {
+      "resource": {
+        "data_source": "catalog",
+        "catalog_version": "0.1.6",
+        "image_catalog_version": "images-0.1.0",
+        "slug": "synthesizers",
+        "name": "Sintetizadores",
+        "kind": "family",
+        "family_slug": null,
+        "description": "Instrumentos eletrônicos que constroem ou transformam sinais sonoros.",
+        "sound_production": "Osciladores, amostras ou outros sinais são moldados eletronicamente.",
+        "common_roles": [
+          "textura",
+          "harmonia",
+          "melodia",
+          "efeitos"
+        ],
+        "related_slugs": [
+          "synthesizer",
+          "sampled-sounds"
+        ],
+        "sections": [
+          {
+            "id": "family-synthesizers-curiosity",
+            "kind": "curiosity",
+            "text": "Um sintetizador não precisa ter teclado. O theremin é controlado por gestos, e outros sistemas usam placas de toque, sequenciadores ou módulos conectados por cabos.",
+            "content_type": "editorial_summary",
+            "status": "reviewed",
+            "review": {
+              "source_metadata_verified": true,
+              "claim_support_verified": true,
+              "reviewed_at": "2026-09-15",
+              "reviewer": "Luis Gustavo R.C.",
+              "editorial_note": null
+            },
+            "citations": [
+              {
+                "source_id": "fa9cd164-a0c8-45e5-bec2-73eb997058ae",
+                "locator": null,
+                "note": null
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "id": "fa9cd164-a0c8-45e5-bec2-73eb997058ae",
+            "title": "Sounds of the Ether: a Brief History of the Theremin",
+            "contributors": [],
+            "publisher": "Naomi Mitchell",
+            "publication_date": null,
+            "url": "https://www.perfectcircuit.com/signal/theremin-history",
+            "accessed_at": "2026-09-15",
+            "verified_at": "2026-09-15",
+            "locator": null,
+            "source_type": "article",
+            "language": "pt-BR",
+            "license": null,
+            "note": null,
+            "metadata_verified": true
+          }
+        ],
+        "further_reading": [],
+        "image": {
+          "asset_id": "synthesizer-anton-shuvalov-01",
+          "resolution": "family",
+          "depicted_instrument_slug": "synthesizer",
+          "alt": "Sintetizadores com controles giratórios, luzes e cabos sobre uma mesa.",
+          "caption": "Imagem ilustrativa da família Sintetizadores: Sintetizadores.",
+          "variants": [
+            {
+              "name": "detail",
+              "url": "http://127.0.0.1:5173/instruments/synthesizer-anton-shuvalov-01/141d575021f1/detail.png",
+              "width": 1200,
+              "height": 750
+            }
+          ],
+          "tone": {
+            "shadow": "#000000",
+            "highlight": "#B7A5CC"
+          },
+          "credit": {
+            "photographer": "Anton Shuvalov",
+            "provider": "Unsplash",
+            "photo_url": "https://unsplash.com/pt-br/fotografias/mixer-de-audio-preto-e-cinza-WFIoD6zWn98",
+            "photographer_url": "https://unsplash.com/@a8ka",
+            "license": "Unsplash License",
+            "license_url": "https://unsplash.com/license"
+          }
+        },
+        "tone": {
+          "shadow": "#000000",
+          "highlight": "#B7A5CC"
+        }
+      },
+      "review": {
+        "source_metadata_verified": false,
+        "claim_support_verified": true,
+        "reviewed_at": "2026-09-15",
+        "reviewer": "Luis Gustavo R.C.",
+        "editorial_note": null
+      },
+      "text_citations": {
+        "description": [],
+        "sound_production": []
+      }
+    },
+    {
+      "resource": {
+        "data_source": "catalog",
+        "catalog_version": "0.1.6",
+        "image_catalog_version": "images-0.1.0",
+        "slug": "woodwinds",
+        "name": "Madeiras",
+        "kind": "family",
+        "family_slug": null,
+        "description": "Instrumentos em que uma coluna de ar vibra dentro de um tubo, com furos, chaves ou palheta.",
+        "sound_production": "O sopro põe o ar em vibração; a geometria do tubo e o modo de excitação definem a cor do som.",
+        "common_roles": [
+          "melodia",
+          "contracanto",
+          "textura"
+        ],
+        "related_slugs": [],
+        "sections": [],
+        "sources": [],
+        "further_reading": [],
+        "image": {
+          "asset_id": "woodwinds-dorothee-kraemer-01",
+          "resolution": "family",
+          "depicted_instrument_slug": "woodwinds-dorothee-kraemer-01",
+          "alt": "Flautas doces de cores claras e escuras sobre uma superfície branca.",
+          "caption": "Imagem ilustrativa da família Madeiras: Flautas doces.",
+          "variants": [
+            {
+              "name": "detail",
+              "url": "http://127.0.0.1:5173/instruments/woodwinds-dorothee-kraemer-01/a4436f2e0c29/detail.png",
+              "width": 1200,
+              "height": 800
+            }
+          ],
+          "tone": {
+            "shadow": "#000000",
+            "highlight": "#9FC4B0"
+          },
+          "credit": {
+            "photographer": "Dorothee Kraemer",
+            "provider": "Unsplash",
+            "photo_url": "https://unsplash.com/pt-br/fotografias/flauta-de-madeira-marrom-na-mesa-branca-Y6Hn79vRcXU",
+            "photographer_url": "https://unsplash.com/@doro_t",
+            "license": "Unsplash License",
+            "license_url": "https://unsplash.com/license"
+          }
+        },
+        "tone": {
+          "shadow": "#000000",
+          "highlight": "#9FC4B0"
+        }
+      },
+      "review": {
+        "source_metadata_verified": false,
+        "claim_support_verified": true,
+        "reviewed_at": "2026-09-15",
+        "reviewer": "Luis Gustavo R.C.",
+        "editorial_note": null
+      },
+      "text_citations": {
+        "description": [],
+        "sound_production": []
+      }
+    },
+    {
+      "resource": {
+        "data_source": "catalog",
+        "catalog_version": "0.1.6",
+        "image_catalog_version": "images-0.1.0",
+        "slug": "brass",
+        "name": "Metais",
+        "kind": "family",
+        "family_slug": null,
+        "description": "Instrumentos de sopro em que os lábios do intérprete excitam a coluna de ar no tubo.",
+        "sound_production": "A vibração dos lábios é amplificada pelo tubo, e válvulas ou varas alteram o comprimento acústico.",
+        "common_roles": [
+          "melodia",
+          "ataque",
+          "sustentação"
+        ],
+        "related_slugs": [],
+        "sections": [],
+        "sources": [],
+        "further_reading": [],
+        "image": {
+          "asset_id": "brass-miguel-alcantara-01",
+          "resolution": "family",
+          "depicted_instrument_slug": "brass-miguel-alcantara-01",
+          "alt": "Detalhe da campânula e dos tubos de um trompete dourado sobre fundo escuro.",
+          "caption": "Imagem ilustrativa da família Metais: Trompete.",
+          "variants": [
+            {
+              "name": "detail",
+              "url": "http://127.0.0.1:5173/instruments/brass-miguel-alcantara-01/da1397f607a4/detail.png",
+              "width": 1200,
+              "height": 800
+            }
+          ],
+          "tone": {
+            "shadow": "#000000",
+            "highlight": "#D9B56D"
+          },
+          "credit": {
+            "photographer": "Miguel Alcântara",
+            "provider": "Unsplash",
+            "photo_url": "https://unsplash.com/pt-br/fotografias/um-close-up-de-um-trompete-de-latao-em-um-fundo-preto-OLyrzpirrds",
+            "photographer_url": "https://unsplash.com/@miguelalcantara",
+            "license": "Unsplash License",
+            "license_url": "https://unsplash.com/license"
+          }
+        },
+        "tone": {
+          "shadow": "#000000",
+          "highlight": "#D9B56D"
+        }
+      },
+      "review": {
+        "source_metadata_verified": false,
+        "claim_support_verified": true,
+        "reviewed_at": "2026-09-15",
+        "reviewer": "Luis Gustavo R.C.",
+        "editorial_note": null
+      },
+      "text_citations": {
+        "description": [],
+        "sound_production": []
+      }
+    },
+    {
+      "resource": {
+        "data_source": "catalog",
+        "catalog_version": "0.1.6",
+        "image_catalog_version": "images-0.1.0",
+        "slug": "voice",
+        "name": "Voz",
+        "kind": "family",
+        "family_slug": null,
+        "description": "Presença vocal documentada em uma gravação, tratada como uma família própria do catálogo editorial.",
+        "sound_production": "A vibração das pregas vocais é moldada pelo trato vocal e articulada em fala, canto ou coro.",
+        "common_roles": [
+          "melodia",
+          "texto",
+          "camada"
+        ],
+        "related_slugs": [],
+        "sections": [],
+        "sources": [],
+        "further_reading": [],
+        "image": {
+          "asset_id": "voice-josh-rocklage-01",
+          "resolution": "family",
+          "depicted_instrument_slug": "voice-josh-rocklage-01",
+          "alt": "Mulher cantando diante de um microfone no palco, com luzes ao fundo.",
+          "caption": "Imagem ilustrativa da família Voz: Cantora ao microfone.",
+          "variants": [
+            {
+              "name": "detail",
+              "url": "http://127.0.0.1:5173/instruments/voice-josh-rocklage-01/90342b45582d/detail.png",
+              "width": 1200,
+              "height": 800
+            }
+          ],
+          "tone": {
+            "shadow": "#000000",
+            "highlight": "#D6A8C8"
+          },
+          "credit": {
+            "photographer": "Josh Rocklage",
+            "provider": "Unsplash",
+            "photo_url": "https://unsplash.com/pt-br/fotografias/mulher-se-apresentando-no-palco-HAAsKeZbHAc",
+            "photographer_url": "https://unsplash.com/@joshrocklage",
+            "license": "Unsplash License",
+            "license_url": "https://unsplash.com/license"
+          }
+        },
+        "tone": {
+          "shadow": "#000000",
+          "highlight": "#D6A8C8"
+        }
+      },
+      "review": {
+        "source_metadata_verified": false,
+        "claim_support_verified": true,
+        "reviewed_at": "2026-09-15",
+        "reviewer": "Luis Gustavo R.C.",
+        "editorial_note": null
+      },
+      "text_citations": {
+        "description": [],
+        "sound_production": []
+      }
+    },
+    {
+      "resource": {
+        "data_source": "catalog",
+        "catalog_version": "0.1.6",
+        "image_catalog_version": "images-0.1.0",
+        "slug": "electric-keys",
+        "name": "Teclas elétricas e eletrônicas",
+        "kind": "family",
+        "family_slug": null,
+        "description": "Instrumentos de teclas em que a captação, a amplificação ou a síntese participa da formação do som.",
+        "sound_production": "O gesto das teclas dispara, modula ou amplifica uma fonte elétrica ou eletrônica.",
+        "common_roles": [
+          "harmonia",
+          "melodia",
+          "camada"
+        ],
+        "related_slugs": [],
+        "sections": [],
+        "sources": [],
+        "further_reading": [],
+        "image": {
+          "asset_id": "electric-keys-seth-gerak-01",
+          "resolution": "family",
+          "depicted_instrument_slug": "electric-keys-seth-gerak-01",
+          "alt": "Detalhe das mãos de uma pessoa tocando um teclado eletrônico com visor e controles.",
+          "caption": "Imagem ilustrativa da família Teclas elétricas e eletrônicas: Teclado eletrônico.",
+          "variants": [
+            {
+              "name": "detail",
+              "url": "http://127.0.0.1:5173/instruments/electric-keys-seth-gerak-01/442fa2580518/detail.png",
+              "width": 1200,
+              "height": 675
+            }
+          ],
+          "tone": {
+            "shadow": "#000000",
+            "highlight": "#9FB7D9"
+          },
+          "credit": {
+            "photographer": "Seth Gerak",
+            "provider": "Unsplash",
+            "photo_url": "https://unsplash.com/pt-br/fotografias/um-homem-esta-tocando-um-teclado-com-as-maos-PwT9HOd2JsA",
+            "photographer_url": "https://unsplash.com/@true_films",
+            "license": "Unsplash License",
+            "license_url": "https://unsplash.com/license"
+          }
+        },
+        "tone": {
+          "shadow": "#000000",
+          "highlight": "#9FB7D9"
+        }
+      },
+      "review": {
+        "source_metadata_verified": false,
+        "claim_support_verified": true,
+        "reviewed_at": "2026-09-15",
+        "reviewer": "Luis Gustavo R.C.",
+        "editorial_note": null
+      },
+      "text_citations": {
+        "description": [],
+        "sound_production": []
+      }
+    },
+    {
+      "resource": {
+        "data_source": "catalog",
+        "catalog_version": "0.1.6",
+        "image_catalog_version": "images-0.1.0",
+        "slug": "acoustic-guitar",
+        "name": "Violão",
+        "kind": "instrument",
+        "family_slug": "plucked-strings",
+        "description": "Instrumento de cordas dedilhadas com caixa de ressonância acústica.",
+        "sound_production": "As cordas vibram ao serem dedilhadas ou palhetadas; o tampo e a caixa de ressonância irradiam o som.",
+        "common_roles": [
+          "harmonia",
+          "melodia",
+          "acompanhamento"
+        ],
+        "related_slugs": [
+          "plucked-strings"
+        ],
+        "sections": [
+          {
+            "id": "instrument-acoustic-guitar-curiosity",
+            "kind": "curiosity",
+            "text": "O acervo do LABEET registra o violão no conjunto que acompanhava a lambada paraense entre 1975 e 1978, ao lado de tambor carimbó, pandeiro, reco-reco, marimba e banjo. Sua presença no acervo vai além do samba e da MPB.",
+            "content_type": "editorial_summary",
+            "status": "sourced",
+            "review": {
+              "source_metadata_verified": true,
+              "claim_support_verified": true,
+              "reviewed_at": "2026-09-14",
+              "reviewer": "Luis Gustavo R.C.",
+              "editorial_note": null
+            },
+            "citations": [
+              {
+                "source_id": "ufpb-labeet-reco-reco",
+                "locator": "",
+                "note": "Resumo editorial da passagem indicada; não implica revisão acadêmica ou endosso institucional."
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "id": "ufpb-labeet-reco-reco",
+            "title": "Reco-reco — Acervo Brazil Instrumentarium",
+            "contributors": [
+              "Alice L. Satomi",
+              "Gabriel da Rosa Seixas (tradução)"
+            ],
+            "publisher": "Universidade Federal da Paraíba — LABEET",
+            "publication_date": "2016-09-12",
+            "url": "https://www.ctdr.ufpb.br/labeet/contents/paginas/acervo-brazinst/copy_of_idiofones/reco-reco",
+            "accessed_at": "2026-09-14",
+            "verified_at": "2026-09-14",
+            "locator": "Verbete Reco-reco",
+            "source_type": "university",
+            "language": "pt-BR",
+            "license": null,
+            "note": "Fonte consultada diretamente. Citações limitadas aos conjuntos descritos no verbete; não é um verbete específico dos instrumentos citados.",
+            "metadata_verified": true
+          }
+        ],
+        "further_reading": [],
+        "image": {
+          "asset_id": "acoustic-guitar-tom-analogicus-01",
+          "resolution": "exact",
+          "depicted_instrument_slug": "acoustic-guitar",
+          "alt": "Detalhe das cordas, da boca e do tampo de madeira de um violão.",
+          "caption": "Imagem do instrumento Violão.",
+          "variants": [
+            {
+              "name": "detail",
+              "url": "http://127.0.0.1:5173/instruments/acoustic-guitar-tom-analogicus-01/da8e04cde2ae/detail.png",
+              "width": 1200,
+              "height": 744
+            }
+          ],
+          "tone": {
+            "shadow": "#000000",
+            "highlight": "#E7AE86"
+          },
+          "credit": {
+            "photographer": "tom analogicus",
+            "provider": "Pexels",
+            "photo_url": "https://www.pexels.com/pt-br/foto/instrumento-musical-violao-cordas-instrumento-de-cordas-6145550/",
+            "photographer_url": "https://www.pexels.com/@analogicus/",
+            "license": "Pexels License",
+            "license_url": "https://www.pexels.com/license/"
+          }
+        },
+        "tone": {
+          "shadow": "#000000",
+          "highlight": "#E7AE86"
+        }
+      },
+      "review": {
+        "source_metadata_verified": false,
+        "claim_support_verified": true,
+        "reviewed_at": "2026-09-15",
+        "reviewer": "Luis Gustavo R.C.",
+        "editorial_note": null
+      },
+      "text_citations": {
+        "description": [],
+        "sound_production": []
+      }
+    },
+    {
+      "resource": {
+        "data_source": "catalog",
+        "catalog_version": "0.1.6",
+        "image_catalog_version": "images-0.1.0",
+        "slug": "cavaquinho",
+        "name": "Cavaquinho",
+        "kind": "instrument",
+        "family_slug": "plucked-strings",
+        "description": "Pequeno instrumento de cordas dedilhadas e caixa de ressonância acústica.",
+        "sound_production": "As cordas dedilhadas ou palhetadas transmitem a vibração ao tampo e à caixa de ressonância.",
+        "common_roles": [
+          "harmonia",
+          "ritmo",
+          "acompanhamento"
+        ],
+        "related_slugs": [
+          "plucked-strings"
+        ],
+        "sections": [
+          {
+            "id": "instrument-cavaquinho-curiosity",
+            "kind": "curiosity",
+            "text": "Na gravação da Lapinha de Valdemar de 8 de dezembro de 1972, catalogada pelo LABEET, o cavaquinho acompanha as pastoras junto de bandolim, violão e pandeiro. O registro documenta seu uso no pastoril, além dos contextos de samba e choro.",
+            "content_type": "editorial_summary",
+            "status": "sourced",
+            "review": {
+              "source_metadata_verified": true,
+              "claim_support_verified": false,
+              "reviewed_at": "2026-09-15",
+              "reviewer": "Luis Gustavo",
+              "editorial_note": null
+            },
+            "citations": [
+              {
+                "source_id": "ufpb-labeet-lapinha",
+                "locator": "Audios: AFB 07; gravação 08/12/1972; UFPB/BC-FR7003; T42 T43.",
+                "note": "Resumo editorial da passagem indicada; não implica revisão acadêmica ou endosso institucional."
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "id": "ufpb-labeet-lapinha",
+            "title": "Pastoril ou Lapinha — Acervo PDMCP",
+            "contributors": [],
+            "publisher": "Universidade Federal da Paraíba — LABEET",
+            "publication_date": null,
+            "url": "https://www.ctdr.ufpb.br/labeet/contents/paginas/acervo-pdmcp/pastoril-ou-lapinha/",
+            "accessed_at": "2026-09-14",
+            "verified_at": "2026-09-14",
+            "locator": "Audios: AFB 07, Tape 42 e Tape 43 — 3; T42 T43",
+            "source_type": "university",
+            "language": "pt-BR",
+            "license": null,
+            "note": "Registro de catálogo da Lapinha de Valdemar, datado de 08/12/1972. A data da gravação não é a data de publicação da página; autoria individual não atribuída ao registro.",
+            "metadata_verified": true
+          }
+        ],
+        "further_reading": [
+          {
+            "title": "Tradição e Inovação no Cavaquinho Brasileiro",
+            "url": "http://repositorio.unb.br/handle/10482/19765",
+            "publisher": "Luis Carlos Orione De Alencar Arraes",
+            "status": "reviewed",
+            "reviewer": "Luis Gustavo R.C.",
+            "reviewed_at": "2026-09-15"
+          }
+        ],
+        "image": {
+          "asset_id": "electric-guitar-nikolas-mitsiggas-01",
+          "resolution": "family",
+          "depicted_instrument_slug": "electric-guitar",
+          "alt": "Guitarra elétrica escura com reflexos azulados sobre um fundo preto.",
+          "caption": "Imagem ilustrativa da família Cordas dedilhadas: Guitarra elétrica.",
+          "variants": [
+            {
+              "name": "detail",
+              "url": "http://127.0.0.1:5173/instruments/electric-guitar-nikolas-mitsiggas-01/b05745d5fad8/detail.png",
+              "width": 1200,
+              "height": 800
+            }
+          ],
+          "tone": {
+            "shadow": "#000000",
+            "highlight": "#E7AE86"
+          },
+          "credit": {
+            "photographer": "Nikolas Mitsiggas",
+            "provider": "Unsplash",
+            "photo_url": "https://unsplash.com/pt-br/fotografias/uma-guitarra-eletrica-preto-e-azul-em-um-fundo-preto-Y2qugjxmw0g",
+            "photographer_url": "https://unsplash.com/@nikolasmitsiggas",
+            "license": "Unsplash License",
+            "license_url": "https://unsplash.com/license"
+          }
+        },
+        "tone": {
+          "shadow": "#000000",
+          "highlight": "#E7AE86"
+        }
+      },
+      "review": {
+        "source_metadata_verified": false,
+        "claim_support_verified": true,
+        "reviewed_at": "2026-09-15",
+        "reviewer": "Luis Gustavo R.C.",
+        "editorial_note": null
+      },
+      "text_citations": {
+        "description": [],
+        "sound_production": []
+      }
+    },
+    {
+      "resource": {
+        "data_source": "catalog",
+        "catalog_version": "0.1.6",
+        "image_catalog_version": "images-0.1.0",
+        "slug": "pandeiro",
+        "name": "Pandeiro",
+        "kind": "instrument",
+        "family_slug": "percussion",
+        "description": "Tambor de aro com uma membrana e pequenas peças metálicas chamadas soalhas.",
+        "sound_production": "Golpes e fricção excitam a membrana; o movimento do aro também faz vibrar as soalhas.",
+        "common_roles": [
+          "ritmo",
+          "acentuação",
+          "textura"
+        ],
+        "related_slugs": [
+          "percussion"
+        ],
+        "sections": [
+          {
+            "id": "instrument-pandeiro-curiosity",
+            "kind": "curiosity",
+            "text": "O pandeiro pode funcionar como membranofone quando sua pele é tocada, ou como idiofone quando apenas as soalhas soam ao ser sacudido. Um mesmo instrumento reúne duas formas de produzir som; um instrumento híbrido.",
+            "content_type": "editorial_summary",
+            "status": "sourced",
+            "review": {
+              "source_metadata_verified": false,
+              "claim_support_verified": true,
+              "reviewed_at": "2026-09-15",
+              "reviewer": "Luis Gustavo R.C.",
+              "editorial_note": null
+            },
+            "citations": [
+              {
+                "source_id": "a741b710-00a4-4826-9727-38944e8b8bc7",
+                "locator": "Introdução, p. 13, 2º parágrafo",
+                "note": null
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+        "id": "a741b710-00a4-4826-9727-38944e8b8bc7",
+        "title": "Marcos Suzano: inovações técnicas, tecnológicas e influências na performance do pandeiro",
+        "contributors": [
+          "Katiusca Lamara dos Santos Barbosa"
+        ],
+        "publisher": "Universidade Federal da Paraíba — Programa de Pós-Graduação em Música",
+        "publication_date": "2015-04",
+            "url": "https://repositorio.ufpb.br/jspui/bitstream/123456789/18433/1/KatiuscaLamaraDosSantosBarbosa_Dissert.pdf",
+            "accessed_at": "2026-09-15",
+            "verified_at": "2026-09-15",
+            "locator": null,
+            "source_type": "article",
+            "language": "pt-BR",
+            "license": null,
+            "note": null,
+        "metadata_verified": true
+          }
+        ],
+        "further_reading": [],
+        "image": {
+          "asset_id": "pandeiro-sebastian-brito-01",
+          "resolution": "exact",
+          "depicted_instrument_slug": "pandeiro",
+          "alt": "Músico tocando um pandeiro com as mãos sob luz fraca, em preto e branco.",
+          "caption": "Imagem do instrumento Pandeiro.",
+          "variants": [
+            {
+              "name": "detail",
+              "url": "http://127.0.0.1:5173/instruments/pandeiro-sebastian-brito-01/5a197806c593/detail.png",
+              "width": 1200,
+              "height": 758
+            }
+          ],
+          "tone": {
+            "shadow": "#000000",
+            "highlight": "#D5C18D"
+          },
+          "credit": {
+            "photographer": "Sebastián Brito",
+            "provider": "Unsplash",
+            "photo_url": "https://unsplash.com/pt-br/fotografias/musico-tocando-pandeiro-na-luz-fraca-YVxbyvV2sWI",
+            "photographer_url": "https://unsplash.com/@britosebastian",
+            "license": "Unsplash License",
+            "license_url": "https://unsplash.com/license"
+          }
+        },
+        "tone": {
+          "shadow": "#000000",
+          "highlight": "#D5C18D"
+        }
+      },
+      "review": {
+        "source_metadata_verified": false,
+        "claim_support_verified": true,
+        "reviewed_at": "2026-09-15",
+        "reviewer": "Luis Gustavo R.C.",
+        "editorial_note": null
+      },
+      "text_citations": {
+        "description": [],
+        "sound_production": []
+      }
+    },
+    {
+      "resource": {
+        "data_source": "catalog",
+        "catalog_version": "0.1.6",
+        "image_catalog_version": "images-0.1.0",
+        "slug": "surdo",
+        "name": "Surdo",
+        "kind": "instrument",
+        "family_slug": "percussion",
+        "description": "Tambor de registro grave usado para marcação rítmica em conjuntos de percussão.",
+        "sound_production": "A percussão da membrana põe em vibração a pele e o ar do corpo ressonante; o abafamento controla a duração do som.",
+        "common_roles": [
+          "ritmo",
+          "marcação",
+          "linha grave"
+        ],
+        "related_slugs": [
+          "percussion"
+        ],
+        "sections": [
+          {
+            "id": "instrument-surdo-curiosity",
+            "kind": "curiosity",
+            "text": "O surdo é situado em conjuntos de carnaval, sambas, marchinhas e samba de morro do Rio de Janeiro. Ele aparece ao lado de caixa, repique, tamborim, pandeiro e cuíca, compondo um conjunto de membranofones.",
+            "content_type": "editorial_summary",
+            "status": "sourced",
+            "review": {
+              "source_metadata_verified": true,
+              "claim_support_verified": true,
+              "reviewed_at": "2026-09-13",
+              "reviewer": "Luis Gustavo R.C.",
+              "editorial_note": null
+            },
+            "citations": [
+              {
+                "source_id": "ufpb-labeet-reco-reco",
+                "locator": "",
+                "note": "Resumo editorial da passagem indicada; não implica revisão acadêmica ou endosso institucional."
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "id": "ufpb-labeet-reco-reco",
+            "title": "Reco-reco — Acervo Brazil Instrumentarium",
+            "contributors": [
+              "Alice L. Satomi",
+              "Gabriel da Rosa Seixas (tradução)"
+            ],
+            "publisher": "Universidade Federal da Paraíba — LABEET",
+            "publication_date": "2016-09-12",
+            "url": "https://www.ctdr.ufpb.br/labeet/contents/paginas/acervo-brazinst/copy_of_idiofones/reco-reco",
+            "accessed_at": "2026-09-14",
+            "verified_at": "2026-09-14",
+            "locator": "Verbete Reco-reco",
+            "source_type": "university",
+            "language": "pt-BR",
+            "license": null,
+            "note": "Fonte consultada diretamente. Citações limitadas aos conjuntos descritos no verbete; não é um verbete específico dos instrumentos citados.",
+            "metadata_verified": true
+          }
+        ],
+        "further_reading": [],
+        "image": {
+          "asset_id": "drums-laura-rivera-01",
+          "resolution": "family",
+          "depicted_instrument_slug": "drums",
+          "alt": "Detalhe de mãos tocando tambores com baquetas, em uma fotografia em preto e branco.",
+          "caption": "Imagem ilustrativa da família Percussão: Bateria.",
+          "variants": [
+            {
+              "name": "detail",
+              "url": "http://127.0.0.1:5173/instruments/drums-laura-rivera-01/10848ed0b8e3/detail.png",
+              "width": 1200,
+              "height": 800
+            }
+          ],
+          "tone": {
+            "shadow": "#000000",
+            "highlight": "#D5C18D"
+          },
+          "credit": {
+            "photographer": "Laura Rivera",
+            "provider": "Unsplash",
+            "photo_url": "https://unsplash.com/pt-br/fotografias/uma-pessoa-esta-tocando-bateria-em-uma-foto-em-preto-e-branco-YtZCf35EcZQ",
+            "photographer_url": "https://unsplash.com/@laurar1vera",
+            "license": "Unsplash License",
+            "license_url": "https://unsplash.com/license"
+          }
+        },
+        "tone": {
+          "shadow": "#000000",
+          "highlight": "#D5C18D"
+        }
+      },
+      "review": {
+        "source_metadata_verified": false,
+        "claim_support_verified": true,
+        "reviewed_at": "2026-09-15",
+        "reviewer": "Luis Gustavo R.C.",
+        "editorial_note": null
+      },
+      "text_citations": {
+        "description": [],
+        "sound_production": []
+      }
+    },
+    {
+      "resource": {
+        "data_source": "catalog",
+        "catalog_version": "0.1.6",
+        "image_catalog_version": "images-0.1.0",
+        "slug": "tamborim",
+        "name": "Tamborim",
+        "kind": "instrument",
+        "family_slug": "percussion",
+        "description": "Pequeno tambor de aro e uma membrana, tocado com baqueta.",
+        "sound_production": "A baqueta percute a membrana esticada sobre o aro, produzindo ataques curtos e definidos.",
+        "common_roles": [
+          "ritmo",
+          "acentuação",
+          "contracanto"
+        ],
+        "related_slugs": [
+          "percussion"
+        ],
+        "sections": [
+          {
+            "id": "instrument-tamborim-curiosity",
+            "kind": "curiosity",
+            "text": "O tamborim é distinguido entre dois tipos: um artesanal, de corpo de madeira mais profundo, usado em congada e moçambique, e outro comercial, de aro baixo de metal ou acrílico, comum nas baterias de escolas de samba.",
+            "content_type": "editorial_summary",
+            "status": "sourced",
+            "review": {
+              "source_metadata_verified": true,
+              "claim_support_verified": true,
+              "reviewed_at": "2026-09-15",
+              "reviewer": "Luis Gustavo R.C.",
+              "editorial_note": null
+            },
+            "citations": [
+              {
+                "source_id": "ufpb-labeet-tamborim",
+                "locator": "",
+                "note": "Resumo editorial da passagem indicada; não implica revisão acadêmica ou endosso institucional."
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "id": "ufpb-labeet-tamborim",
+            "title": "Tamborim — Acervo Brazil Instrumentarium",
+            "contributors": [
+              "Alice L. Satomi",
+              "Gabriel da Rosa Seixas (tradução)"
+            ],
+            "publisher": "Universidade Federal da Paraíba — LABEET",
+            "publication_date": "2016-10-10",
+            "url": "https://www.ctdr.ufpb.br/labeet/contents/acervos/categorias/membranofones/tamborim",
+            "accessed_at": "2026-09-14",
+            "verified_at": "2026-09-14",
+            "locator": "",
+            "source_type": "university",
+            "language": "pt-BR",
+            "license": null,
+            "note": "",
+            "metadata_verified": true
+          }
+        ],
+        "further_reading": [],
+        "image": {
+          "asset_id": "drums-laura-rivera-01",
+          "resolution": "family",
+          "depicted_instrument_slug": "drums",
+          "alt": "Detalhe de mãos tocando tambores com baquetas, em uma fotografia em preto e branco.",
+          "caption": "Imagem ilustrativa da família Percussão: Bateria.",
+          "variants": [
+            {
+              "name": "detail",
+              "url": "http://127.0.0.1:5173/instruments/drums-laura-rivera-01/10848ed0b8e3/detail.png",
+              "width": 1200,
+              "height": 800
+            }
+          ],
+          "tone": {
+            "shadow": "#000000",
+            "highlight": "#D5C18D"
+          },
+          "credit": {
+            "photographer": "Laura Rivera",
+            "provider": "Unsplash",
+            "photo_url": "https://unsplash.com/pt-br/fotografias/uma-pessoa-esta-tocando-bateria-em-uma-foto-em-preto-e-branco-YtZCf35EcZQ",
+            "photographer_url": "https://unsplash.com/@laurar1vera",
+            "license": "Unsplash License",
+            "license_url": "https://unsplash.com/license"
+          }
+        },
+        "tone": {
+          "shadow": "#000000",
+          "highlight": "#D5C18D"
+        }
+      },
+      "review": {
+        "source_metadata_verified": false,
+        "claim_support_verified": true,
+        "reviewed_at": "2026-09-15",
+        "reviewer": "Luis Gustavo R.C.",
+        "editorial_note": null
+      },
+      "text_citations": {
+        "description": [],
+        "sound_production": []
+      }
+    },
+    {
+      "resource": {
+        "data_source": "catalog",
+        "catalog_version": "0.1.6",
+        "image_catalog_version": "images-0.1.0",
+        "slug": "cuica",
+        "name": "Cuíca",
+        "kind": "instrument",
+        "family_slug": "percussion",
+        "description": "Tambor de fricção com uma haste presa à membrana pelo lado interno.",
+        "sound_production": "A fricção da haste transmite vibração à membrana; a pressão dos dedos sobre a pele modifica o som.",
+        "common_roles": [
+          "ritmo",
+          "fraseado",
+          "textura"
+        ],
+        "related_slugs": [
+          "percussion"
+        ],
+        "sections": [
+          {
+            "id": "instrument-cuica-curiosity",
+            "kind": "curiosity",
+            "text": "A cuíca aparece entre os membranofones que acompanham o reco-reco industrial no carnaval, no samba, nas marchinhas e no samba de morro carioca. O registro evidencia seu lugar em conjuntos, junto de surdo, caixa e repique.",
+            "content_type": "editorial_summary",
+            "status": "sourced",
+            "review": {
+              "source_metadata_verified": true,
+              "claim_support_verified": true,
+              "reviewed_at": "2026-09-15",
+              "reviewer": "Luis Gustavo",
+              "editorial_note": null
+            },
+            "citations": [
+              {
+                "source_id": "ufpb-labeet-reco-reco",
+                "locator": "",
+                "note": "Resumo editorial da passagem indicada; não implica revisão acadêmica ou endosso institucional."
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "id": "ufpb-labeet-reco-reco",
+            "title": "Reco-reco — Acervo Brazil Instrumentarium",
+            "contributors": [
+              "Alice L. Satomi",
+              "Gabriel da Rosa Seixas (tradução)"
+            ],
+            "publisher": "Universidade Federal da Paraíba — LABEET",
+            "publication_date": "2016-09-12",
+            "url": "https://www.ctdr.ufpb.br/labeet/contents/paginas/acervo-brazinst/copy_of_idiofones/reco-reco",
+            "accessed_at": "2026-09-14",
+            "verified_at": "2026-09-14",
+            "locator": "Verbete Reco-reco",
+            "source_type": "university",
+            "language": "pt-BR",
+            "license": null,
+            "note": "Fonte consultada diretamente. Citações limitadas aos conjuntos descritos no verbete; não é um verbete específico dos instrumentos citados.",
+            "metadata_verified": true
+          }
+        ],
+        "further_reading": [],
+        "image": {
+          "asset_id": "drums-laura-rivera-01",
+          "resolution": "family",
+          "depicted_instrument_slug": "drums",
+          "alt": "Detalhe de mãos tocando tambores com baquetas, em uma fotografia em preto e branco.",
+          "caption": "Imagem ilustrativa da família Percussão: Bateria.",
+          "variants": [
+            {
+              "name": "detail",
+              "url": "http://127.0.0.1:5173/instruments/drums-laura-rivera-01/10848ed0b8e3/detail.png",
+              "width": 1200,
+              "height": 800
+            }
+          ],
+          "tone": {
+            "shadow": "#000000",
+            "highlight": "#D5C18D"
+          },
+          "credit": {
+            "photographer": "Laura Rivera",
+            "provider": "Unsplash",
+            "photo_url": "https://unsplash.com/pt-br/fotografias/uma-pessoa-esta-tocando-bateria-em-uma-foto-em-preto-e-branco-YtZCf35EcZQ",
+            "photographer_url": "https://unsplash.com/@laurar1vera",
+            "license": "Unsplash License",
+            "license_url": "https://unsplash.com/license"
+          }
+        },
+        "tone": {
+          "shadow": "#000000",
+          "highlight": "#D5C18D"
+        }
+      },
+      "review": {
+        "source_metadata_verified": false,
+        "claim_support_verified": true,
+        "reviewed_at": "2026-09-15",
+        "reviewer": "Luis Gustavo R.C.",
+        "editorial_note": null
+      },
+      "text_citations": {
+        "description": [],
+        "sound_production": []
+      }
+    }
+  ]
+}

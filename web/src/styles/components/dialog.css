@@ -1,0 +1,313 @@
+.ui-dialog-overlay {
+  position: fixed;
+  z-index: 10;
+  inset: 0;
+  background: rgb(0 0 0 / 0.78);
+}
+.ui-dialog-content {
+  position: fixed;
+  z-index: 11;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  width: min(1100px, calc(100vw - 48px));
+  height: min(840px, calc(100dvh - 48px));
+  padding: 32px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel);
+  transform: translate(-50%, -50%);
+}
+.ui-dialog-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 24px;
+}
+.ui-dialog-header .eyebrow {
+  margin: 0 0 10px;
+}
+.ui-dialog-title {
+  margin: 0;
+  font-size: clamp(2rem, 3.5vw, 3.25rem);
+  line-height: 1.1;
+}
+.instrument-family {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 15px;
+}
+.ui-dialog-close {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+.ui-dialog-close:hover {
+  border-color: var(--accent-soft);
+  color: var(--accent-soft);
+}
+.instrument-sheet {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.25fr);
+  gap: 48px;
+  align-items: start;
+}
+.instrument-visual {
+  position: sticky;
+  top: 0;
+  min-width: 0;
+}
+.instrument-photo {
+  position: relative;
+  margin: 0;
+}
+.instrument-photo img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1.1;
+  object-fit: cover;
+  background: var(--instrument-shadow);
+}
+.instrument-photo-credit {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  display: grid;
+  gap: 5px;
+  max-width: 100%;
+  padding: 12px 16px;
+  background: rgb(0 0 0 / 0.82);
+  color: var(--on-dark);
+  font-size: 12px;
+  line-height: 1.5;
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+.instrument-photo:hover .instrument-photo-credit,
+.instrument-photo:focus-within .instrument-photo-credit {
+  opacity: 1;
+}
+.instrument-photo-credit a {
+  justify-self: start;
+  text-underline-offset: 3px;
+}
+.instrument-tones {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 3px;
+  height: 24px;
+  margin-top: 4px;
+}
+.instrument-image-note {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.instrument-image-empty {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 12px;
+  aspect-ratio: 1 / 1.1;
+  padding: 24px;
+  background: var(--instrument-shadow);
+  color: var(--instrument-tone-text);
+  text-align: center;
+}
+.instrument-image-empty span {
+  font-size: 24px;
+}
+.instrument-image-empty small {
+  color: var(--muted);
+  font-size: 13px;
+}
+.instrument-reading {
+  min-width: 0;
+  padding-bottom: 12px;
+}
+.instrument-description {
+  margin: 0 0 36px;
+  color: var(--ink);
+  font-size: 20px;
+  line-height: 1.6;
+}
+.instrument-block {
+  margin: 0 0 36px;
+}
+.instrument-block .eyebrow {
+  margin: 0 0 12px;
+  color: var(--muted);
+  letter-spacing: 0.065em;
+}
+.instrument-block > p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+.instrument-roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--ink);
+}
+.instrument-roles li::first-letter {
+  text-transform: uppercase;
+}
+.instrument-citation {
+  margin-left: 4px;
+  color: var(--instrument-tone-text);
+  font-family: var(--meta);
+  font-size: 13px;
+  text-decoration: none;
+}
+.instrument-citation:hover {
+  text-decoration: underline;
+}
+.instrument-block > .instrument-review-note,
+.instrument-review-note {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.instrument-details {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.instrument-details summary {
+  width: fit-content;
+  cursor: pointer;
+  text-underline-offset: 3px;
+}
+.instrument-details summary:hover {
+  color: var(--ink);
+}
+.instrument-details dl {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0;
+}
+.instrument-details dl > div {
+  display: grid;
+  grid-template-columns: minmax(100px, 0.8fr) minmax(0, 1.2fr);
+  gap: 16px;
+}
+.instrument-details dt {
+  color: var(--muted);
+}
+.instrument-details dd {
+  margin: 0;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.instrument-details p {
+  margin: 12px 0 0;
+}
+.instrument-related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.instrument-related button {
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: 14px;
+  cursor: pointer;
+}
+.instrument-related button:hover {
+  border-color: var(--instrument-tone-text);
+  color: var(--instrument-tone-text);
+}
+.instrument-sources {
+  display: grid;
+  gap: 24px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.instrument-sources li {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 10px;
+  scroll-margin-top: 12px;
+}
+.instrument-source-number {
+  color: var(--instrument-tone-text);
+  font-family: var(--meta);
+  font-size: 13px;
+}
+.instrument-source-title {
+  color: var(--ink);
+  font-size: 15px;
+  overflow-wrap: anywhere;
+  text-underline-offset: 4px;
+}
+.instrument-source-meta {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+.instrument-about {
+  margin-top: 8px;
+}
+.instrument-message {
+  color: var(--muted);
+  margin: 0;
+}
+@media (max-width: 800px) {
+  .ui-dialog-content {
+    width: calc(100vw - 24px);
+    height: calc(100dvh - 24px);
+    padding: 22px 18px;
+  }
+  .ui-dialog-header {
+    padding-bottom: 20px;
+  }
+  .instrument-sheet {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+  .instrument-visual {
+    position: static;
+  }
+  .instrument-photo img,
+  .instrument-image-empty {
+    aspect-ratio: 4 / 3;
+  }
+  .instrument-description {
+    font-size: 18px;
+    margin-bottom: 28px;
+  }
+  .instrument-details dl > div {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}
+@media (hover: none) {
+  .instrument-photo-credit {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .instrument-photo-credit {
+    transition: none;
+  }
+}

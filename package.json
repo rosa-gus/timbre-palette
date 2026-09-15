@@ -1,0 +1,42 @@
+{
+  "name": "timbre-palette-api",
+  "version": "0.1.0",
+  "productStatus": "prototype",
+  "private": true,
+  "type": "module",
+  "license": "UNLICENSED",
+  "packageManager": "yarn@1.22.22",
+  "scripts": {
+    "prepare:images": "python3 src/palette_api/tools/publish_images.py",
+    "dev:web": "yarn prepare:images && vite --host 127.0.0.1",
+    "dev:editorial": "vite --config vite.editorial.config.ts --host 127.0.0.1",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local --persist-to .wrangler/state -c wrangler.jsonc",
+    "db:migrate:remote": "wrangler d1 migrations apply DB --remote --yes -c wrangler.jsonc",
+    "dev:api": "yarn db:migrate:local && .venv/bin/uv run pywrangler dev -c wrangler.jsonc -c wrangler.enricher.jsonc --persist-to .wrangler/state",
+    "dev:enrichment:recover": ".venv/bin/uv run pywrangler dev -c wrangler.enricher.jsonc -c wrangler.jsonc --persist-to .wrangler/state --test-scheduled --port 8788",
+    "dev:api:mock": ".venv/bin/uv run pywrangler dev --var PALETTE_API_MODE:mock",
+    "catalog:validate": ".venv/bin/uv run python -m palette_api.tools.prepare_albums catalog/prepared-albums.json",
+    "catalog:sql": ".venv/bin/uv run python -m palette_api.tools.prepare_albums catalog/prepared-albums.json --sql",
+    "editorial:validate": "python3 src/palette_api/tools/publish_editorial.py editorial/src/instruments.json",
+    "editorial:sql": "python3 src/palette_api/tools/publish_editorial.py editorial/src/instruments.json --sql",
+    "typecheck:web": "tsc --noEmit -p tsconfig.web.json && svelte-check --tsconfig ./tsconfig.web.json",
+    "typecheck:editorial": "tsc --noEmit -p tsconfig.editorial.json && svelte-check --tsconfig ./tsconfig.editorial.json",
+    "build:web": "yarn prepare:images && yarn typecheck:web && vite build",
+    "build:editorial": "yarn typecheck:editorial && vite build --config vite.editorial.config.ts",
+    "test:web": "yarn typecheck:web"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^7.3.0",
+    "@types/node": "^24.3.0",
+    "csstype": "^3.2.3",
+    "svelte": "^5.57.0",
+    "svelte-check": "^4.7.6",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.5",
+    "wrangler": "^4.131.1"
+  },
+  "dependencies": {
+    "@internationalized/date": "^3.12.4",
+    "bits-ui": "^2.19.2"
+  }
+}
