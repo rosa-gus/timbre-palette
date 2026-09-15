@@ -23,6 +23,7 @@
   import ProductVersion from "./components/ProductVersion.svelte";
   import FooterLinkPreview from "./components/FooterLinkPreview.svelte";
   import TechnicalLimits from "./components/TechnicalLimits.svelte";
+  import { normalizePathname } from "./navigation";
   import CatalogGrowth from "./components/CatalogGrowth.svelte";
   import EmptyView from "./views/EmptyView.svelte";
   import EntryView from "./views/EntryView.svelte";
@@ -80,6 +81,7 @@
     light: "CLARO",
     system: "SISTEMA",
   };
+  const homePath = normalizePathname();
 
   let view: "entry" | "loading" | "report" | "empty" = "entry";
   let catalogGrowth: { percent: number; added: number } | null = null;
@@ -300,7 +302,7 @@
 <div class="site-shell" data-view={view} data-theme={resolvedTheme}>
   <header class="site-header">
     <div class="header-identity">
-      <a class="wordmark" href="./" aria-label="Timbre Palette, início">
+      <a class="wordmark" href={homePath} aria-label="Timbre Palette, início">
         <img src="./favicon-32x32.png" alt="" aria-hidden="true" />
         <span>TIMBRE PALETTE</span>
       </a>

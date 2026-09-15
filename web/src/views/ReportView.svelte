@@ -4,6 +4,7 @@
   import Button from "../components/Button.svelte";
   import CoverageTooltip from "../components/CoverageTooltip.svelte";
   import ColorSwatch from "../components/ColorSwatch.svelte";
+  import { normalizePathname } from "../navigation";
   import { getPortraitCopy } from "../portrait";
   import { createAsciiArtwork } from "../sharing/ascii";
   import type {
@@ -34,6 +35,7 @@
   export let getAvailability: (
     section: SectionId,
   ) => SectionAvailability = () => "insufficient_coverage";
+  const homePath = normalizePathname();
 
   function percent(value: number): string {
     return `${Math.round(value * 100)}%`;
@@ -103,7 +105,7 @@
   style={`--report-tone:${report.families[0]?.tone?.highlight ?? fallbackTone};--report-tone-text:${toneText(report.families[0]?.tone?.highlight ?? fallbackTone)}`}
 >
   <div class="report-back">
-    <a class="back-link" href="/"><Arrow direction="left" />Voltar</a>
+    <a class="back-link" href={homePath}><Arrow direction="left" />Voltar</a>
   </div>
   <div class="archive-header">
     <p class="eyebrow">ESCUTA DE @{report.profile.username}</p>

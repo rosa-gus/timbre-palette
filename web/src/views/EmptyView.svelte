@@ -1,12 +1,15 @@
 <script lang="ts">
   import Arrow from "../components/Arrow.svelte";
+  import { normalizePathname } from "../navigation";
+
+  const homePath = normalizePathname();
   export let notice = "";
 </script>
 
 <section class="empty-view" aria-live="polite">
   <h1>Foi mal, o sistema ainda está meio burro.</h1>
   <p>{notice}</p>
-  <a class="retry-link" href="/"
+  <a class="retry-link" href={homePath}
     >Tentar outro período <Arrow direction="right" /></a
   >
 </section>
