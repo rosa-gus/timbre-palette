@@ -2,7 +2,9 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "timbre-palette-api",
   "main": "src/worker.py",
-  "compatibility_date": "2026-09-12",
+  // Keep Python Workers on the stable 3.13 runtime until the 3.14 Pyodide
+  // promising-task initialization issue is resolved upstream.
+  "compatibility_date": "2026-09-07",
   "compatibility_flags": ["python_workers"],
   "rules": [
     {
