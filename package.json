@@ -1,10 +1,10 @@
 {
-  "name": "timbre-palette-api",
+  "name": "timbre-palette",
   "version": "0.1.0",
   "productStatus": "prototype",
   "private": true,
   "type": "module",
-  "license": "UNLICENSED",
+  "license": "GPL-3.0-only",
   "packageManager": "yarn@1.22.22",
   "scripts": {
     "prepare:images": "python3 src/palette_api/tools/publish_images.py",

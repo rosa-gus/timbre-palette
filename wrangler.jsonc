@@ -28,7 +28,7 @@
     {
       "binding": "DB",
       "database_name": "timbre-palette",
-      "database_id": "local",
+      "database_id": "de217b93-15a0-45be-802d-c9966582d66a",
       "migrations_dir": "migrations"
     }
   ],

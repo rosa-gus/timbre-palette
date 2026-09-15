@@ -5,7 +5,7 @@
   "compatibility_date": "2026-09-12",
   "compatibility_flags": ["python_workers"],
   "vars": {
-    "MUSICBRAINZ_USER_AGENT": "timbre-palette-api/0.2 (rosagus.contato@protonmail.com)"
+    "MUSICBRAINZ_USER_AGENT": "timbre-palette-api/0.3 (rosagus.contato@protonmail.com)"
   },
   "observability": {
     "enabled": true,
@@ -17,7 +17,7 @@
     {
       "binding": "DB",
       "database_name": "timbre-palette",
-      "database_id": "local",
+      "database_id": "de217b93-15a0-45be-802d-c9966582d66a",
       "migrations_dir": "migrations"
     }
   ],
