@@ -87,6 +87,20 @@ class BuildProgress:
         self.total_tables = max(1, total_tables)
         self._emit(0.0, f"iniciando ETL; {total_tables} tabelas previstas", force=True)
 
+    def inspecting_dump(self, dump_path: Path) -> None:
+        self._emit(0.0, f"inspecionando dump {dump_path.name}", force=True)
+
+    def archive_member_scanned(self, member_count: int) -> None:
+        if self._is_due():
+            self._emit(0.0, f"catalogando dump: {member_count:,} entradas")
+
+    def archive_catalogued(self, member_count: int) -> None:
+        self._emit(
+            0.0,
+            f"dump catalogado: {member_count:,} entradas",
+            force=True,
+        )
+
     def start_table(self, table_name: str, *, total_bytes: int | None = None) -> None:
         self.current_table = table_name
         self.current_rows = 0
@@ -174,7 +188,12 @@ class BuildProgress:
 class DumpSource:
     """Open named tables from an extracted dump or a tar/bz2 archive."""
 
-    def __init__(self, path: Path) -> None:
+    def __init__(
+        self,
+        path: Path,
+        *,
+        progress: BuildProgress | None = None,
+    ) -> None:
         self.path = path
         self._directory_files: dict[str, Path] | None = None
         self._archive_members: tuple[str, ...] | None = None
@@ -187,12 +206,24 @@ class DumpSource:
             self._directory_files = files
         elif path.is_file() and _is_archive(path):
             with tarfile.open(path, mode="r:*") as archive:
-                members = [member for member in archive.getmembers() if member.isfile()]
+                members = []
+                entry_count = 0
+                while True:
+                    member = archive.next()
+                    if member is None:
+                        break
+                    entry_count += 1
+                    if member.isfile():
+                        members.append(member)
+                    if progress is not None:
+                        progress.archive_member_scanned(entry_count)
                 self._archive_members = tuple(member.name for member in members)
                 self._archive_member_sizes = {
                     _normalized_table_name(Path(member.name).name): member.size
                     for member in members
                 }
+                if progress is not None:
+                    progress.archive_catalogued(entry_count)
 
     def has_table(self, table_name: str) -> bool:
         try:
@@ -273,7 +304,9 @@ def build_index(
             f"Output directory is not empty: {output_dir}. Choose a new directory."
         )
     output_dir.mkdir(parents=True, exist_ok=True)
-    source = DumpSource(dump_path)
+    if progress is not None:
+        progress.inspecting_dump(dump_path)
+    source = DumpSource(dump_path, progress=progress)
     planned_tables = _planned_table_names(source, include_release_relations)
     if progress is not None:
         progress.start(len(planned_tables))

@@ -98,17 +98,23 @@ def test_build_index_reports_progress_without_polluting_manifest_output(
     dump = tmp_path / "dump"
     dump.mkdir()
     _write_dump(dump)
+    archive = tmp_path / "mbdump.tar.bz2"
+    with tarfile.open(archive, mode="w:bz2") as tar:
+        for table in dump.iterdir():
+            tar.add(table, arcname=f"mbdump/{table.name}")
     output = tmp_path / "index"
     progress_output = io.StringIO()
 
     build_index(
-        dump,
+        archive,
         output,
         snapshot_version="schema-30-2026-09-12",
         progress=BuildProgress(interval_seconds=60, stream=progress_output),
     )
 
     progress = progress_output.getvalue()
+    assert "inspecionando dump mbdump.tar.bz2" in progress
+    assert "dump catalogado:" in progress
     assert "[  0.0%] iniciando ETL" in progress
     assert "carregando artist" in progress
     assert "gerando objetos do índice" in progress
