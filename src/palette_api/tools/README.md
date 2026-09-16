@@ -124,3 +124,42 @@ network requests or run during an API request.
 
 Home-page media credits are maintained in
 [assets/CREDITS.md](../../../assets/CREDITS.md).
+
+## Enrichment recovery
+
+After deploying the work-unit consumer, generate a reviewed replay for jobs
+that ended only because Queue delivery retries were exhausted:
+
+```sh
+.venv/bin/python -m palette_api.tools.requeue_enrichment \
+  --reason retry_exhausted --limit 20 > /tmp/timbre-palette-requeue.sql
+wrangler d1 execute DB --remote \
+  --file=/tmp/timbre-palette-requeue.sql --yes -c wrangler.jsonc
+```
+
+Omit `--limit` only after validating the canary. The command increments each
+job generation, invalidates old deliveries, and leaves the new work for the
+scheduled outbox sweep to group into units of up to ten jobs.
+
+The generated SQL intentionally does not include `BEGIN`/`COMMIT`: the D1
+Wrangler execution path rejects explicit transaction delimiters. Statements
+are applied independently, so inspect the generated file and run a small
+canary before replaying the full set.
+
+For a v3 unit quarantined by the DLQ, add `--include-recovery-units`; this
+reopens only `recovery_required` units and keeps already completed items final.
+
+If a replay was performed with the first work-unit implementation and jobs
+remain `pending` while their work units are `completed`, deploy the corrected
+enricher first, then generate a repair file:
+
+```sh
+.venv/bin/python -m palette_api.tools.repair_enrichment_work_units \
+  > /tmp/timbre-palette-repair.sql
+wrangler d1 execute DB --remote \
+  --file=/tmp/timbre-palette-repair.sql --yes -c wrangler.jsonc
+```
+
+The repair detaches only pending jobs whose work-unit generation does not
+match the job generation. The next scheduled sweep groups them into fresh
+work units and dispatches them with the correct generation.

@@ -140,6 +140,138 @@ def make_worker(db: D1Database) -> Default:
     return worker
 
 
+@pytest.fixture
+def work_unit_db() -> sqlite3.Connection:
+    conn = sqlite3.connect(":memory:")
+    root = Path(__file__).resolve().parent.parent
+    for migration in sorted((root / "migrations").glob("*.sql")):
+        conn.executescript(migration.read_text())
+    yield conn
+    conn.close()
+
+
+@pytest.mark.anyio
+async def test_work_unit_processes_multiple_jobs_with_one_queue_message(
+    work_unit_db: sqlite3.Connection,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class Queue:
+        def __init__(self) -> None:
+            self.messages: list[object] = []
+
+        async def send(self, body: object, **kwargs: object) -> None:
+            self.messages.append(body)
+
+    class FakeEnricher:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        async def enrich_track(self, received: Track) -> None:
+            self.calls += 1
+            return None
+
+        async def accepted_claim_count(self, recording_id: int) -> int:
+            raise AssertionError("não deveria ser chamado")
+
+    fake_enricher = FakeEnricher()
+    monkeypatch.setattr("enrichment_worker.MusicBrainzResolver", lambda transport: object())
+    monkeypatch.setattr(
+        "enrichment_worker.MusicBrainzEnricher",
+        lambda resolver, repository: fake_enricher,
+    )
+    queue = Queue()
+    scheduler = D1QueueEnrichmentScheduler(D1Database(work_unit_db), queue)
+    tracks = tuple(
+        Track(f"Song {index}", "Artist", 1, mbid=f"track-mbid-{index}")
+        for index in range(2)
+    )
+
+    await scheduler.schedule(tracks)
+    assert len(queue.messages) == 1
+    message_body = queue.messages[0]
+    assert message_body["schema_version"] == 3
+    assert len(message_body["work_unit_key"]) == 64
+
+    worker = make_worker(D1Database(work_unit_db))
+    decision = await worker.process_queue_message(
+        message_body,
+        "rpc-message-1",
+        1,
+        MAIN_QUEUE_NAME,
+    )
+
+    assert fake_enricher.calls == 2
+    assert decision == {"action": "ack"}
+    assert work_unit_db.execute(
+        "SELECT status, item_count FROM enrichment_work_units"
+    ).fetchone() == ("completed", 2)
+    assert work_unit_db.execute(
+        "SELECT COUNT(*) FROM enrichment_jobs WHERE status = 'ambiguous'"
+    ).fetchone()[0] == 2
+
+    duplicate = Message(message_body, attempts=2)
+    await worker.queue(
+        SimpleNamespace(queue=MAIN_QUEUE_NAME, messages=[duplicate]), None, None
+    )
+    assert duplicate.ack_count == 1
+    assert fake_enricher.calls == 2
+
+
+@pytest.mark.anyio
+async def test_work_unit_generation_matches_replayed_job_generation(
+    work_unit_db: sqlite3.Connection,
+) -> None:
+    class Queue:
+        def __init__(self) -> None:
+            self.messages: list[object] = []
+
+        async def send(self, body: object, **kwargs: object) -> None:
+            self.messages.append(body)
+
+    queue = Queue()
+    scheduler = D1QueueEnrichmentScheduler(
+        D1Database(work_unit_db), queue, dispatch_on_schedule=False
+    )
+    tracks = tuple(
+        Track(f"Replay song {index}", "Artist", 1, mbid=f"replay-{index}")
+        for index in range(2)
+    )
+
+    await scheduler.schedule(tracks)
+    work_unit_db.execute(
+        "UPDATE enrichment_work_units SET status = 'completed', dispatch_status = 'none'"
+    )
+    work_unit_db.execute("DELETE FROM enrichment_work_unit_items")
+    work_unit_db.execute(
+        """
+        UPDATE enrichment_jobs
+        SET generation = 2, work_unit_key = NULL, dispatch_status = 'pending'
+        """
+    )
+    work_unit_db.commit()
+
+    assert await scheduler.recover_pending(limit=6) == 1
+    assert queue.messages[0]["generation"] == 2
+    assert work_unit_db.execute(
+        "SELECT generation FROM enrichment_work_units WHERE generation = 2"
+    ).fetchone() == (2,)
+
+
+@pytest.mark.anyio
+async def test_rpc_rejects_unsupported_queue_name(
+    work_unit_db: sqlite3.Connection,
+) -> None:
+    worker = make_worker(D1Database(work_unit_db))
+
+    with pytest.raises(ValueError, match="Unsupported enrichment Queue name"):
+        await worker.process_queue_message(
+            {},
+            "rpc-message-1",
+            1,
+            "unexpected-queue",
+        )
+
+
 @pytest.mark.anyio
 async def test_redelivery_is_acknowledged_without_reprocessing(
     seeded_db: sqlite3.Connection,
@@ -258,12 +390,15 @@ async def test_musicbrainz_unavailable_is_retryable(
     )
 
     worker = make_worker(D1Database(seeded_db))
-    message = Message({"schema_version": 2, "job_key": job_key, "generation": 1})
+    decision = await worker.process_queue_message(
+        {"schema_version": 2, "job_key": job_key, "generation": 1},
+        "rpc-message-1",
+        1,
+        MAIN_QUEUE_NAME,
+    )
 
-    await worker.queue(SimpleNamespace(queue=MAIN_QUEUE_NAME, messages=[message]), None, None)
-
-    assert message.ack_count == 0
-    assert message.retry_calls
+    assert decision["action"] == "retry"
+    assert decision["delay_seconds"] > 0
     assert seeded_db.execute(
         "SELECT status FROM enrichment_jobs"
     ).fetchone()[0] == "failed"

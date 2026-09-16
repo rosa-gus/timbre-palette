@@ -6,6 +6,7 @@ import json
 import re
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
+from time import monotonic
 from typing import Any, Protocol
 import unicodedata
 from urllib.parse import quote, urlencode, urlsplit
@@ -16,7 +17,8 @@ from palette_api.lastfm import JsonHttpResponse
 
 MUSICBRAINZ_API_URL = "https://musicbrainz.org/ws/2"
 RESOLVER_VERSION = "musicbrainz-0.2.0"
-DEFAULT_USER_AGENT = "timbre-palette-api/0.3.1"
+DEFAULT_USER_AGENT = "timbre-palette-api/0.3.2"
+DEFAULT_MINIMUM_INTERVAL_MS = 3000
 
 
 class MusicBrainzError(Exception):
@@ -53,6 +55,10 @@ class AsyncJsonTransport(Protocol):
     async def get_json(self, url: str) -> JsonHttpResponse: ...
 
 
+class AsyncRateGate(Protocol):
+    async def acquire_slot(self, minimum_interval_ms: int) -> object: ...
+
+
 class WorkersFetchJsonTransport:
     """HTTP transport backed by the native asynchronous Workers Fetch API."""
 
@@ -60,18 +66,21 @@ class WorkersFetchJsonTransport:
         self,
         user_agent: str = DEFAULT_USER_AGENT,
         *,
-        minimum_interval_ms: int = 1100,
+        minimum_interval_ms: int = DEFAULT_MINIMUM_INTERVAL_MS,
+        rate_gate: AsyncRateGate | None = None,
         wait: Callable[[int], Awaitable[object]] | None = None,
     ) -> None:
         self._user_agent = user_agent
-        self._minimum_interval_ms = minimum_interval_ms
+        self._minimum_interval_ms = max(0, int(minimum_interval_ms))
+        self._rate_gate = rate_gate
         self._wait = wait
 
     async def get_json(self, url: str) -> JsonHttpResponse:
         from workers import fetch
 
         operation = _operation_from_url(url)
-        await self._pace()
+        gate_wait_ms = await self._pace(operation)
+        request_started_at = monotonic()
         try:
             response = await fetch(
                 url,
@@ -88,6 +97,8 @@ class WorkersFetchJsonTransport:
             )
             _log_event(
                 "musicbrainz_transport_error",
+                duration_ms=_duration_ms(request_started_at),
+                rate_gate_wait_ms=gate_wait_ms,
                 **_error_fields(wrapped, cause=error),
             )
             raise wrapped from error
@@ -98,6 +109,13 @@ class WorkersFetchJsonTransport:
             # Error responses do not need to be decoded. Returning the status
             # lets the resolver classify 429/5xx without hiding it behind a
             # JSON decoding error (MusicBrainz may return HTML on failures).
+            _log_event(
+                "musicbrainz_request",
+                duration_ms=_duration_ms(request_started_at),
+                operation=operation,
+                rate_gate_wait_ms=gate_wait_ms,
+                status_code=status_code,
+            )
             return JsonHttpResponse(
                 status_code=status_code,
                 body=None,
@@ -115,28 +133,70 @@ class WorkersFetchJsonTransport:
             )
             _log_event(
                 "musicbrainz_response_error",
+                duration_ms=_duration_ms(request_started_at),
                 operation=operation,
+                rate_gate_wait_ms=gate_wait_ms,
                 **_error_fields(wrapped, cause=error),
             )
             raise wrapped from error
+        _log_event(
+            "musicbrainz_request",
+            duration_ms=_duration_ms(request_started_at),
+            operation=operation,
+            rate_gate_wait_ms=gate_wait_ms,
+            status_code=status_code,
+        )
         return JsonHttpResponse(
             status_code=status_code,
             body=body,
             retry_after_seconds=retry_after_seconds,
         )
 
-    async def _pace(self) -> None:
+    async def _pace(self, operation: str) -> int:
         if self._minimum_interval_ms <= 0:
-            return
+            return 0
+        if self._rate_gate is None:
+            await self._wait_for(self._minimum_interval_ms)
+            return self._minimum_interval_ms
+
+        try:
+            reservation = await self._rate_gate.acquire_slot(
+                self._minimum_interval_ms
+            )
+            wait_ms = _rate_gate_wait_ms(reservation)
+        except Exception as error:
+            wrapped = MusicBrainzUnavailableError(
+                "Could not acquire a MusicBrainz rate-limit slot.",
+                reason_code="rate_gate_unavailable",
+                operation="rate_gate",
+            )
+            _log_event(
+                "musicbrainz_rate_gate_error",
+                request_operation=operation,
+                **_error_fields(wrapped, cause=error),
+            )
+            raise wrapped from error
+
+        if wait_ms > 0:
+            await self._wait_for(wait_ms)
+        _log_event(
+            "musicbrainz_rate_gate_wait",
+            interval_ms=self._minimum_interval_ms,
+            operation=operation,
+            wait_ms=wait_ms,
+        )
+        return wait_ms
+
+    async def _wait_for(self, delay_ms: int) -> None:
         if self._wait is not None:
-            await self._wait(self._minimum_interval_ms)
+            await self._wait(delay_ms)
             return
         # Workers' scheduler.wait keeps the isolate suspended without burning
         # CPU. The import is local so repository/unit-test environments do not
         # need the Workers JS bridge.
         from js import scheduler
 
-        await scheduler.wait(self._minimum_interval_ms)
+        await scheduler.wait(delay_ms)
 
 
 @dataclass(frozen=True, slots=True)
@@ -671,6 +731,24 @@ def _retry_after_seconds(response: object) -> int | None:
     return max(0, min(24 * 60 * 60, seconds))
 
 
+def _rate_gate_wait_ms(reservation: object) -> int:
+    if isinstance(reservation, Mapping):
+        raw_wait_ms = reservation.get("wait_ms")
+    else:
+        raw_wait_ms = getattr(reservation, "wait_ms", None)
+    if isinstance(raw_wait_ms, bool):
+        raise ValueError("The MusicBrainz rate gate returned an invalid wait time.")
+    try:
+        wait_ms = int(raw_wait_ms)
+    except (TypeError, ValueError) as error:
+        raise ValueError(
+            "The MusicBrainz rate gate returned an invalid wait time."
+        ) from error
+    if wait_ms < 0:
+        raise ValueError("The MusicBrainz rate gate returned a negative wait time.")
+    return min(60_000, wait_ms)
+
+
 def _error_fields(
     error: MusicBrainzError,
     *,
@@ -698,6 +776,10 @@ def _safe_error_message(error: object) -> str | None:
     message = " ".join(str(error).split())
     message = re.sub(r"https?://\S+", "<url>", message)
     return message[:300] or None
+
+
+def _duration_ms(started_at: float) -> int:
+    return max(0, round((monotonic() - started_at) * 1000))
 
 
 def _log_event(event: str, **fields: object) -> None:
@@ -1017,18 +1099,34 @@ class D1EnrichmentJobRepository:
         self._db = db
 
     async def get(self, job_key: str) -> Any:
-        return await _first(
-            self._db.prepare(
-                """
-                SELECT job_key, source_mbid, artist, title, recording_id, status,
-                       generation, attempts, processing_attempts, last_error,
-                       terminal_reason_code, terminal_detail
-                FROM enrichment_jobs
-                WHERE job_key = ?
-                LIMIT 1
-                """
-            ).bind(job_key)
-        )
+        try:
+            return await _first(
+                self._db.prepare(
+                    """
+                    SELECT job_key, source_mbid, artist, title, recording_id, status,
+                           generation, attempts, processing_attempts, last_error,
+                           terminal_reason_code, terminal_detail, job_type,
+                           target_mbid, stage
+                    FROM enrichment_jobs
+                    WHERE job_key = ?
+                    LIMIT 1
+                    """
+                ).bind(job_key)
+            )
+        except Exception:
+            # Keep v2 consumers readable while 0009 is being rolled out.
+            return await _first(
+                self._db.prepare(
+                    """
+                    SELECT job_key, source_mbid, artist, title, recording_id, status,
+                           generation, attempts, processing_attempts, last_error,
+                           terminal_reason_code, terminal_detail
+                    FROM enrichment_jobs
+                    WHERE job_key = ?
+                    LIMIT 1
+                    """
+                ).bind(job_key)
+            )
 
     async def status(self, job_key: str) -> str | None:
         row = await self.get(job_key)
@@ -1164,6 +1262,7 @@ class D1EnrichmentJobRepository:
             UPDATE enrichment_jobs
             SET status = 'failed', last_error = ?,
                 processing_lease_until = NULL, dispatch_status = 'queued',
+                next_dispatch_at = NULL,
                 updated_at = datetime('now')
             WHERE job_key = ? AND generation = ?
             """,
@@ -1198,11 +1297,21 @@ class D1EnrichmentJobRepository:
     async def mark_dead_lettered(
         self, job_key: str, error: str, generation: int = 1
     ) -> None:
-        await self.mark_terminal(
+        await self._run(
+            """
+            UPDATE enrichment_jobs
+            SET status = 'terminal',
+                last_error = COALESCE(last_error, ?),
+                terminal_reason_code = 'retry_exhausted',
+                terminal_detail = ?, processing_lease_until = NULL,
+                dispatch_status = 'none', next_dispatch_at = NULL,
+                updated_at = datetime('now')
+            WHERE job_key = ? AND generation = ?
+            """,
+            error[:1000],
+            error[:1000],
             job_key,
-            error,
             generation,
-            reason_code="retry_exhausted",
         )
 
     async def _run(self, query: str, *params: object) -> Any:

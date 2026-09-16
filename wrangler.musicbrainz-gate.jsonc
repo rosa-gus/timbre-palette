@@ -1,0 +1,26 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "timbre-palette-musicbrainz-gate",
+  "main": "src/musicbrainz_rate_gate_worker.ts",
+  "compatibility_date": "2026-09-07",
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "head_sampling_rate": 1
+    }
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "MUSICBRAINZ_RATE_GATE",
+        "class_name": "MusicBrainzRateGate"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["MusicBrainzRateGate"]
+    }
+  ]
+}

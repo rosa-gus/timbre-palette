@@ -25,14 +25,23 @@ class EnrichmentMessage(_StrictModel):
     stage: Literal["identity", "source", "observe", "publish"] = "source"
 
 
+class EnrichmentWorkUnitMessage(_StrictModel):
+    """Compact message for a group of jobs stored in D1."""
+
+    schema_version: Literal[3]
+    work_unit_key: str = Field(pattern=r"^[0-9a-f]{64}$")
+    generation: int = Field(ge=1)
+
+
 @dataclass(frozen=True, slots=True)
 class ParsedEnrichmentMessage:
     schema_version: int
-    job_key: str
     generation: int
+    job_key: str | None = None
     job_type: str = "recording"
     target_mbid: str | None = None
     stage: str = "source"
+    work_unit_key: str | None = None
 
 
 def parse_enrichment_message(body: object) -> ParsedEnrichmentMessage:
@@ -53,6 +62,13 @@ def parse_enrichment_message(body: object) -> ParsedEnrichmentMessage:
                 job_type=message.job_type,
                 target_mbid=message.target_mbid,
                 stage=message.stage,
+            )
+        if version == 3:
+            message = EnrichmentWorkUnitMessage.model_validate(body)
+            return ParsedEnrichmentMessage(
+                schema_version=3,
+                generation=message.generation,
+                work_unit_key=message.work_unit_key,
             )
     except ValidationError as error:
         raise ValueError("Invalid enrichment message.") from error

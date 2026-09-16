@@ -153,26 +153,17 @@ async def test_release_job_uses_album_message_contract() -> None:
         "release-mbid", artist="Prepared Artist", title="Prepared Album"
     )
 
-    assert queue.messages == [
-        {
-            "schema_version": 2,
-            "job_key": queue.messages[0]["job_key"],
-            "generation": 1,
-            "job_type": "release",
-            "target_mbid": "release-mbid",
-            "stage": "source",
-        }
-    ]
+    assert len(queue.messages) == 1
+    assert queue.messages[0]["schema_version"] == 3
+    assert queue.messages[0]["generation"] == 1
+    assert len(queue.messages[0]["work_unit_key"]) == 64
     assert conn.execute(
         "SELECT job_type, target_mbid, stage FROM enrichment_jobs"
     ).fetchone() == ("release", "release-mbid", "source")
     queue.messages.clear()
-    conn.execute(
-        "UPDATE enrichment_jobs SET next_dispatch_at = datetime('now', '-1 second')"
-    )
-    conn.commit()
-    assert await D1QueueEnrichmentScheduler(Database(conn), queue).recover_pending() == 1
-    assert queue.messages[0]["job_type"] == "release"
+    # A successfully published unit is not republished by a timer.
+    assert await D1QueueEnrichmentScheduler(Database(conn), queue).recover_pending() == 0
+    assert queue.messages == []
 
 
 @pytest.mark.anyio
