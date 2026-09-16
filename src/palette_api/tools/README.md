@@ -111,6 +111,11 @@ yarn musicbrainz:index:build \
   --snapshot-version schema-30-2026-09-12
 ```
 
+The builder prints periodic progress to `stderr`, including the current table,
+percentage, row count, generated recordings, and elapsed time. Use
+`--progress-interval 10` to change the update interval or `--no-progress` for
+non-interactive automation.
+
 Run the cost preflight before uploading the directory to R2:
 
 ```sh

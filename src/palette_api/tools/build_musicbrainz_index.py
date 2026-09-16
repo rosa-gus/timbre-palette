@@ -22,6 +22,7 @@ import sqlite3
 import sys
 import tarfile
 import tempfile
+import time
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from datetime import datetime, timezone
@@ -37,12 +38,137 @@ from palette_api.musicbrainz_index import (
 
 DEFAULT_SOURCE_URL = "https://musicbrainz.org/doc/MusicBrainz_Database/Download"
 DEFAULT_ATTRIBUTION = "MusicBrainz; derived instrumental-credit index."
-DEFAULT_LICENSE = "CC BY-NC-SA-3.0"
+DEFAULT_LICENSE = "CC0"
 RELATION_TYPES = ("vocal", "vocals", "programming", "samples", "sampled")
+CORE_TABLES = (
+    "artist",
+    "recording",
+    "instrument",
+    "link_type",
+    "link",
+    "link_attribute_type",
+    "link_attribute",
+    "l_artist_recording",
+)
+RELEASE_TABLES = ("release", "medium", "track", "l_artist_release")
 
 
 class TableNotFound(FileNotFoundError):
     pass
+
+
+class BuildProgress:
+    """Periodic human-readable progress for the command-line ETL."""
+
+    LOAD_PERCENT = 70.0
+
+    def __init__(
+        self,
+        *,
+        interval_seconds: float = 5.0,
+        stream: TextIO | None = None,
+    ) -> None:
+        if interval_seconds <= 0:
+            raise ValueError("interval_seconds must be greater than zero")
+        self.interval_seconds = interval_seconds
+        self.stream = stream or sys.stderr
+        self.started_at = time.monotonic()
+        self.last_report_at = self.started_at
+        self.total_tables = 1
+        self.completed_tables = 0
+        self.current_table = ""
+        self.current_rows = 0
+        self.current_table_bytes: int | None = None
+        self.current_position: int | None = None
+        self.output_records = 0
+        self.output_credits = 0
+
+    def start(self, total_tables: int) -> None:
+        self.total_tables = max(1, total_tables)
+        self._emit(0.0, f"iniciando ETL; {total_tables} tabelas previstas", force=True)
+
+    def start_table(self, table_name: str, *, total_bytes: int | None = None) -> None:
+        self.current_table = table_name
+        self.current_rows = 0
+        self.current_table_bytes = total_bytes if total_bytes and total_bytes > 0 else None
+        self.current_position = 0
+        self._emit(self._load_percent(), f"carregando {table_name}", force=True)
+
+    def row_processed(self) -> bool:
+        self.current_rows += 1
+        return self._is_due()
+
+    def report_table(self, position: int | None = None) -> None:
+        self.current_position = position
+        self._emit(self._load_percent(), self._table_detail())
+
+    def finish_table(self) -> None:
+        self.current_position = self.current_table_bytes
+        self.completed_tables += 1
+        self._emit(
+            self._load_percent(),
+            f"{self.current_table}: {self.current_rows:,} linhas",
+            force=True,
+        )
+
+    def start_writing(self) -> None:
+        self._emit(self.LOAD_PERCENT, "gerando objetos do índice", force=True)
+
+    def output_record(self, record_count: int, credit_count: int) -> None:
+        self.output_records = record_count
+        self.output_credits = credit_count
+        if self._is_due():
+            self._emit(
+                self.LOAD_PERCENT,
+                f"gerando objetos: {record_count:,} gravações, "
+                f"{credit_count:,} créditos",
+            )
+
+    def complete(self, record_count: int, credit_count: int) -> None:
+        elapsed = self._elapsed()
+        self._emit(
+            100.0,
+            f"concluído: {record_count:,} gravações, {credit_count:,} créditos "
+            f"em {elapsed:.0f}s",
+            force=True,
+        )
+
+    def _load_percent(self) -> float:
+        progress = float(self.completed_tables)
+        if self.current_table_bytes and self.current_position is not None:
+            progress += min(
+                1.0,
+                max(0.0, self.current_position / self.current_table_bytes),
+            )
+        return min(self.LOAD_PERCENT, self.LOAD_PERCENT * progress / self.total_tables)
+
+    def _table_detail(self) -> str:
+        if self.current_table_bytes and self.current_position is not None:
+            table_percent = min(
+                100.0,
+                max(0.0, 100.0 * self.current_position / self.current_table_bytes),
+            )
+            return (
+                f"carregando {self.current_table}: {table_percent:.1f}% da tabela, "
+                f"{self.current_rows:,} linhas"
+            )
+        return f"carregando {self.current_table}: {self.current_rows:,} linhas"
+
+    def _is_due(self) -> bool:
+        return time.monotonic() - self.last_report_at >= self.interval_seconds
+
+    def _elapsed(self) -> float:
+        return time.monotonic() - self.started_at
+
+    def _emit(self, percent: float, detail: str, *, force: bool = False) -> None:
+        if not force and not self._is_due():
+            return
+        self.last_report_at = time.monotonic()
+        print(
+            f"[{percent:5.1f}%] {detail} (decorrido {self._elapsed():.0f}s)",
+            file=self.stream,
+            flush=True,
+        )
 
 
 class DumpSource:
@@ -52,6 +178,7 @@ class DumpSource:
         self.path = path
         self._directory_files: dict[str, Path] | None = None
         self._archive_members: tuple[str, ...] | None = None
+        self._archive_member_sizes: dict[str, int] | None = None
         if path.is_dir():
             files: dict[str, Path] = {}
             for candidate in path.rglob("*"):
@@ -60,11 +187,12 @@ class DumpSource:
             self._directory_files = files
         elif path.is_file() and _is_archive(path):
             with tarfile.open(path, mode="r:*") as archive:
-                self._archive_members = tuple(
-                    member.name
-                    for member in archive.getmembers()
-                    if member.isfile()
-                )
+                members = [member for member in archive.getmembers() if member.isfile()]
+                self._archive_members = tuple(member.name for member in members)
+                self._archive_member_sizes = {
+                    _normalized_table_name(Path(member.name).name): member.size
+                    for member in members
+                }
 
     def has_table(self, table_name: str) -> bool:
         try:
@@ -91,6 +219,21 @@ class DumpSource:
                 raise TableNotFound(table_name)
             with io.TextIOWrapper(extracted, encoding="utf-8", newline="") as stream:
                 yield stream
+
+    def table_size(self, table_name: str) -> int | None:
+        location = self._find_table(table_name)
+        if isinstance(location, Path):
+            if location.suffix == ".bz2":
+                return None
+            try:
+                return location.stat().st_size
+            except OSError:
+                return None
+        if self._archive_member_sizes is None:
+            return None
+        return self._archive_member_sizes.get(
+            _normalized_table_name(Path(location).name)
+        )
 
     def _find_table(self, table_name: str) -> Path | str:
         normalized = _normalized_table_name(table_name)
@@ -119,6 +262,7 @@ def build_index(
     attribution: str = DEFAULT_ATTRIBUTION,
     include_release_relations: bool = True,
     staging_path: Path | None = None,
+    progress: BuildProgress | None = None,
 ) -> dict[str, object]:
     """Build the index and return the generated manifest."""
 
@@ -130,6 +274,9 @@ def build_index(
         )
     output_dir.mkdir(parents=True, exist_ok=True)
     source = DumpSource(dump_path)
+    planned_tables = _planned_table_names(source, include_release_relations)
+    if progress is not None:
+        progress.start(len(planned_tables))
 
     temporary_staging: tempfile.TemporaryDirectory[str] | None = None
     if staging_path is None:
@@ -142,9 +289,9 @@ def build_index(
         connection = sqlite3.connect(staging_path)
         try:
             _create_staging_schema(connection)
-            _load_required_tables(source, connection)
+            _load_required_tables(source, connection, progress=progress)
             has_release_tables = include_release_relations and _load_release_tables(
-                source, connection
+                source, connection, progress=progress
             )
             manifest = _write_index(
                 connection,
@@ -154,12 +301,18 @@ def build_index(
                 license_name=license_name.strip(),
                 attribution=attribution.strip(),
                 include_release_relations=has_release_tables,
+                progress=progress,
             )
         finally:
             connection.close()
     finally:
         if temporary_staging is not None:
             temporary_staging.cleanup()
+    if progress is not None:
+        progress.complete(
+            int(manifest["record_count"]),
+            int(manifest["credit_count"]),
+        )
     return manifest
 
 
@@ -214,13 +367,33 @@ def _create_staging_schema(connection: sqlite3.Connection) -> None:
     )
 
 
-def _load_required_tables(source: DumpSource, connection: sqlite3.Connection) -> None:
+def _planned_table_names(
+    source: DumpSource,
+    include_release_relations: bool,
+) -> list[str]:
+    planned = list(CORE_TABLES)
+    if source.has_table("link_attribute_credit"):
+        planned.append("link_attribute_credit")
+    if include_release_relations and all(
+        source.has_table(table_name) for table_name in RELEASE_TABLES
+    ):
+        planned.extend(RELEASE_TABLES)
+    return planned
+
+
+def _load_required_tables(
+    source: DumpSource,
+    connection: sqlite3.Connection,
+    *,
+    progress: BuildProgress | None = None,
+) -> None:
     _load_table(
         source,
         "artist",
         connection,
         "INSERT OR IGNORE INTO artists(id, mbid) VALUES (?, ?)",
         lambda row: _first_values(row, 2),
+        progress=progress,
     )
     _load_table(
         source,
@@ -228,6 +401,7 @@ def _load_required_tables(source: DumpSource, connection: sqlite3.Connection) ->
         connection,
         "INSERT OR IGNORE INTO recordings(id, mbid) VALUES (?, ?)",
         lambda row: _first_values(row, 2),
+        progress=progress,
     )
     _load_table(
         source,
@@ -235,6 +409,7 @@ def _load_required_tables(source: DumpSource, connection: sqlite3.Connection) ->
         connection,
         "INSERT OR IGNORE INTO instruments(gid, name) VALUES (?, ?)",
         lambda row: _values(row, (1, 2), integer_indexes=set()),
+        progress=progress,
     )
     _load_table(
         source,
@@ -242,6 +417,7 @@ def _load_required_tables(source: DumpSource, connection: sqlite3.Connection) ->
         connection,
         "INSERT OR IGNORE INTO link_types(id, name) VALUES (?, ?)",
         lambda row: _values(row, (0, 6), integer_indexes={0}),
+        progress=progress,
     )
     _load_table(
         source,
@@ -249,6 +425,7 @@ def _load_required_tables(source: DumpSource, connection: sqlite3.Connection) ->
         connection,
         "INSERT OR IGNORE INTO links(id, link_type) VALUES (?, ?)",
         lambda row: _values(row, (0, 1), integer_indexes={0, 1}),
+        progress=progress,
     )
     _load_table(
         source,
@@ -256,6 +433,7 @@ def _load_required_tables(source: DumpSource, connection: sqlite3.Connection) ->
         connection,
         "INSERT OR IGNORE INTO attribute_types(id, gid, name) VALUES (?, ?, ?)",
         lambda row: _values(row, (0, 4, 5), integer_indexes={0}),
+        progress=progress,
     )
     _load_table(
         source,
@@ -263,6 +441,7 @@ def _load_required_tables(source: DumpSource, connection: sqlite3.Connection) ->
         connection,
         "INSERT OR IGNORE INTO link_attributes(link, attribute_type) VALUES (?, ?)",
         lambda row: _values(row, (0, 1), integer_indexes={0, 1}),
+        progress=progress,
     )
     _load_table(
         source,
@@ -270,6 +449,7 @@ def _load_required_tables(source: DumpSource, connection: sqlite3.Connection) ->
         connection,
         "INSERT INTO artist_recording(link, artist_id, recording_id) VALUES (?, ?, ?)",
         lambda row: _values(row, (1, 2, 3), integer_indexes={1, 2, 3}),
+        progress=progress,
     )
     if source.has_table("link_attribute_credit"):
         _load_table(
@@ -278,10 +458,16 @@ def _load_required_tables(source: DumpSource, connection: sqlite3.Connection) ->
             connection,
             "INSERT OR IGNORE INTO attribute_credits(link, attribute_type, credited_as) VALUES (?, ?, ?)",
             lambda row: _values(row, (0, 1, 2), integer_indexes={0, 1}),
+            progress=progress,
         )
 
 
-def _load_release_tables(source: DumpSource, connection: sqlite3.Connection) -> bool:
+def _load_release_tables(
+    source: DumpSource,
+    connection: sqlite3.Connection,
+    *,
+    progress: BuildProgress | None = None,
+) -> bool:
     required = ("release", "medium", "track", "l_artist_release")
     if not all(source.has_table(table) for table in required):
         print(
@@ -296,6 +482,7 @@ def _load_release_tables(source: DumpSource, connection: sqlite3.Connection) -> 
         connection,
         "INSERT OR IGNORE INTO releases(id, mbid) VALUES (?, ?)",
         lambda row: _first_values(row, 2),
+        progress=progress,
     )
     _load_table(
         source,
@@ -303,6 +490,7 @@ def _load_release_tables(source: DumpSource, connection: sqlite3.Connection) -> 
         connection,
         "INSERT OR IGNORE INTO media(id, release_id) VALUES (?, ?)",
         lambda row: _values(row, (0, 2), integer_indexes={0, 2}),
+        progress=progress,
     )
     _load_table(
         source,
@@ -310,6 +498,7 @@ def _load_release_tables(source: DumpSource, connection: sqlite3.Connection) -> 
         connection,
         "INSERT INTO tracks(recording_id, medium_id) VALUES (?, ?)",
         lambda row: _values(row, (2, 3), integer_indexes={2, 3}),
+        progress=progress,
     )
     _load_table(
         source,
@@ -317,6 +506,7 @@ def _load_release_tables(source: DumpSource, connection: sqlite3.Connection) -> 
         connection,
         "INSERT INTO artist_release(link, artist_id, release_id) VALUES (?, ?, ?)",
         lambda row: _values(row, (1, 2, 3), integer_indexes={1, 2, 3}),
+        progress=progress,
     )
     return True
 
@@ -327,12 +517,19 @@ def _load_table(
     connection: sqlite3.Connection,
     statement: str,
     transform,
+    *,
+    progress: BuildProgress | None = None,
 ) -> None:
     batch: list[tuple[object, ...]] = []
+    if progress is not None:
+        progress.start_table(table_name, total_bytes=source.table_size(table_name))
     try:
         with source.table(table_name) as stream:
             for row in _copy_rows(stream):
+                should_report = progress is not None and progress.row_processed()
                 values = transform(row)
+                if should_report:
+                    progress.report_table(_stream_position(stream))
                 if values is None:
                     continue
                 batch.append(values)
@@ -344,6 +541,8 @@ def _load_table(
     if batch:
         connection.executemany(statement, batch)
     connection.commit()
+    if progress is not None:
+        progress.finish_table()
 
 
 def _write_index(
@@ -355,9 +554,12 @@ def _write_index(
     license_name: str,
     attribution: str,
     include_release_relations: bool,
+    progress: BuildProgress | None = None,
 ) -> dict[str, object]:
     records_dir = output_dir / INDEX_OBJECT_PREFIX
     records_dir.mkdir(parents=True, exist_ok=True)
+    if progress is not None:
+        progress.start_writing()
     digest = hashlib.sha256()
     record_count = 0
     credit_count = 0
@@ -415,6 +617,8 @@ def _write_index(
         record_count += 1
         credit_count += len(credits)
         record_bytes += len(encoded)
+        if progress is not None:
+            progress.output_record(record_count, credit_count)
         current_mbid = None
         current_credits = {}
 
@@ -461,6 +665,13 @@ def _write_index(
         _license_notice(manifest), encoding="utf-8"
     )
     return manifest
+
+
+def _stream_position(stream: TextIO) -> int | None:
+    try:
+        return int(stream.tell())
+    except (OSError, ValueError):
+        return None
 
 
 def _relation_rows(
@@ -704,6 +915,13 @@ def _license_notice(manifest: dict[str, object]) -> str:
     )
 
 
+def _positive_float(value: str) -> float:
+    parsed = float(value)
+    if parsed <= 0:
+        raise argparse.ArgumentTypeError("must be greater than zero")
+    return parsed
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("dump", type=Path, help="mbdump directory or mbdump.tar.bz2")
@@ -718,7 +936,23 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="exclude release-scoped credits and emit recording-scoped rows only",
     )
     parser.add_argument("--staging-path", type=Path)
+    parser.add_argument(
+        "--progress-interval",
+        type=_positive_float,
+        default=5.0,
+        help="seconds between progress updates (default: 5)",
+    )
+    parser.add_argument(
+        "--no-progress",
+        action="store_true",
+        help="disable human-readable progress output on stderr",
+    )
     args = parser.parse_args(argv)
+    progress = (
+        None
+        if args.no_progress
+        else BuildProgress(interval_seconds=args.progress_interval)
+    )
     manifest = build_index(
         args.dump,
         args.output,
@@ -728,6 +962,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         attribution=args.attribution,
         include_release_relations=not args.no_release_relations,
         staging_path=args.staging_path,
+        progress=progress,
     )
     print(json.dumps(manifest, ensure_ascii=False, indent=2))
     return 0

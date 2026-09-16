@@ -30,9 +30,14 @@ database and writes a new, empty output directory:
   /data/index/musicbrainz-2026-09-12 \
   --snapshot-version schema-30-2026-09-12 \
   --source-url https://musicbrainz.org/doc/MusicBrainz_Database/Download \
-  --license CC\ BY-NC-SA-3.0 \
+  --license CC0 \
   --attribution 'MusicBrainz; derived instrumental-credit index.'
 ```
+
+During the build, the tool writes periodic progress to `stderr`, showing the
+current table, percentage, row count, generated recordings, and elapsed time.
+Use `--progress-interval 10` to report every ten seconds, or `--no-progress`
+for non-interactive automation.
 
 The ETL reads `artist`, `recording`, `instrument`, relationship/link tables,
 and—when present—`release`, `medium`, `track`, and `l_artist_release`. It

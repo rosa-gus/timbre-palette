@@ -1,3 +1,4 @@
+import io
 import json
 import sqlite3
 import tarfile
@@ -16,7 +17,7 @@ from palette_api.musicbrainz_index import (
     R2CreditIndex,
 )
 from palette_api.domain import Track
-from palette_api.tools.build_musicbrainz_index import build_index
+from palette_api.tools.build_musicbrainz_index import BuildProgress, build_index
 from palette_api.tools.preflight_musicbrainz_index import preflight_index
 from palette_api.tools.publish_musicbrainz_index import emit_sql, load_manifest
 
@@ -89,6 +90,32 @@ def test_build_index_keeps_recording_and_release_scope(tmp_path: Path) -> None:
     blocked = preflight_index(output, max_records=0)
     assert blocked["ok"] is False
     assert any("object count" in error for error in blocked["errors"])
+
+
+def test_build_index_reports_progress_without_polluting_manifest_output(
+    tmp_path: Path,
+) -> None:
+    dump = tmp_path / "dump"
+    dump.mkdir()
+    _write_dump(dump)
+    output = tmp_path / "index"
+    progress_output = io.StringIO()
+
+    build_index(
+        dump,
+        output,
+        snapshot_version="schema-30-2026-09-12",
+        progress=BuildProgress(interval_seconds=60, stream=progress_output),
+    )
+
+    progress = progress_output.getvalue()
+    assert "[  0.0%] iniciando ETL" in progress
+    assert "carregando artist" in progress
+    assert "gerando objetos do índice" in progress
+    assert "[100.0%] concluído" in progress
+    assert json.loads((output / "manifest.json").read_text(encoding="utf-8"))[
+        "record_count"
+    ] == 1
 
 
 def test_index_manifest_emits_d1_publication_sql(tmp_path: Path) -> None:
