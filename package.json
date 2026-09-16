@@ -14,6 +14,7 @@
     "db:migrate:remote": "wrangler d1 migrations apply DB --remote -c wrangler.jsonc",
     "dev:api": "yarn db:migrate:local && .venv/bin/uv run pywrangler dev -c wrangler.jsonc -c wrangler.enricher-python.jsonc --persist-to .wrangler/state",
     "dev:enrichment:queue": "wrangler dev -c wrangler.enricher.jsonc --persist-to .wrangler/state --port 8789",
+    "dev:musicbrainz:gate": "wrangler dev -c wrangler.musicbrainz-gate.jsonc --persist-to .wrangler/state --port 8790",
     "dev:enrichment:recover": ".venv/bin/uv run pywrangler dev -c wrangler.enricher-python.jsonc -c wrangler.jsonc --persist-to .wrangler/state --test-scheduled --port 8788",
     "dev:api:mock": ".venv/bin/uv run pywrangler dev --var PALETTE_API_MODE:mock",
     "catalog:validate": ".venv/bin/uv run python -m palette_api.tools.prepare_albums catalog/prepared-albums.json",

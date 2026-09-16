@@ -14,6 +14,7 @@ from palette_api.enrichment import D1QueueEnrichmentScheduler
 from palette_api.enrichment import D1PreparedAlbumPlanner
 from palette_api.enrichment import D1WorkUnitRepository
 from palette_api.musicbrainz import (
+    DEFAULT_MINIMUM_INTERVAL_MS,
     D1EnrichmentJobRepository,
     D1IdentityRepository,
     MusicBrainzEnricher,
@@ -75,8 +76,12 @@ class Default(WorkerEntrypoint):
                 "enrichment_configuration_error",
                 reason_code="missing_musicbrainz_user_agent",
             )
-            raise RuntimeError("MUSICBRAINZ_USER_AGENT não configurado.")
-        transport = WorkersFetchJsonTransport(user_agent=user_agent)
+            raise RuntimeError("MUSICBRAINZ_USER_AGENT is not configured.")
+        transport = WorkersFetchJsonTransport(
+            user_agent=user_agent,
+            minimum_interval_ms=_musicbrainz_minimum_interval_ms(self.env),
+            rate_gate=getattr(self.env, "MUSICBRAINZ_RATE_GATE", None),
+        )
         resolver = MusicBrainzResolver(transport)
         enricher = MusicBrainzEnricher(resolver, D1IdentityRepository(self.env.DB))
         album_collector = MusicBrainzAlbumCollector(transport)
@@ -902,6 +907,17 @@ def _text(value: object) -> str:
 def _optional_text(value: object) -> str | None:
     text = _text(value)
     return text or None
+
+
+def _musicbrainz_minimum_interval_ms(env: object) -> int:
+    raw_value = getattr(env, "MUSICBRAINZ_MIN_INTERVAL_MS", None)
+    try:
+        value = int(str(raw_value)) if raw_value is not None else None
+    except (TypeError, ValueError):
+        value = None
+    if value is None:
+        return DEFAULT_MINIMUM_INTERVAL_MS
+    return min(60_000, max(1_000, value))
 
 
 def _optional_nonnegative_int(value: object) -> int | None:

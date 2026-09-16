@@ -93,11 +93,12 @@ accepted only when they resolve to the explicit `voice` editorial alias.
 ## Local operation
 
 Run `yarn dev:api` to start the API and the Python enrichment service against
-the local D1 in `.wrangler/state`. Start `yarn dev:enrichment:queue` in a
-second process for the TypeScript Queue ingress. `yarn dev:api:mock` uses
-fixtures and does not start enrichment. The Queue consumer is configured in
-`wrangler.enricher.jsonc`; the Python service's producer and scheduled outbox
-sweep are configured in `wrangler.enricher-python.jsonc`.
+the local D1 in `.wrangler/state`. Start `yarn dev:musicbrainz:gate` in a
+second process, then `yarn dev:enrichment:queue` in a third process for the
+TypeScript Queue ingress. `yarn dev:api:mock` uses fixtures and does not start
+enrichment. The Queue consumer is configured in `wrangler.enricher.jsonc`; the
+Python service's producer, rate-gate binding, and scheduled outbox sweep are
+configured in `wrangler.enricher-python.jsonc`.
 
 Jobs with `status = pending`, `dispatch_status = queued`, and
 `processing_attempts = 0` were published but have not started processing. A
@@ -133,9 +134,17 @@ Queue drains and the metrics remain stable, repeat without the limit if needed.
 The production deployment order is:
 
 ```sh
+npx wrangler deploy -c wrangler.musicbrainz-gate.jsonc
 npx wrangler deploy -c wrangler.enricher-python.jsonc
 npx wrangler deploy -c wrangler.enricher.jsonc
 ```
+
+The MusicBrainz gate is a private TypeScript Worker backed by a SQLite
+Durable Object. Every enrichment request reserves a global slot before calling
+MusicBrainz. The default interval is 3,000 ms and can be changed with
+`MUSICBRAINZ_MIN_INTERVAL_MS`; the gate enforces a minimum of one second. If
+the gate is unavailable, the enrichment request retries without sending an
+unguarded upstream request.
 
 ## Observability
 
@@ -178,7 +187,10 @@ when the private RPC call fails before the Python service can return a Queue
 decision.
 MusicBrainz failures additionally emit
 `musicbrainz_transport_error`, `musicbrainz_response_error`, or
-`musicbrainz_upstream_error`.
+`musicbrainz_upstream_error`. Rate limiting adds
+`musicbrainz_rate_gate_wait`, `musicbrainz_rate_gate_error`, and
+`musicbrainz_request`, including the operation, reserved wait, status, and
+duration without logging response bodies or complete URLs.
 
 Retry and upstream events include `job_key`, `message_id`, `job_type`,
 `target_mbid`, `attempt`, `operation`, `reason_code`, and `duration_ms` when

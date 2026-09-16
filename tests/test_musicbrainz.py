@@ -13,6 +13,7 @@ from palette_api.musicbrainz import (
     MusicBrainzResolver,
     MusicBrainzUnavailableError,
     ResolvedRecording,
+    WorkersFetchJsonTransport,
 )
 
 
@@ -27,6 +28,93 @@ class StubTransport:
             if key in url:
                 return response
         raise AssertionError(f"URL inesperada: {url}")
+
+
+@pytest.mark.anyio
+async def test_workers_transport_reserves_global_rate_gate_slot(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import workers
+
+    class Response:
+        status = 200
+        headers = {}
+
+        async def json(self) -> dict[str, str]:
+            return {"id": "recording-mbid"}
+
+    fetch_urls: list[str] = []
+
+    async def fake_fetch(url: str, **kwargs: object) -> Response:
+        fetch_urls.append(url)
+        return Response()
+
+    monkeypatch.setattr(workers, "fetch", fake_fetch, raising=False)
+
+    class RateGate:
+        def __init__(self) -> None:
+            self.intervals: list[int] = []
+
+        async def acquire_slot(self, minimum_interval_ms: int) -> dict[str, int]:
+            self.intervals.append(minimum_interval_ms)
+            return {"wait_ms": 37}
+
+    waits: list[int] = []
+    gate = RateGate()
+    transport = WorkersFetchJsonTransport(
+        user_agent="test-agent",
+        minimum_interval_ms=1500,
+        rate_gate=gate,
+        wait=lambda delay_ms: _record_wait(waits, delay_ms),
+    )
+
+    response = await transport.get_json(
+        "https://musicbrainz.org/ws/2/recording/recording-mbid?fmt=json"
+    )
+
+    assert response.status_code == 200
+    assert fetch_urls == [
+        "https://musicbrainz.org/ws/2/recording/recording-mbid?fmt=json"
+    ]
+    assert gate.intervals == [1500]
+    assert waits == [37]
+
+
+@pytest.mark.anyio
+async def test_workers_transport_fails_closed_when_rate_gate_is_unavailable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import workers
+
+    fetch_called = False
+
+    async def fake_fetch(url: str, **kwargs: object) -> object:
+        nonlocal fetch_called
+        fetch_called = True
+        raise AssertionError("MusicBrainz must not be called without a rate slot.")
+
+    monkeypatch.setattr(workers, "fetch", fake_fetch, raising=False)
+
+    class RateGate:
+        async def acquire_slot(self, minimum_interval_ms: int) -> object:
+            raise RuntimeError("gate unavailable")
+
+    transport = WorkersFetchJsonTransport(
+        rate_gate=RateGate(),
+        wait=lambda delay_ms: _record_wait([], delay_ms),
+    )
+
+    with pytest.raises(MusicBrainzUnavailableError) as raised:
+        await transport.get_json(
+            "https://musicbrainz.org/ws/2/recording/recording-mbid?fmt=json"
+        )
+
+    assert raised.value.reason_code == "rate_gate_unavailable"
+    assert not fetch_called
+
+
+async def _record_wait(target: list[int], delay_ms: int) -> None:
+    target.append(delay_ms)
 
 
 class D1Statement:
