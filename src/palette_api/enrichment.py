@@ -191,13 +191,13 @@ class D1QueueEnrichmentScheduler:
             rows = await _all_rows(
                 self._db.prepare(
                     """
-                    SELECT job_key
+                    SELECT job_key, generation
                     FROM enrichment_jobs
                     WHERE job_key IN ({placeholders})
                       AND work_unit_key IS NULL
                       AND status IN ('pending', 'failed')
                       AND dispatch_status IN ('pending', 'failed')
-                    ORDER BY job_key
+                    ORDER BY generation, job_key
                     """.format(placeholders=", ".join("?" for _ in keys))
                 ).bind(*keys)
             )
@@ -208,46 +208,51 @@ class D1QueueEnrichmentScheduler:
             _log_event("enrichment_work_units_unavailable", error_type=type(error).__name__)
             return False
         self._work_units_enabled = True
-        unassigned = tuple(
-            _text(_value(row, "job_key")) for row in rows if _text(_value(row, "job_key"))
-        )
-        for chunk in _chunks(unassigned, WORK_UNIT_SIZE):
-            work_key = _work_unit_key(chunk)
-            await self._db.prepare(
-                """
-                INSERT OR IGNORE INTO enrichment_work_units
-                    (work_key, generation, status, dispatch_status)
-                VALUES (?, 1, 'pending', 'pending')
-                """
-            ).bind(work_key).run()
-            for item_order, job_key in enumerate(chunk):
+        by_generation: dict[int, list[str]] = {}
+        for row in rows:
+            job_key = _text(_value(row, "job_key"))
+            if not job_key:
+                continue
+            generation = int(_value(row, "generation") or 1)
+            by_generation.setdefault(generation, []).append(job_key)
+        for generation in sorted(by_generation):
+            for chunk in _chunks(tuple(by_generation[generation]), WORK_UNIT_SIZE):
+                work_key = _work_unit_key(chunk, generation)
                 await self._db.prepare(
                     """
-                    INSERT OR IGNORE INTO enrichment_work_unit_items
-                        (work_unit_id, job_key, item_order)
-                    SELECT id, ?, ?
-                    FROM enrichment_work_units
+                    INSERT OR IGNORE INTO enrichment_work_units
+                        (work_key, generation, status, dispatch_status)
+                    VALUES (?, ?, 'pending', 'pending')
+                    """
+                ).bind(work_key, generation).run()
+                for item_order, job_key in enumerate(chunk):
+                    await self._db.prepare(
+                        """
+                        INSERT OR IGNORE INTO enrichment_work_unit_items
+                            (work_unit_id, job_key, item_order)
+                        SELECT id, ?, ?
+                        FROM enrichment_work_units
+                        WHERE work_key = ?
+                        """
+                    ).bind(job_key, item_order, work_key).run()
+                    await self._db.prepare(
+                        """
+                        UPDATE enrichment_jobs
+                        SET work_unit_key = ?, updated_at = datetime('now')
+                        WHERE job_key = ? AND work_unit_key IS NULL
+                        """
+                    ).bind(work_key, job_key).run()
+                await self._db.prepare(
+                    """
+                    UPDATE enrichment_work_units
+                    SET item_count = (
+                            SELECT COUNT(*) FROM enrichment_work_unit_items AS items
+                            WHERE items.work_unit_id = enrichment_work_units.id
+                        ),
+                        updated_at = datetime('now')
                     WHERE work_key = ?
                     """
-                ).bind(job_key, item_order, work_key).run()
-                await self._db.prepare(
-                    """
-                    UPDATE enrichment_jobs
-                    SET work_unit_key = ?, updated_at = datetime('now')
-                    WHERE job_key = ? AND work_unit_key IS NULL
-                    """
-                ).bind(work_key, job_key).run()
-            await self._db.prepare(
-                """
-                UPDATE enrichment_work_units
-                SET item_count = (
-                        SELECT COUNT(*) FROM enrichment_work_unit_items AS items
-                        WHERE items.work_unit_id = enrichment_work_units.id
-                    ),
-                    updated_at = datetime('now')
-                WHERE work_key = ?
-                """
-            ).bind(work_key).run()
+                ).bind(work_key).run()
         return True
 
     async def _ensure_work_units_for_pending(self, limit: int) -> bool:
@@ -779,8 +784,8 @@ def _job_key(track: Track) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
-def _work_unit_key(job_keys: tuple[str, ...]) -> str:
-    payload = "work-unit:v1:" + ":".join(sorted(job_keys))
+def _work_unit_key(job_keys: tuple[str, ...], generation: int) -> str:
+    payload = f"work-unit:v2:{generation}:" + ":".join(sorted(job_keys))
     return hashlib.sha256(payload.encode("ascii")).hexdigest()
 
 

@@ -148,3 +148,18 @@ canary before replaying the full set.
 
 For a v3 unit quarantined by the DLQ, add `--include-recovery-units`; this
 reopens only `recovery_required` units and keeps already completed items final.
+
+If a replay was performed with the first work-unit implementation and jobs
+remain `pending` while their work units are `completed`, deploy the corrected
+enricher first, then generate a repair file:
+
+```sh
+.venv/bin/python -m palette_api.tools.repair_enrichment_work_units \
+  > /tmp/timbre-palette-repair.sql
+wrangler d1 execute DB --remote \
+  --file=/tmp/timbre-palette-repair.sql --yes -c wrangler.enricher.jsonc
+```
+
+The repair detaches only pending jobs whose work-unit generation does not
+match the job generation. The next scheduled sweep groups them into fresh
+work units and dispatches them with the correct generation.

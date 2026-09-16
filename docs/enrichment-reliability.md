@@ -2,10 +2,11 @@
 
 D1 is the source of truth for enrichment jobs and work units; the Queue
 provides delivery. The API records demand and jobs but does not publish to the
-Queue. The enrichment Worker publishes the D1 outbox once per grouped work
-unit during its scheduled sweep. If publication fails, the sweep finds the
-pending outbox entry and retries it. Retries and duplicate deliveries are
-expected and must remain safe.
+Queue. The Python enrichment service publishes the D1 outbox once per grouped
+work unit during its scheduled sweep, while the TypeScript ingress owns
+delivery acknowledgements, retries, and the DLQ. If publication fails, the
+sweep finds the pending outbox entry and retries it. Retries and duplicate
+deliveries are expected and must remain safe.
 
 ## State model
 
@@ -91,10 +92,12 @@ accepted only when they resolve to the explicit `voice` editorial alias.
 
 ## Local operation
 
-Run `yarn dev:api` to start the API and consumer against the local D1 in
-`.wrangler/state`. `yarn dev:api:mock` uses fixtures and does not start the
-consumer. The Queue producer and consumer are configured only in
-`wrangler.enricher.jsonc`.
+Run `yarn dev:api` to start the API and the Python enrichment service against
+the local D1 in `.wrangler/state`. Start `yarn dev:enrichment:queue` in a
+second process for the TypeScript Queue ingress. `yarn dev:api:mock` uses
+fixtures and does not start enrichment. The Queue consumer is configured in
+`wrangler.enricher.jsonc`; the Python service's producer and scheduled outbox
+sweep are configured in `wrangler.enricher-python.jsonc`.
 
 Jobs with `status = pending`, `dispatch_status = queued`, and
 `processing_attempts = 0` were published but have not started processing. A
@@ -119,11 +122,20 @@ legacy maintenance must be explicit and separate.
 
 ## Rollout
 
-Apply migration `0015_enrichment_work_units.sql`, deploy the enrichment Worker,
-and then deploy the API Worker. Do not replay the existing DLQ before the new
-consumer is active. Validate a canary with the guarded tool in
+Apply migration `0015_enrichment_work_units.sql`, deploy
+`timbre-palette-enricher-python` first, and then deploy the TypeScript
+`timbre-palette-enricher` Queue Worker. The TypeScript Worker must be active
+before the old Python Queue consumer is replaced. Do not replay the existing
+DLQ before the new consumer is active. Validate a canary with the guarded tool in
 `src/palette_api/tools/requeue_enrichment.py` using `--limit 20`; after the
 Queue drains and the metrics remain stable, repeat without the limit if needed.
+
+The production deployment order is:
+
+```sh
+npx wrangler deploy -c wrangler.enricher-python.jsonc
+npx wrangler deploy -c wrangler.enricher.jsonc
+```
 
 ## Observability
 
@@ -161,6 +173,9 @@ Structured logs use these events: `enrichment_started`,
 `enrichment_retry`, `enrichment_dead_lettered`, `enrichment_stale_message`,
 `enrichment_work_unit_dispatched`, `enrichment_work_unit_retry`,
 `enrichment_work_unit_dead_lettered`, and `enrichment_outbox_sweep`.
+The TypeScript ingress additionally emits `enrichment_python_service_error`
+when the private RPC call fails before the Python service can return a Queue
+decision.
 MusicBrainz failures additionally emit
 `musicbrainz_transport_error`, `musicbrainz_response_error`, or
 `musicbrainz_upstream_error`.

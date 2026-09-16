@@ -1,9 +1,10 @@
-"""Cloudflare Queue consumer and outbox sweeper for MusicBrainz enrichment."""
+"""Python enrichment service and outbox sweeper for MusicBrainz enrichment."""
 
 import json
 import re
 from collections.abc import Mapping
 from time import monotonic
+from types import SimpleNamespace
 
 from workers import WorkerEntrypoint
 
@@ -36,6 +37,32 @@ MAX_QUEUE_RETRY_DELAY_SECONDS = 24 * 60 * 60
 
 
 class Default(WorkerEntrypoint):
+    async def process_queue_message(
+        self,
+        body: object,
+        message_id: str | None = None,
+        attempts: int = 1,
+        queue_name: str = MAIN_QUEUE_NAME,
+    ) -> dict[str, object]:
+        """Process one Queue delivery for the TypeScript ingress Worker.
+
+        Queue ownership intentionally stays in TypeScript. This RPC method
+        keeps the existing Python state machine and returns the delivery
+        decision so the TypeScript consumer can ack or retry outside Pyodide's
+        Queue handler wrapper.
+        """
+
+        if queue_name not in {MAIN_QUEUE_NAME, DLQ_QUEUE_NAME}:
+            raise ValueError("Unsupported enrichment Queue name.")
+
+        message = _RpcQueueMessage(body, message_id, attempts)
+        await self.queue(
+            SimpleNamespace(queue=queue_name, messages=[message]),
+            None,
+            None,
+        )
+        return message.decision()
+
     async def queue(self, batch, env=None, ctx=None) -> None:
         jobs = D1EnrichmentJobRepository(self.env.DB)
         if _text(getattr(batch, "queue", None)) == DLQ_QUEUE_NAME:
@@ -920,3 +947,35 @@ def _error_fields(error: Exception) -> dict[str, object]:
 
 def _log_event(event: str, **fields: object) -> None:
     print(json.dumps({"event": event, **fields}, ensure_ascii=False, sort_keys=True))
+
+
+class _RpcQueueMessage:
+    """Small Queue-message adapter used by the RPC boundary."""
+
+    def __init__(
+        self,
+        body: object,
+        message_id: str | None,
+        attempts: int,
+    ) -> None:
+        self.body = body
+        self.id = message_id
+        self.attempts = max(1, int(attempts or 1))
+        self._decision: dict[str, object] | None = None
+
+    def ack(self) -> None:
+        self._decision = {"action": "ack"}
+
+    def retry(self, **kwargs: object) -> None:
+        delay = kwargs.get("delaySeconds", 0)
+        try:
+            delay_seconds = max(0, int(delay or 0))
+        except (TypeError, ValueError):
+            delay_seconds = 0
+        self._decision = {
+            "action": "retry",
+            "delay_seconds": delay_seconds,
+        }
+
+    def decision(self) -> dict[str, object]:
+        return self._decision or {"action": "ack"}

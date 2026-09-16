@@ -59,12 +59,13 @@ flowchart LR
     API -->|read accepted evidence| D1[(Cloudflare D1)]
     API -->|demand and jobs| D1[(Cloudflare D1)]
     D1 -->|scheduled outbox sweep| Queue[Cloudflare Queue]
-    Queue --> Enricher[Python enrichment Worker]
+    Queue --> QueueWorker[TypeScript Queue Worker]
+    QueueWorker -->|private RPC| Enricher[Python enrichment service]
     Enricher -->|identity and credit lookup| MusicBrainz[MusicBrainz API]
     Enricher -->|candidates and accepted claims| D1
 ```
 
-The HTTP Worker and enrichment Worker share the same application and domain modules. Slow or rate-limited enrichment work remains outside the request path. D1 owns demand, jobs, and grouped work units; the enrichment Worker is the only Queue producer, and each message can process up to ten jobs sequentially.
+The HTTP Worker and enrichment service share the same application and domain modules. Slow or rate-limited enrichment work remains outside the request path. D1 owns demand, jobs, and grouped work units; the Python service is the scheduled Queue producer, while the TypeScript Worker owns Queue delivery, acknowledgements, retries, and the DLQ. Each message can process up to ten jobs sequentially.
 
 ## Front-end
 

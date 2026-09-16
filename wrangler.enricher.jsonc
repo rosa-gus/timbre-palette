@@ -1,38 +1,21 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "timbre-palette-enricher",
-  "main": "src/enrichment_worker.py",
-  // Keep Python Workers on the stable 3.13 runtime until the 3.14 Pyodide
-  // promising-task initialization issue is resolved upstream.
+  "main": "src/enrichment_queue_worker.ts",
   "compatibility_date": "2026-09-07",
-  "compatibility_flags": ["python_workers"],
-  "vars": {
-    "MUSICBRAINZ_USER_AGENT": "timbre-palette-api/0.3.2 (rosagus.contato@protonmail.com)"
-  },
   "observability": {
     "enabled": true,
     "logs": {
       "head_sampling_rate": 1
     }
   },
-  "d1_databases": [
+  "services": [
     {
-      "binding": "DB",
-      "database_name": "timbre-palette",
-      "database_id": "de217b93-15a0-45be-802d-c9966582d66a",
-      "migrations_dir": "migrations"
+      "binding": "ENRICHER",
+      "service": "timbre-palette-enricher-python"
     }
   ],
-  "triggers": {
-    "crons": ["* * * * *"]
-  },
   "queues": {
-    "producers": [
-      {
-        "binding": "ENRICHMENT_QUEUE",
-        "queue": "timbre-palette-enrichment"
-      }
-    ],
     "consumers": [
       {
         "queue": "timbre-palette-enrichment",
