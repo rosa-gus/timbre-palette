@@ -22,9 +22,7 @@ def build_sql(
     )
     if limit is not None:
         target += f" LIMIT {limit}"
-    sql = f"""BEGIN;
-
--- Remove old work-unit membership before clearing work_unit_key. The old
+    sql = f"""-- Remove old work-unit membership before clearing work_unit_key. The old
 -- Queue message remains harmless: its generation becomes stale after replay.
 DELETE FROM enrichment_work_unit_items
 WHERE job_key IN ({target});
@@ -45,8 +43,6 @@ SET generation = generation + 1,
     dispatch_error = NULL,
     updated_at = datetime('now')
 WHERE job_key IN ({target});
-
-COMMIT;
 """
     if not include_recovery_units:
         return sql
@@ -58,7 +54,7 @@ COMMIT;
     )
     if limit is not None:
         unit_target += f" LIMIT {limit}"
-    return sql.removesuffix("COMMIT;\n") + f"""
+    return sql + f"""
 
 -- Reopen explicitly quarantined work units. Completed items remain completed;
 -- only unfinished items become pending in the new generation.
@@ -110,8 +106,6 @@ SET generation = generation + 1,
     dispatch_error = NULL,
     updated_at = datetime('now')
 WHERE work_key IN ({unit_target});
-
-COMMIT;
 """
 
 

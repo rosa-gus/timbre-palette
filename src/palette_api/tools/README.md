@@ -141,5 +141,10 @@ Omit `--limit` only after validating the canary. The command increments each
 job generation, invalidates old deliveries, and leaves the new work for the
 scheduled outbox sweep to group into units of up to ten jobs.
 
+The generated SQL intentionally does not include `BEGIN`/`COMMIT`: the D1
+Wrangler execution path rejects explicit transaction delimiters. Statements
+are applied independently, so inspect the generated file and run a small
+canary before replaying the full set.
+
 For a v3 unit quarantined by the DLQ, add `--include-recovery-units`; this
 reopens only `recovery_required` units and keeps already completed items final.
