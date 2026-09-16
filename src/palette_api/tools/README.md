@@ -134,7 +134,7 @@ that ended only because Queue delivery retries were exhausted:
 .venv/bin/python -m palette_api.tools.requeue_enrichment \
   --reason retry_exhausted --limit 20 > /tmp/timbre-palette-requeue.sql
 wrangler d1 execute DB --remote \
-  --file=/tmp/timbre-palette-requeue.sql --yes -c wrangler.enricher.jsonc
+  --file=/tmp/timbre-palette-requeue.sql --yes -c wrangler.jsonc
 ```
 
 Omit `--limit` only after validating the canary. The command increments each
@@ -157,7 +157,7 @@ enricher first, then generate a repair file:
 .venv/bin/python -m palette_api.tools.repair_enrichment_work_units \
   > /tmp/timbre-palette-repair.sql
 wrangler d1 execute DB --remote \
-  --file=/tmp/timbre-palette-repair.sql --yes -c wrangler.enricher.jsonc
+  --file=/tmp/timbre-palette-repair.sql --yes -c wrangler.jsonc
 ```
 
 The repair detaches only pending jobs whose work-unit generation does not

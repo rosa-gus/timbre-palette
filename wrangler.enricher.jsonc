@@ -15,6 +15,9 @@
       "service": "timbre-palette-enricher-python"
     }
   ],
+  "triggers": {
+    "crons": []
+  },
   "queues": {
     "consumers": [
       {
