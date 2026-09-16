@@ -22,6 +22,7 @@ import sqlite3
 import sys
 import tarfile
 import tempfile
+import threading
 import time
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
@@ -93,6 +94,13 @@ class BuildProgress:
     def archive_member_scanned(self, member_count: int) -> None:
         if self._is_due():
             self._emit(0.0, f"catalogando dump: {member_count:,} entradas")
+
+    def archive_scan_heartbeat(self, member_count: int) -> None:
+        self._emit(
+            0.0,
+            f"catalogando dump: leitura em andamento ({member_count:,} entradas)",
+            force=True,
+        )
 
     def archive_catalogued(self, member_count: int) -> None:
         self._emit(
@@ -205,25 +213,46 @@ class DumpSource:
                     files.setdefault(_normalized_table_name(candidate.name), candidate)
             self._directory_files = files
         elif path.is_file() and _is_archive(path):
-            with tarfile.open(path, mode="r:*") as archive:
-                members = []
-                entry_count = 0
-                while True:
-                    member = archive.next()
-                    if member is None:
-                        break
-                    entry_count += 1
-                    if member.isfile():
-                        members.append(member)
-                    if progress is not None:
-                        progress.archive_member_scanned(entry_count)
-                self._archive_members = tuple(member.name for member in members)
-                self._archive_member_sizes = {
-                    _normalized_table_name(Path(member.name).name): member.size
-                    for member in members
-                }
-                if progress is not None:
-                    progress.archive_catalogued(entry_count)
+            members = []
+            entry_count = 0
+            heartbeat_stop: threading.Event | None = None
+            heartbeat_thread: threading.Thread | None = None
+            if progress is not None:
+                heartbeat_stop = threading.Event()
+
+                def report_heartbeat() -> None:
+                    while not heartbeat_stop.wait(progress.interval_seconds):
+                        progress.archive_scan_heartbeat(entry_count)
+
+                heartbeat_thread = threading.Thread(
+                    target=report_heartbeat,
+                    name="musicbrainz-dump-progress",
+                    daemon=True,
+                )
+                heartbeat_thread.start()
+            try:
+                with tarfile.open(path, mode="r:*") as archive:
+                    while True:
+                        member = archive.next()
+                        if member is None:
+                            break
+                        entry_count += 1
+                        if member.isfile():
+                            members.append(member)
+                        if progress is not None:
+                            progress.archive_member_scanned(entry_count)
+            finally:
+                if heartbeat_stop is not None:
+                    heartbeat_stop.set()
+                if heartbeat_thread is not None:
+                    heartbeat_thread.join()
+            self._archive_members = tuple(member.name for member in members)
+            self._archive_member_sizes = {
+                _normalized_table_name(Path(member.name).name): member.size
+                for member in members
+            }
+            if progress is not None:
+                progress.archive_catalogued(entry_count)
 
     def has_table(self, table_name: str) -> bool:
         try:
