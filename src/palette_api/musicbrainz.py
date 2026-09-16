@@ -17,7 +17,7 @@ from palette_api.lastfm import JsonHttpResponse
 
 MUSICBRAINZ_API_URL = "https://musicbrainz.org/ws/2"
 RESOLVER_VERSION = "musicbrainz-0.2.0"
-DEFAULT_USER_AGENT = "timbre-palette-api/0.3.2"
+DEFAULT_USER_AGENT = "timbre-palette-api/0.4.2"
 DEFAULT_MINIMUM_INTERVAL_MS = 3000
 
 
@@ -208,6 +208,7 @@ class ResolvedRecording:
     confidence: float
     source_mbid: str | None
     source_entity_type: str | None
+    resolver_version: str = RESOLVER_VERSION
     instrument_credits: tuple["InstrumentCredit", ...] = ()
     observations: tuple[CreditObservation, ...] = ()
 
@@ -224,6 +225,9 @@ class InstrumentCredit:
     relation_type: str = "instrument"
     production_method: str = "performed"
     sound_nature: str | None = None
+    performer_mbid: str | None = None
+    snapshot_version: str | None = None
+    attributes: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -837,7 +841,7 @@ class D1IdentityRepository:
             recording_id,
             match.method,
             match.confidence,
-            RESOLVER_VERSION,
+            match.resolver_version,
             track.artist,
             track.title,
             match.source_mbid,
@@ -856,6 +860,8 @@ class D1IdentityRepository:
         a retry can safely replay the complete sequence.
         """
         recording_id = await self.save_match(track, match)
+        extended_credit_columns = await self._has_extended_credit_columns()
+        extended_evidence_columns = await self._has_extended_evidence_columns()
         for credit in match.instrument_credits:
             performer = credit.performer or ""
             original_credit = credit.original_credit or credit.instrument_name
@@ -871,26 +877,74 @@ class D1IdentityRepository:
             source_url = credit.source_url or (
                 f"https://musicbrainz.org/recording/{match.mbid}"
             )
-            await self._run(
-                """
-                INSERT OR IGNORE INTO instrument_credit_candidates
-                    (recording_id, source, instrument_mbid, instrument_name,
-                     performer, original_credit, scope, source_url, status,
-                     queue_priority, queue_reason)
-                VALUES (?, 'musicbrainz', ?, ?, ?, ?, ?, ?, 'pending', ?, ?)
-                """,
-                recording_id,
-                credit.instrument_mbid or "",
-                credit.instrument_name,
-                performer,
-                original_credit,
-                scope,
-                source_url,
-                20 if credit.instrument_mbid else 10,
-                "unmapped_instrument_mbid"
-                if credit.instrument_mbid
-                else "unmapped_instrument_name",
-            )
+            if extended_credit_columns:
+                await self._run(
+                    """
+                    INSERT OR IGNORE INTO instrument_credit_candidates
+                        (recording_id, source, instrument_mbid, instrument_name,
+                         performer, performer_mbid, original_credit, scope,
+                         source_url, snapshot_version, attributes_json, status,
+                         queue_priority, queue_reason)
+                    VALUES (?, 'musicbrainz', ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)
+                    """,
+                    recording_id,
+                    credit.instrument_mbid or "",
+                    credit.instrument_name,
+                    performer,
+                    credit.performer_mbid,
+                    original_credit,
+                    scope,
+                    source_url,
+                    credit.snapshot_version,
+                    json.dumps(credit.attributes, ensure_ascii=False),
+                    20 if credit.instrument_mbid else 10,
+                    "unmapped_instrument_mbid"
+                    if credit.instrument_mbid
+                    else "unmapped_instrument_name",
+                )
+            else:
+                await self._run(
+                    """
+                    INSERT OR IGNORE INTO instrument_credit_candidates
+                        (recording_id, source, instrument_mbid, instrument_name,
+                         performer, original_credit, scope, source_url, status,
+                         queue_priority, queue_reason)
+                    VALUES (?, 'musicbrainz', ?, ?, ?, ?, ?, ?, 'pending', ?, ?)
+                    """,
+                    recording_id,
+                    credit.instrument_mbid or "",
+                    credit.instrument_name,
+                    performer,
+                    original_credit,
+                    scope,
+                    source_url,
+                    20 if credit.instrument_mbid else 10,
+                    "unmapped_instrument_mbid"
+                    if credit.instrument_mbid
+                    else "unmapped_instrument_name",
+                )
+            if extended_credit_columns:
+                await self._run(
+                    """
+                    UPDATE instrument_credit_candidates
+                    SET performer_mbid = COALESCE(?, performer_mbid),
+                        original_credit = ?, scope = ?, source_url = ?,
+                        snapshot_version = COALESCE(?, snapshot_version),
+                        attributes_json = ?, updated_at = datetime('now')
+                    WHERE recording_id = ? AND source = 'musicbrainz'
+                      AND instrument_mbid = ? AND instrument_name = ? AND performer = ?
+                    """,
+                    credit.performer_mbid,
+                    original_credit,
+                    scope,
+                    source_url,
+                    credit.snapshot_version,
+                    json.dumps(credit.attributes, ensure_ascii=False),
+                    recording_id,
+                    credit.instrument_mbid or "",
+                    credit.instrument_name,
+                    performer,
+                )
             mapping = await self._instrument_mapper.resolve(credit)
             if mapping is not None:
                 await self._promote_mapped_credit(
@@ -901,6 +955,7 @@ class D1IdentityRepository:
                     scope=scope,
                     source_url=source_url,
                     mapping=mapping,
+                    extended_evidence_columns=extended_evidence_columns,
                 )
         await self._run(
             """
@@ -963,6 +1018,7 @@ class D1IdentityRepository:
         scope: str,
         source_url: str,
         mapping: InstrumentMapping,
+        extended_evidence_columns: bool,
     ) -> None:
         await self._run(
             """
@@ -1034,30 +1090,96 @@ class D1IdentityRepository:
             raise MusicBrainzInvalidResponseError(
                 "Could not locate the published instrumental claim."
             )
-        await self._run(
-            """
-            INSERT INTO evidence_items
-                (claim_id, source, source_url, original_credit, scope,
-                 source_quality, verified_at)
-            SELECT ?, 'musicbrainz', ?, ?, ?, ?, datetime('now')
-            WHERE NOT EXISTS (
-                SELECT 1 FROM evidence_items
+        if extended_evidence_columns:
+            await self._run(
+                """
+                INSERT INTO evidence_items
+                    (claim_id, source, source_url, original_credit, scope,
+                     source_quality, snapshot_version, verified_at)
+                SELECT ?, 'musicbrainz', ?, ?, ?, ?, ?, datetime('now')
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM evidence_items
+                    WHERE claim_id = ? AND source = 'musicbrainz'
+                      AND ifnull(source_url, '') = ?
+                      AND ifnull(original_credit, '') = ?
+                      AND scope = ?
+                )
+                """,
+                int(claim_id),
+                source_url,
+                original_credit,
+                scope,
+                credit.source_quality or "direct_relation",
+                credit.snapshot_version,
+                int(claim_id),
+                source_url,
+                original_credit,
+                scope,
+            )
+        else:
+            await self._run(
+                """
+                INSERT INTO evidence_items
+                    (claim_id, source, source_url, original_credit, scope,
+                     source_quality, verified_at)
+                SELECT ?, 'musicbrainz', ?, ?, ?, ?, datetime('now')
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM evidence_items
+                    WHERE claim_id = ? AND source = 'musicbrainz'
+                      AND ifnull(source_url, '') = ?
+                      AND ifnull(original_credit, '') = ?
+                      AND scope = ?
+                )
+                """,
+                int(claim_id),
+                source_url,
+                original_credit,
+                scope,
+                credit.source_quality or "direct_relation",
+                int(claim_id),
+                source_url,
+                original_credit,
+                scope,
+            )
+        if extended_evidence_columns:
+            await self._run(
+                """
+                UPDATE evidence_items
+                SET source_quality = ?,
+                    snapshot_version = COALESCE(?, snapshot_version)
                 WHERE claim_id = ? AND source = 'musicbrainz'
                   AND ifnull(source_url, '') = ?
                   AND ifnull(original_credit, '') = ?
                   AND scope = ?
+                """,
+                credit.source_quality or "direct_relation",
+                credit.snapshot_version,
+                int(claim_id),
+                source_url,
+                original_credit,
+                scope,
             )
-            """,
-            int(claim_id),
-            source_url,
-            original_credit,
-            scope,
-            credit.source_quality or "direct_relation",
-            int(claim_id),
-            source_url,
-            original_credit,
-            scope,
-        )
+
+    async def _has_extended_credit_columns(self) -> bool:
+        try:
+            await _first(
+                self._db.prepare(
+                    "SELECT performer_mbid, snapshot_version, attributes_json "
+                    "FROM instrument_credit_candidates LIMIT 0"
+                )
+            )
+        except Exception:
+            return False
+        return True
+
+    async def _has_extended_evidence_columns(self) -> bool:
+        try:
+            await _first(
+                self._db.prepare("SELECT snapshot_version FROM evidence_items LIMIT 0")
+            )
+        except Exception:
+            return False
+        return True
 
     async def _recording_id(self, mbid: str) -> int | None:
         row = await _first(
@@ -1329,11 +1451,24 @@ class MusicBrainzEnricher:
         self,
         resolver: MusicBrainzResolver,
         repository: D1IdentityRepository,
+        credit_index: Any | None = None,
     ) -> None:
         self._resolver = resolver
         self._repository = repository
+        self._credit_index = credit_index
 
     async def enrich_track(self, track: Track) -> int | None:
+        if self._credit_index is not None and track.mbid:
+            indexed = await self._credit_index.lookup(track.mbid)
+            if indexed is not None:
+                return await self._repository.save_enrichment(
+                    track,
+                    indexed.to_resolved_recording(
+                        title=track.title,
+                        artist=track.artist,
+                        source_mbid=track.mbid,
+                    ),
+                )
         match = await self._resolver.resolve(track)
         if match is None:
             return None

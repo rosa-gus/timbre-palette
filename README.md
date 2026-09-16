@@ -61,11 +61,18 @@ flowchart LR
     D1 -->|scheduled outbox sweep| Queue[Cloudflare Queue]
     Queue --> QueueWorker[TypeScript Queue Worker]
     QueueWorker -->|private RPC| Enricher[Python enrichment service]
-    Enricher -->|identity and credit lookup| MusicBrainz[MusicBrainz API]
+    Enricher -->|recent normalized credits| D1
+    Enricher -->|offline credit snapshot| R2[(R2 credit index)]
+    Enricher -->|only misses and updates| MusicBrainz[MusicBrainz API]
     Enricher -->|candidates and accepted claims| D1
 ```
 
 The HTTP Worker and enrichment service share the same application and domain modules. Slow or rate-limited enrichment work remains outside the request path. D1 owns demand, jobs, and grouped work units; the Python service is the scheduled Queue producer, while the TypeScript Worker owns Queue delivery, acknowledgements, retries, and the DLQ. Each message can process up to ten jobs sequentially.
+
+The MusicBrainz path first checks recent normalized D1 evidence and then a
+versioned offline credit index in R2. Only a miss in both local layers reaches
+the rate-limited API. The ETL, R2 object layout, snapshot publication,
+and license handling are documented in [MusicBrainz credit index](docs/musicbrainz-credit-index.md).
 
 ## Front-end
 
@@ -201,6 +208,7 @@ The full editorial policy is documented in [docs/editorial-policy.md](docs/edito
 - Contemporary music can be especially difficult to document because detailed personnel and instrument credits are often sparse, fragmented across platforms, or omitted from public structured metadata.
 - A recording present in MusicBrainz may have no usable instrument relationships, and a release-level credit cannot automatically be treated as evidence for every track.
 - Catalog coverage is still limited. Background enrichment may improve a later report, but it cannot guarantee complete attribution.
+- The offline MusicBrainz index is a versioned derivative snapshot. It can lag behind live edits; its snapshot version, source URL, attribution, and license remain attached to normalized evidence.
 - Results depend on the public top-track history returned by Last.fm and therefore do not represent a complete listening archive.
 
 ## License

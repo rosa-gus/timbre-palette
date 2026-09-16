@@ -43,18 +43,36 @@ class D1QueueEnrichmentScheduler:
         if not by_key:
             return
         await self._record_demand(tuple(by_key.values()))
-        keys = tuple(by_key)
-        await self._ensure_jobs(tuple(by_key[key] for key in keys))
-        if await self._ensure_work_units(keys):
+        release_tracks: dict[str, Track] = {}
+        recording_tracks: list[Track] = []
+        for track in by_key.values():
+            if track.release_mbid and track.release_mbid.strip():
+                release_tracks.setdefault(track.release_mbid.strip(), track)
+            else:
+                recording_tracks.append(track)
+
+        recording_keys = tuple(_job_key(track) for track in recording_tracks)
+        await self._ensure_jobs(tuple(recording_tracks))
+        if recording_keys and await self._ensure_work_units(recording_keys):
             # Public requests only create durable work. The cron sweeper is the
             # sole producer in production, which prevents a burst of profile
             # requests from publishing the same work repeatedly.
             if self._dispatch_on_schedule:
-                await self._dispatch_work_units_for_keys(keys)
-            return
-        if self._dispatch_on_schedule:
-            rows = await self._rows_for_keys(keys)
+                await self._dispatch_work_units_for_keys(recording_keys)
+        elif recording_keys and self._dispatch_on_schedule:
+            rows = await self._rows_for_keys(recording_keys)
             await self._dispatch_rows(rows)
+
+        # Last.fm sometimes supplies the concrete release MBID on a top-track
+        # item. One release request can then hydrate every recording and its
+        # recording-level relations; no per-track MusicBrainz lookup is queued
+        # for those items.
+        for release_mbid, track in release_tracks.items():
+            await self.schedule_release(
+                release_mbid,
+                artist=track.artist,
+                title=track.title,
+            )
 
     async def schedule_release(
         self,

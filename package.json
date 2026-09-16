@@ -1,6 +1,6 @@
 {
   "name": "timbre-palette",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "productStatus": "prototype",
   "private": true,
   "type": "module",
@@ -19,6 +19,8 @@
     "dev:api:mock": ".venv/bin/uv run pywrangler dev --var PALETTE_API_MODE:mock",
     "catalog:validate": ".venv/bin/uv run python -m palette_api.tools.prepare_albums catalog/prepared-albums.json",
     "catalog:sql": ".venv/bin/uv run python -m palette_api.tools.prepare_albums catalog/prepared-albums.json --sql",
+    "musicbrainz:index:build": ".venv/bin/uv run python -m palette_api.tools.build_musicbrainz_index",
+    "musicbrainz:index:sql": ".venv/bin/uv run python -m palette_api.tools.publish_musicbrainz_index",
     "editorial:validate": "python3 src/palette_api/tools/publish_editorial.py editorial/src/instruments.json",
     "editorial:sql": "python3 src/palette_api/tools/publish_editorial.py editorial/src/instruments.json --sql",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json && svelte-check --tsconfig ./tsconfig.web.json",

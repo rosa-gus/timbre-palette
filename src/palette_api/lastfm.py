@@ -184,6 +184,13 @@ class LastFmListeningHistoryProvider:
         if not title or not artist or play_count < 0:
             return None
 
+        album = raw_track.get("album")
+        release_mbid = (
+            LastFmListeningHistoryProvider._optional_text(album.get("mbid"))
+            if isinstance(album, Mapping)
+            else None
+        )
+
         return Track(
             title=title,
             artist=artist,
@@ -192,6 +199,7 @@ class LastFmListeningHistoryProvider:
             lastfm_url=LastFmListeningHistoryProvider._optional_text(
                 raw_track.get("url")
             ),
+            release_mbid=release_mbid,
         )
 
     @staticmethod

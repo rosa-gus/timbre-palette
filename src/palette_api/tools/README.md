@@ -100,6 +100,29 @@ Each entry must contain a unique release MBID, artist, title, and integer
 priority. Optional genre values are normalized during validation. SQL output
 uses an idempotent upsert for `prepared_album_targets`.
 
+## MusicBrainz offline credit index
+
+Build the compact R2 dataset from a MusicBrainz dump:
+
+```sh
+yarn musicbrainz:index:build \
+  /data/musicbrainz/mbdump.tar.bz2 \
+  /data/index/musicbrainz-2026-09-12 \
+  --snapshot-version schema-30-2026-09-12
+```
+
+The output contains one object per recording plus a manifest and a
+`LICENSE-MUSICBRAINZ.txt` notice. Publish the manifest metadata to D1 with:
+
+```sh
+yarn musicbrainz:index:sql \
+  /data/index/musicbrainz-2026-09-12/manifest.json \
+  > /tmp/timbre-palette-musicbrainz-index.sql
+```
+
+See [MusicBrainz credit index](../../../docs/musicbrainz-credit-index.md) for
+the table selection, R2 layout, release-first behavior, and license rules.
+
 ## Editorial publication
 
 Validate the canonical editorial snapshot:

@@ -100,6 +100,7 @@ class Track:
     layers: tuple[InstrumentLayer, ...] = ()
     recording_status: RecordingStatus | None = None
     recording_status_detail: str | None = None
+    release_mbid: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

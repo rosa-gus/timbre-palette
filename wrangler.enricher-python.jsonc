@@ -7,8 +7,9 @@
   "compatibility_date": "2026-09-07",
   "compatibility_flags": ["python_workers"],
   "vars": {
-    "MUSICBRAINZ_USER_AGENT": "timbre-palette-api/0.3.2 (rosagus.contato@protonmail.com)",
-    "MUSICBRAINZ_MIN_INTERVAL_MS": "3000"
+    "MUSICBRAINZ_USER_AGENT": "timbre-palette-api/0.4.2 (rosagus.contato@protonmail.com)",
+    "MUSICBRAINZ_MIN_INTERVAL_MS": "3000",
+    "MUSICBRAINZ_CREDIT_INDEX_MAX_AGE_DAYS": "30"
   },
   "observability": {
     "enabled": true,
@@ -41,5 +42,11 @@
         "queue": "timbre-palette-enrichment"
       }
     ]
-  }
+  },
+  "r2_buckets": [
+    {
+      "binding": "MUSICBRAINZ_CREDIT_INDEX",
+      "bucket_name": "timbre-palette-musicbrainz-credit-index"
+    }
+  ]
 }

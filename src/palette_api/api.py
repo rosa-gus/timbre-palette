@@ -56,7 +56,7 @@ PALETTE_CACHE_CONTROL = "public, max-age=300, s-maxage=300"
 app = FastAPI(
     title="Timbre Palette API",
     summary="Retratos instrumentais de históricos públicos do Last.fm.",
-    version="0.3.2",
+    version="0.4.2",
 )
 
 app.add_middleware(

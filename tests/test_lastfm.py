@@ -30,6 +30,9 @@ SUCCESS_RESPONSE = {
                     "name": "Radiohead",
                     "mbid": "test-artist-mbid",
                 },
+                "album": {
+                    "mbid": "test-release-mbid",
+                },
             },
             {
                 "name": "Svefn-g-englar",
@@ -92,6 +95,7 @@ async def test_lastfm_provider_builds_request_and_parses_top_tracks() -> None:
     assert history.tracks[0].artist == "Radiohead"
     assert history.tracks[0].play_count == 42
     assert history.tracks[0].mbid == "test-track-mbid"
+    assert history.tracks[0].release_mbid == "test-release-mbid"
     assert history.tracks[1].mbid is None
     assert history.tracks[0].layers == ()
 

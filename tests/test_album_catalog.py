@@ -167,6 +167,30 @@ async def test_release_job_uses_album_message_contract() -> None:
 
 
 @pytest.mark.anyio
+async def test_track_with_release_mbid_queues_release_collection_first() -> None:
+    conn = database()
+
+    class Queue:
+        def __init__(self) -> None:
+            self.messages: list[dict] = []
+
+        async def send(self, body: dict, **kwargs: object) -> None:
+            self.messages.append(body)
+
+    queue = Queue()
+    await D1QueueEnrichmentScheduler(Database(conn), queue).schedule(
+        (Track("Track One", "Prepared Artist", 4, mbid="track-mbid", release_mbid="release-mbid"),)
+    )
+
+    assert conn.execute(
+        "SELECT job_type, target_mbid FROM enrichment_jobs"
+    ).fetchone() == ("release", "release-mbid")
+    assert len(queue.messages) == 1
+    assert queue.messages[0]["schema_version"] == 3
+    assert len(queue.messages[0]["work_unit_key"]) == 64
+
+
+@pytest.mark.anyio
 async def test_visits_aggregate_demand_without_profile_data() -> None:
     conn = database()
 

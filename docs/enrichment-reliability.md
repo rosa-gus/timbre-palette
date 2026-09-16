@@ -8,6 +8,12 @@ delivery acknowledgements, retries, and the DLQ. If publication fails, the
 sweep finds the pending outbox entry and retries it. Retries and duplicate
 deliveries are expected and must remain safe.
 
+Before a recording job uses the upstream, the Python service checks recent D1
+normalization and the versioned R2 MusicBrainz credit index. An index hit is a
+local, idempotent D1 write; only a miss in both local layers needs the
+rate-gated MusicBrainz API. The offline build and provenance contract are
+documented in [MusicBrainz credit index](musicbrainz-credit-index.md).
+
 ## State model
 
 `enrichment_jobs.status` describes job processing:
@@ -123,7 +129,8 @@ legacy maintenance must be explicit and separate.
 
 ## Rollout
 
-Apply migration `0015_enrichment_work_units.sql`, deploy
+Apply migrations `0015_enrichment_work_units.sql` and
+`0016_musicbrainz_credit_index.sql`, create/populate the R2 credit index, and deploy
 `timbre-palette-enricher-python` first, and then deploy the TypeScript
 `timbre-palette-enricher` Queue Worker. The TypeScript Worker must be active
 before the old Python Queue consumer is replaced. Do not replay the existing

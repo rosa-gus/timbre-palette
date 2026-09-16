@@ -1,5 +1,6 @@
 """Python enrichment service and outbox sweeper for MusicBrainz enrichment."""
 
+import inspect
 import json
 import re
 from collections.abc import Mapping
@@ -23,6 +24,12 @@ from palette_api.musicbrainz import (
     MusicBrainzUnavailableError,
     MusicBrainzResolver,
     WorkersFetchJsonTransport,
+)
+from palette_api.musicbrainz_index import (
+    DEFAULT_RECENT_INDEX_MAX_AGE_DAYS,
+    CompositeCreditIndex,
+    D1RecentCreditIndex,
+    R2CreditIndex,
 )
 from palette_api.queue_contract import parse_enrichment_message, retry_delay_seconds
 
@@ -83,7 +90,20 @@ class Default(WorkerEntrypoint):
             rate_gate=getattr(self.env, "MUSICBRAINZ_RATE_GATE", None),
         )
         resolver = MusicBrainzResolver(transport)
-        enricher = MusicBrainzEnricher(resolver, D1IdentityRepository(self.env.DB))
+        credit_indexes = [
+            D1RecentCreditIndex(
+                self.env.DB,
+                max_age_days=_credit_index_max_age_days(self.env),
+            )
+        ]
+        credit_index_bucket = getattr(self.env, "MUSICBRAINZ_CREDIT_INDEX", None)
+        if credit_index_bucket is not None:
+            credit_indexes.append(R2CreditIndex(credit_index_bucket))
+        enricher = _make_enricher(
+            resolver,
+            D1IdentityRepository(self.env.DB),
+            CompositeCreditIndex(*credit_indexes),
+        )
         album_collector = MusicBrainzAlbumCollector(transport)
 
         for message in batch.messages:
@@ -918,6 +938,38 @@ def _musicbrainz_minimum_interval_ms(env: object) -> int:
     if value is None:
         return DEFAULT_MINIMUM_INTERVAL_MS
     return min(60_000, max(1_000, value))
+
+
+def _credit_index_max_age_days(env: object) -> int:
+    raw_value = getattr(env, "MUSICBRAINZ_CREDIT_INDEX_MAX_AGE_DAYS", None)
+    try:
+        value = (
+            int(str(raw_value))
+            if raw_value is not None
+            else DEFAULT_RECENT_INDEX_MAX_AGE_DAYS
+        )
+    except (TypeError, ValueError):
+        value = DEFAULT_RECENT_INDEX_MAX_AGE_DAYS
+    return max(0, min(3650, value))
+
+
+def _make_enricher(resolver: object, repository: object, credit_index: object):
+    """Keep the constructor seam compatible with older test/service doubles."""
+
+    try:
+        parameters = inspect.signature(MusicBrainzEnricher).parameters
+    except (TypeError, ValueError):
+        parameters = {}
+    if "credit_index" in parameters or any(
+        parameter.kind is inspect.Parameter.VAR_KEYWORD
+        for parameter in parameters.values()
+    ):
+        return MusicBrainzEnricher(
+            resolver,
+            repository,
+            credit_index=credit_index,
+        )
+    return MusicBrainzEnricher(resolver, repository)
 
 
 def _optional_nonnegative_int(value: object) -> int | None:

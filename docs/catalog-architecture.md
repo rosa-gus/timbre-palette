@@ -13,7 +13,8 @@ flowchart TD
     D --> P
     P --> O[(D1 enrichment outbox)]
     O --> W[Enrichment Worker]
-    W --> MB[MusicBrainz release and recording data]
+    I[R2 offline credit index] --> W
+    W --> MB[MusicBrainz release and recording data for misses/updates]
     W --> S[(source_documents and credit_observations)]
     S --> C[(Prepared album catalog)]
     W --> U[(Instrument claims and evidence)]
@@ -29,7 +30,7 @@ flowchart TD
 - `album_tracks` maps an edition's track position to a canonical recording.
 - Instrumentation belongs to the recording. A release-level credit is not copied to every track automatically.
 
-`source_documents` stores the raw response, request parameters, content hash, and parser version. `credit_observations` stores the raw relationships, including relationships that are not yet eligible for the public palette. This allows taxonomy changes to be reprocessed without fetching MusicBrainz again.
+`source_documents` stores the raw response, request parameters, content hash, and parser version. `credit_observations` stores the raw relationships, including relationships that are not yet eligible for the public palette. This allows taxonomy changes to be reprocessed without fetching MusicBrainz again. Recent index hits also retain the snapshot version, performer MBID, relation attributes, and source URL on the normalized candidate/evidence rows.
 
 The collector preserves the source, performer, scope, original credit, and production metadata for each relationship. `instrument`, `vocal`, and `vocals` relationships may be promoted to claims when their MBID or name has an explicit catalog mapping. `programming`, `samples`, and `sampled` remain observations.
 
@@ -65,11 +66,11 @@ Changes to the published album manifest must be accompanied by a migration or an
 
 When a visited track has no accepted evidence, the scheduler records only its artist, title, MBID, play weight, and occurrence count in `catalog_demand`. Usernames and complete listening histories are not persisted.
 
-Repeated demand is deduplicated. A cached source document prevents redundant external requests. A `503` response is treated as a transient failure, not as evidence that a recording has no credits.
+Repeated demand is deduplicated. A recent D1 enrichment or an R2 snapshot hit prevents redundant external requests. A `503` response is treated as a transient failure, not as evidence that a recording has no credits.
 
 ## Enrichment and publication
 
-Track and release jobs use the same Queue contract. Release jobs use `job_type: "release"`, `target_mbid`, and `stage: "source"`. The D1 outbox is the source of truth; Queue delivery is at-least-once, so processing and writes must be idempotent.
+Track and release jobs use the same Queue contract. When Last.fm provides a release MBID, the scheduler emits a release job first; release jobs use `job_type: "release"`, `target_mbid`, and `stage: "source"`. The D1 outbox is the source of truth; Queue delivery is at-least-once, so processing and writes must be idempotent.
 
 The Worker shares one rate-limited MusicBrainz transport across track and release collection. A release job stores all recoverable stages before completing and can resume after a failure without restarting external collection unnecessarily.
 
