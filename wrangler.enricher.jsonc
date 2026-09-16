@@ -7,7 +7,7 @@
   "compatibility_date": "2026-09-07",
   "compatibility_flags": ["python_workers"],
   "vars": {
-    "MUSICBRAINZ_USER_AGENT": "timbre-palette-api/0.3.1 (rosagus.contato@protonmail.com)"
+    "MUSICBRAINZ_USER_AGENT": "timbre-palette-api/0.3.2 (rosagus.contato@protonmail.com)"
   },
   "observability": {
     "enabled": true,
@@ -38,7 +38,7 @@
         "queue": "timbre-palette-enrichment",
         "max_batch_size": 1,
         "max_batch_timeout": 0,
-        "max_retries": 5,
+        "max_retries": 3,
         "dead_letter_queue": "timbre-palette-enrichment-dlq",
         "max_concurrency": 1
       },

@@ -56,7 +56,7 @@ PALETTE_CACHE_CONTROL = "public, max-age=300, s-maxage=300"
 app = FastAPI(
     title="Timbre Palette API",
     summary="Retratos instrumentais de históricos públicos do Last.fm.",
-    version="0.3.1",
+    version="0.3.2",
 )
 
 app.add_middleware(
@@ -152,8 +152,8 @@ async def get_palette_service(
         else MockInstrumentationProvider()
     )
     enrichment_scheduler = (
-        D1QueueEnrichmentScheduler(db, queue)
-        if db is not None and queue is not None
+        D1QueueEnrichmentScheduler(db, queue, dispatch_on_schedule=False)
+        if db is not None
         else None
     )
     return PaletteService(

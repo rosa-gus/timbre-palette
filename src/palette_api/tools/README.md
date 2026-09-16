@@ -124,3 +124,22 @@ network requests or run during an API request.
 
 Home-page media credits are maintained in
 [assets/CREDITS.md](../../../assets/CREDITS.md).
+
+## Enrichment recovery
+
+After deploying the work-unit consumer, generate a reviewed replay for jobs
+that ended only because Queue delivery retries were exhausted:
+
+```sh
+.venv/bin/python -m palette_api.tools.requeue_enrichment \
+  --reason retry_exhausted --limit 20 > /tmp/timbre-palette-requeue.sql
+wrangler d1 execute DB --remote \
+  --file=/tmp/timbre-palette-requeue.sql --yes -c wrangler.enricher.jsonc
+```
+
+Omit `--limit` only after validating the canary. The command increments each
+job generation, invalidates old deliveries, and leaves the new work for the
+scheduled outbox sweep to group into units of up to ten jobs.
+
+For a v3 unit quarantined by the DLQ, add `--include-recovery-units`; this
+reopens only `recovery_required` units and keeps already completed items final.

@@ -57,13 +57,14 @@ flowchart LR
     Browser[Public Svelte application] -->|HTTPS| API[FastAPI HTTP Worker]
     API -->|public listening history| LastFM[Last.fm API]
     API -->|read accepted evidence| D1[(Cloudflare D1)]
-    API -->|unknown recordings| Queue[Cloudflare Queue]
+    API -->|demand and jobs| D1[(Cloudflare D1)]
+    D1 -->|scheduled outbox sweep| Queue[Cloudflare Queue]
     Queue --> Enricher[Python enrichment Worker]
     Enricher -->|identity and credit lookup| MusicBrainz[MusicBrainz API]
     Enricher -->|candidates and accepted claims| D1
 ```
 
-The HTTP Worker and enrichment Worker share the same application and domain modules. Slow or rate-limited enrichment work remains outside the request path, while the queue provides retryable, idempotent processing.
+The HTTP Worker and enrichment Worker share the same application and domain modules. Slow or rate-limited enrichment work remains outside the request path. D1 owns demand, jobs, and grouped work units; the enrichment Worker is the only Queue producer, and each message can process up to ten jobs sequentially.
 
 ## Front-end
 

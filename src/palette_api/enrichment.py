@@ -10,8 +10,7 @@ from palette_api.album_catalog import demand_key
 
 
 DISPATCH_BATCH_SIZE = 20
-DISPATCH_LEASE_SECONDS = 120
-DISPATCH_CONFIRMATION_SECONDS = 300
+WORK_UNIT_SIZE = 10
 
 
 class QueueSender(Protocol):
@@ -22,14 +21,22 @@ class D1QueueEnrichmentScheduler:
     """Create jobs and publish them through a recoverable D1 outbox.
 
     D1 is the source of truth. Queue publication is retried by the cron
-    sweeper when the HTTP request is interrupted, when ``send`` fails, or when
-    no delivery confirmation is observed within the safety window. Duplicate
-    publication is intentional: the consumer is idempotent.
+    sweeper only for pending/failed sends or expired send leases. A successful
+    send is not republished merely because processing takes time: the Queue
+    delivery, not a timer, owns that retry lifecycle.
     """
 
-    def __init__(self, db: Any, queue: QueueSender) -> None:
+    def __init__(
+        self,
+        db: Any,
+        queue: QueueSender | None,
+        *,
+        dispatch_on_schedule: bool = True,
+    ) -> None:
         self._db = db
         self._queue = queue
+        self._dispatch_on_schedule = dispatch_on_schedule
+        self._work_units_enabled: bool | None = None
 
     async def schedule(self, tracks: tuple[Track, ...]) -> None:
         by_key = {_job_key(track): track for track in tracks}
@@ -38,11 +45,16 @@ class D1QueueEnrichmentScheduler:
         await self._record_demand(tuple(by_key.values()))
         keys = tuple(by_key)
         await self._ensure_jobs(tuple(by_key[key] for key in keys))
-        # The request publishes only rows that are still waiting to be sent.
-        # Stale queued rows are recovered by the scheduled sweeper instead of
-        # multiplying messages on every API read.
-        rows = await self._rows_for_keys(keys)
-        await self._dispatch_rows(rows)
+        if await self._ensure_work_units(keys):
+            # Public requests only create durable work. The cron sweeper is the
+            # sole producer in production, which prevents a burst of profile
+            # requests from publishing the same work repeatedly.
+            if self._dispatch_on_schedule:
+                await self._dispatch_work_units_for_keys(keys)
+            return
+        if self._dispatch_on_schedule:
+            rows = await self._rows_for_keys(keys)
+            await self._dispatch_rows(rows)
 
     async def schedule_release(
         self,
@@ -71,23 +83,50 @@ class D1QueueEnrichmentScheduler:
             title or release_mbid,
             release_mbid,
         ).run()
-        rows = await _all_rows(
-            self._db.prepare(
-                """
-                SELECT job_key, generation, dispatch_status, job_type,
-                       target_mbid, stage
-                FROM enrichment_jobs
-                WHERE job_key = ? AND status IN ('pending', 'failed')
-                  AND dispatch_status IN ('pending', 'failed')
-                  AND (next_dispatch_at IS NULL OR next_dispatch_at <= datetime('now'))
-                LIMIT 1
-                """
-            ).bind(job_key)
-        )
-        await self._dispatch_release_rows(rows)
+        if await self._ensure_work_units((job_key,)):
+            if self._dispatch_on_schedule:
+                await self._dispatch_work_units_for_keys((job_key,))
+            return
+        if self._dispatch_on_schedule:
+            rows = await _all_rows(
+                self._db.prepare(
+                    """
+                    SELECT job_key, generation, dispatch_status, job_type,
+                           target_mbid, stage
+                    FROM enrichment_jobs
+                    WHERE job_key = ? AND status IN ('pending', 'failed')
+                      AND dispatch_status IN ('pending', 'failed')
+                      AND (next_dispatch_at IS NULL OR next_dispatch_at <= datetime('now'))
+                    LIMIT 1
+                    """
+                ).bind(job_key)
+            )
+            await self._dispatch_release_rows(rows)
 
     async def recover_pending(self, limit: int = DISPATCH_BATCH_SIZE) -> int:
-        """Publish due outbox rows; intended for a one-minute Cron Trigger."""
+        """Publish due outbox work; intended for a one-minute Cron Trigger."""
+
+        if await self._ensure_work_units_for_pending(limit * WORK_UNIT_SIZE):
+            await self._recover_expired_work_units()
+            rows = await _all_rows(
+                self._db.prepare(
+                    """
+                    SELECT work_key, generation, dispatch_status
+                    FROM enrichment_work_units
+                    WHERE status IN ('pending', 'failed')
+                      AND (
+                        dispatch_status IN ('pending', 'failed')
+                        OR (dispatch_status = 'sending'
+                            AND (dispatch_lease_until IS NULL
+                                 OR dispatch_lease_until <= datetime('now')))
+                      )
+                      AND (next_dispatch_at IS NULL OR next_dispatch_at <= datetime('now'))
+                    ORDER BY updated_at, id
+                    LIMIT ?
+                    """
+                ).bind(limit)
+            )
+            return await self._dispatch_work_unit_rows(rows)
 
         query = """
             SELECT job_key, generation, dispatch_status, job_type,
@@ -127,6 +166,224 @@ class D1QueueEnrichmentScheduler:
         return await self._dispatch_rows(recording_rows) + await self._dispatch_release_rows(
             release_rows
         )
+
+    async def _recover_expired_work_units(self) -> None:
+        """Return abandoned processing leases to the durable outbox."""
+
+        await self._db.prepare(
+            """
+            UPDATE enrichment_work_units
+            SET status = 'failed', dispatch_status = 'pending',
+                processing_lease_until = NULL, next_dispatch_at = NULL,
+                updated_at = datetime('now')
+            WHERE status = 'processing'
+              AND (processing_lease_until IS NULL
+                   OR processing_lease_until <= datetime('now'))
+            """
+        ).run()
+
+    async def _ensure_work_units(self, keys: tuple[str, ...]) -> bool:
+        """Attach unassigned jobs to deterministic, idempotent work units."""
+
+        if not keys:
+            return True
+        try:
+            rows = await _all_rows(
+                self._db.prepare(
+                    """
+                    SELECT job_key
+                    FROM enrichment_jobs
+                    WHERE job_key IN ({placeholders})
+                      AND work_unit_key IS NULL
+                      AND status IN ('pending', 'failed')
+                      AND dispatch_status IN ('pending', 'failed')
+                    ORDER BY job_key
+                    """.format(placeholders=", ".join("?" for _ in keys))
+                ).bind(*keys)
+            )
+        except Exception as error:
+            # Keep the v2 path usable during a rolling migration and in old
+            # local fixtures that do not have migration 0015 yet.
+            self._work_units_enabled = False
+            _log_event("enrichment_work_units_unavailable", error_type=type(error).__name__)
+            return False
+        self._work_units_enabled = True
+        unassigned = tuple(
+            _text(_value(row, "job_key")) for row in rows if _text(_value(row, "job_key"))
+        )
+        for chunk in _chunks(unassigned, WORK_UNIT_SIZE):
+            work_key = _work_unit_key(chunk)
+            await self._db.prepare(
+                """
+                INSERT OR IGNORE INTO enrichment_work_units
+                    (work_key, generation, status, dispatch_status)
+                VALUES (?, 1, 'pending', 'pending')
+                """
+            ).bind(work_key).run()
+            for item_order, job_key in enumerate(chunk):
+                await self._db.prepare(
+                    """
+                    INSERT OR IGNORE INTO enrichment_work_unit_items
+                        (work_unit_id, job_key, item_order)
+                    SELECT id, ?, ?
+                    FROM enrichment_work_units
+                    WHERE work_key = ?
+                    """
+                ).bind(job_key, item_order, work_key).run()
+                await self._db.prepare(
+                    """
+                    UPDATE enrichment_jobs
+                    SET work_unit_key = ?, updated_at = datetime('now')
+                    WHERE job_key = ? AND work_unit_key IS NULL
+                    """
+                ).bind(work_key, job_key).run()
+            await self._db.prepare(
+                """
+                UPDATE enrichment_work_units
+                SET item_count = (
+                        SELECT COUNT(*) FROM enrichment_work_unit_items AS items
+                        WHERE items.work_unit_id = enrichment_work_units.id
+                    ),
+                    updated_at = datetime('now')
+                WHERE work_key = ?
+                """
+            ).bind(work_key).run()
+        return True
+
+    async def _ensure_work_units_for_pending(self, limit: int) -> bool:
+        try:
+            rows = await _all_rows(
+                self._db.prepare(
+                    """
+                    SELECT job_key
+                    FROM enrichment_jobs
+                    WHERE work_unit_key IS NULL
+                      AND status IN ('pending', 'failed')
+                      AND dispatch_status IN ('pending', 'failed')
+                      AND (next_dispatch_at IS NULL OR next_dispatch_at <= datetime('now'))
+                    ORDER BY updated_at, id
+                    LIMIT ?
+                    """
+                ).bind(limit)
+            )
+        except Exception as error:
+            self._work_units_enabled = False
+            _log_event("enrichment_work_units_unavailable", error_type=type(error).__name__)
+            return False
+        self._work_units_enabled = True
+        keys = tuple(
+            _text(_value(row, "job_key")) for row in rows if _text(_value(row, "job_key"))
+        )
+        return await self._ensure_work_units(keys)
+
+    async def _dispatch_work_units_for_keys(self, keys: tuple[str, ...]) -> int:
+        placeholders = ", ".join("?" for _ in keys)
+        rows = await _all_rows(
+            self._db.prepare(
+                f"""
+                SELECT DISTINCT units.work_key, units.generation,
+                                units.dispatch_status
+                FROM enrichment_work_units AS units
+                JOIN enrichment_jobs AS jobs
+                  ON jobs.work_unit_key = units.work_key
+                WHERE jobs.job_key IN ({placeholders})
+                  AND units.status IN ('pending', 'failed')
+                  AND units.dispatch_status IN ('pending', 'failed')
+                  AND (units.next_dispatch_at IS NULL
+                       OR units.next_dispatch_at <= datetime('now'))
+                ORDER BY units.updated_at, units.id
+                """
+            ).bind(*keys)
+        )
+        return await self._dispatch_work_unit_rows(rows)
+
+    async def _dispatch_work_unit_rows(self, rows: list[Any]) -> int:
+        if self._queue is None:
+            raise RuntimeError("The enrichment Queue binding is not configured.")
+        dispatched = 0
+        for row in rows:
+            work_key = _text(_value(row, "work_key"))
+            generation = int(_value(row, "generation") or 1)
+            dispatch_status = _text(_value(row, "dispatch_status"))
+            if not work_key or not await self._claim_work_unit_dispatch(
+                work_key, generation, dispatch_status
+            ):
+                continue
+            try:
+                await self._queue.send(
+                    {
+                        "schema_version": 3,
+                        "work_unit_key": work_key,
+                        "generation": generation,
+                    }
+                )
+            except Exception as error:
+                await self._mark_work_unit_dispatch_failed(
+                    work_key, generation, str(error)
+                )
+                _log_event(
+                    "enrichment_work_unit_dispatch_failed",
+                    work_unit_key=work_key,
+                    generation=generation,
+                    error_type=type(error).__name__,
+                )
+                continue
+            await self._mark_work_unit_dispatched(work_key, generation)
+            dispatched += 1
+            _log_event(
+                "enrichment_work_unit_dispatched",
+                work_unit_key=work_key,
+                generation=generation,
+            )
+        return dispatched
+
+    async def _claim_work_unit_dispatch(
+        self,
+        work_key: str,
+        generation: int,
+        dispatch_status: str,
+    ) -> bool:
+        result = await self._db.prepare(
+            """
+            UPDATE enrichment_work_units
+            SET dispatch_status = 'sending',
+                dispatch_attempts = dispatch_attempts + 1,
+                dispatch_lease_until = datetime('now', '+120 seconds'),
+                updated_at = datetime('now')
+            WHERE work_key = ? AND generation = ?
+              AND status IN ('pending', 'failed')
+              AND dispatch_status = ?
+              AND (
+                next_dispatch_at IS NULL OR next_dispatch_at <= datetime('now')
+              )
+            """
+        ).bind(work_key, generation, dispatch_status).run()
+        return _changes(result) > 0
+
+    async def _mark_work_unit_dispatched(self, work_key: str, generation: int) -> None:
+        await self._db.prepare(
+            """
+            UPDATE enrichment_work_units
+            SET dispatch_status = 'queued', queued_at = datetime('now'),
+                next_dispatch_at = NULL, dispatch_lease_until = NULL,
+                dispatch_error = NULL, updated_at = datetime('now')
+            WHERE work_key = ? AND generation = ? AND dispatch_status = 'sending'
+            """
+        ).bind(work_key, generation).run()
+
+    async def _mark_work_unit_dispatch_failed(
+        self, work_key: str, generation: int, error: str
+    ) -> None:
+        await self._db.prepare(
+            """
+            UPDATE enrichment_work_units
+            SET dispatch_status = 'failed',
+                next_dispatch_at = datetime('now', '+30 seconds'),
+                dispatch_lease_until = NULL, dispatch_error = ?,
+                updated_at = datetime('now')
+            WHERE work_key = ? AND generation = ? AND dispatch_status = 'sending'
+            """
+        ).bind(error[:1000], work_key, generation).run()
 
     async def _ensure_jobs(self, tracks: tuple[Track, ...]) -> None:
         for chunk in _chunks(tracks, DISPATCH_BATCH_SIZE):
@@ -302,13 +559,6 @@ class D1QueueEnrichmentScheduler:
               AND status IN ('pending', 'failed')
               AND dispatch_status = ?
               AND (next_dispatch_at IS NULL OR next_dispatch_at <= datetime('now'))
-              AND (
-                dispatch_status IN ('pending', 'failed')
-                OR (dispatch_status = 'sending'
-                    AND (dispatch_lease_until IS NULL OR dispatch_lease_until <= datetime('now')))
-                OR (dispatch_status = 'queued'
-                    AND next_dispatch_at IS NOT NULL AND next_dispatch_at <= datetime('now'))
-              )
             """
         ).bind(job_key, generation, dispatch_status).run()
         return _changes(result) > 0
@@ -318,7 +568,7 @@ class D1QueueEnrichmentScheduler:
             """
             UPDATE enrichment_jobs
             SET dispatch_status = 'queued', queued_at = datetime('now'),
-                next_dispatch_at = datetime('now', '+300 seconds'),
+                next_dispatch_at = NULL,
                 dispatch_lease_until = NULL, dispatch_error = NULL,
                 updated_at = datetime('now')
             WHERE job_key = ? AND generation = ? AND dispatch_status = 'sending'
@@ -336,6 +586,141 @@ class D1QueueEnrichmentScheduler:
             WHERE job_key = ? AND generation = ? AND dispatch_status = 'sending'
             """
         ).bind(error[:1000], job_key, generation).run()
+
+
+class D1WorkUnitRepository:
+    """Leases and completes grouped enrichment work in D1."""
+
+    PROCESSING_LEASE_SECONDS = 600
+
+    def __init__(self, db: Any) -> None:
+        self._db = db
+
+    async def get(self, work_key: str) -> Any:
+        return await _first(
+            self._db.prepare(
+                """
+                SELECT work_key, generation, status, item_count, attempts,
+                       processing_attempts, last_error, processing_lease_until
+                FROM enrichment_work_units
+                WHERE work_key = ?
+                LIMIT 1
+                """
+            ).bind(work_key)
+        )
+
+    async def job_keys(self, work_key: str) -> tuple[str, ...]:
+        rows = await _all_rows(
+            self._db.prepare(
+                """
+                SELECT job_key
+                FROM enrichment_work_unit_items
+                WHERE work_unit_id = (
+                    SELECT id FROM enrichment_work_units WHERE work_key = ?
+                )
+                ORDER BY item_order, job_key
+                """
+            ).bind(work_key)
+        )
+        return tuple(
+            value for row in rows if (value := _text(_value(row, "job_key")))
+        )
+
+    async def claim_processing(
+        self,
+        work_key: str,
+        generation: int,
+        message_id: str | None,
+    ) -> str:
+        result = await self._run(
+            """
+            UPDATE enrichment_work_units
+            SET status = 'processing', attempts = attempts + 1,
+                processing_attempts = processing_attempts + 1,
+                last_attempt_at = datetime('now'),
+                processing_started_at = datetime('now'),
+                processing_lease_until = datetime('now', '+600 seconds'),
+                message_id = ?, updated_at = datetime('now')
+            WHERE work_key = ? AND generation = ?
+              AND (
+                status IN ('pending', 'failed')
+                OR (status = 'processing'
+                    AND (processing_lease_until IS NULL
+                         OR processing_lease_until <= datetime('now')))
+              )
+            """,
+            message_id,
+            work_key,
+            generation,
+        )
+        if _changes(result) > 0:
+            return "claimed"
+        current = await self.get(work_key)
+        if current is None:
+            return "missing"
+        current_generation = int(_value(current, "generation") or 1)
+        if current_generation != generation:
+            return "stale"
+        current_status = _text(_value(current, "status"))
+        if current_status in {"completed", "terminal", "recovery_required"}:
+            return "final"
+        if current_status == "processing":
+            return "busy"
+        return "stale"
+
+    async def mark_failed(self, work_key: str, generation: int, error: str) -> None:
+        await self._run(
+            """
+            UPDATE enrichment_work_units
+            SET status = 'failed', last_error = ?,
+                processing_lease_until = NULL, dispatch_status = 'queued',
+                next_dispatch_at = NULL, updated_at = datetime('now')
+            WHERE work_key = ? AND generation = ?
+            """,
+            error[:1000],
+            work_key,
+            generation,
+        )
+
+    async def mark_completed(self, work_key: str, generation: int) -> None:
+        await self._run(
+            """
+            UPDATE enrichment_work_units
+            SET status = 'completed', completed_at = datetime('now'),
+                last_error = NULL, processing_lease_until = NULL,
+                dispatch_status = 'none', next_dispatch_at = NULL,
+                updated_at = datetime('now')
+            WHERE work_key = ? AND generation = ?
+            """,
+            work_key,
+            generation,
+        )
+
+    async def mark_recovery_required(
+        self, work_key: str, generation: int, error: str
+    ) -> None:
+        await self._run(
+            """
+            UPDATE enrichment_work_units
+            SET status = 'recovery_required', last_error = ?,
+                terminal_reason_code = 'retry_exhausted',
+                terminal_detail = ?, processing_lease_until = NULL,
+                dispatch_status = 'none', next_dispatch_at = NULL,
+                updated_at = datetime('now')
+            WHERE work_key = ? AND generation = ?
+            """,
+            error[:1000],
+            error[:1000],
+            work_key,
+            generation,
+        )
+
+    async def _run(self, query: str, *params: object) -> Any:
+        statement = self._db.prepare(query).bind(*params)
+        run_fn = getattr(statement, "run", None)
+        if not callable(run_fn):
+            raise RuntimeError("The D1 binding does not provide command execution.")
+        return await run_fn()
 
 
 class D1PreparedAlbumPlanner:
@@ -394,6 +779,11 @@ def _job_key(track: Track) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
+def _work_unit_key(job_keys: tuple[str, ...]) -> str:
+    payload = "work-unit:v1:" + ":".join(sorted(job_keys))
+    return hashlib.sha256(payload.encode("ascii")).hexdigest()
+
+
 def _normalize(value: str) -> str:
     return " ".join(value.casefold().split())
 
@@ -409,6 +799,11 @@ async def _all_rows(statement: Any) -> list[Any]:
         return []
     rows = getattr(result, "results", result)
     return list(rows) if rows else []
+
+
+async def _first(statement: Any) -> Any:
+    first_fn = getattr(statement, "first", None)
+    return await first_fn() if callable(first_fn) else None
 
 
 def _value(row: Any, key: str) -> Any:

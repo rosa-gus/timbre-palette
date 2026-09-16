@@ -140,6 +140,81 @@ def make_worker(db: D1Database) -> Default:
     return worker
 
 
+@pytest.fixture
+def work_unit_db() -> sqlite3.Connection:
+    conn = sqlite3.connect(":memory:")
+    root = Path(__file__).resolve().parent.parent
+    for migration in sorted((root / "migrations").glob("*.sql")):
+        conn.executescript(migration.read_text())
+    yield conn
+    conn.close()
+
+
+@pytest.mark.anyio
+async def test_work_unit_processes_multiple_jobs_with_one_queue_message(
+    work_unit_db: sqlite3.Connection,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class Queue:
+        def __init__(self) -> None:
+            self.messages: list[object] = []
+
+        async def send(self, body: object, **kwargs: object) -> None:
+            self.messages.append(body)
+
+    class FakeEnricher:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        async def enrich_track(self, received: Track) -> None:
+            self.calls += 1
+            return None
+
+        async def accepted_claim_count(self, recording_id: int) -> int:
+            raise AssertionError("não deveria ser chamado")
+
+    fake_enricher = FakeEnricher()
+    monkeypatch.setattr("enrichment_worker.MusicBrainzResolver", lambda transport: object())
+    monkeypatch.setattr(
+        "enrichment_worker.MusicBrainzEnricher",
+        lambda resolver, repository: fake_enricher,
+    )
+    queue = Queue()
+    scheduler = D1QueueEnrichmentScheduler(D1Database(work_unit_db), queue)
+    tracks = tuple(
+        Track(f"Song {index}", "Artist", 1, mbid=f"track-mbid-{index}")
+        for index in range(2)
+    )
+
+    await scheduler.schedule(tracks)
+    assert len(queue.messages) == 1
+    message_body = queue.messages[0]
+    assert message_body["schema_version"] == 3
+    assert len(message_body["work_unit_key"]) == 64
+
+    worker = make_worker(D1Database(work_unit_db))
+    message = Message(message_body)
+    await worker.queue(
+        SimpleNamespace(queue=MAIN_QUEUE_NAME, messages=[message]), None, None
+    )
+
+    assert fake_enricher.calls == 2
+    assert message.ack_count == 1
+    assert work_unit_db.execute(
+        "SELECT status, item_count FROM enrichment_work_units"
+    ).fetchone() == ("completed", 2)
+    assert work_unit_db.execute(
+        "SELECT COUNT(*) FROM enrichment_jobs WHERE status = 'ambiguous'"
+    ).fetchone()[0] == 2
+
+    duplicate = Message(message_body, attempts=2)
+    await worker.queue(
+        SimpleNamespace(queue=MAIN_QUEUE_NAME, messages=[duplicate]), None, None
+    )
+    assert duplicate.ack_count == 1
+    assert fake_enricher.calls == 2
+
+
 @pytest.mark.anyio
 async def test_redelivery_is_acknowledged_without_reprocessing(
     seeded_db: sqlite3.Connection,

@@ -16,7 +16,7 @@ from palette_api.lastfm import JsonHttpResponse
 
 MUSICBRAINZ_API_URL = "https://musicbrainz.org/ws/2"
 RESOLVER_VERSION = "musicbrainz-0.2.0"
-DEFAULT_USER_AGENT = "timbre-palette-api/0.3.1"
+DEFAULT_USER_AGENT = "timbre-palette-api/0.3.2"
 
 
 class MusicBrainzError(Exception):
@@ -1017,18 +1017,34 @@ class D1EnrichmentJobRepository:
         self._db = db
 
     async def get(self, job_key: str) -> Any:
-        return await _first(
-            self._db.prepare(
-                """
-                SELECT job_key, source_mbid, artist, title, recording_id, status,
-                       generation, attempts, processing_attempts, last_error,
-                       terminal_reason_code, terminal_detail
-                FROM enrichment_jobs
-                WHERE job_key = ?
-                LIMIT 1
-                """
-            ).bind(job_key)
-        )
+        try:
+            return await _first(
+                self._db.prepare(
+                    """
+                    SELECT job_key, source_mbid, artist, title, recording_id, status,
+                           generation, attempts, processing_attempts, last_error,
+                           terminal_reason_code, terminal_detail, job_type,
+                           target_mbid, stage
+                    FROM enrichment_jobs
+                    WHERE job_key = ?
+                    LIMIT 1
+                    """
+                ).bind(job_key)
+            )
+        except Exception:
+            # Keep v2 consumers readable while 0009 is being rolled out.
+            return await _first(
+                self._db.prepare(
+                    """
+                    SELECT job_key, source_mbid, artist, title, recording_id, status,
+                           generation, attempts, processing_attempts, last_error,
+                           terminal_reason_code, terminal_detail
+                    FROM enrichment_jobs
+                    WHERE job_key = ?
+                    LIMIT 1
+                    """
+                ).bind(job_key)
+            )
 
     async def status(self, job_key: str) -> str | None:
         row = await self.get(job_key)
@@ -1164,6 +1180,7 @@ class D1EnrichmentJobRepository:
             UPDATE enrichment_jobs
             SET status = 'failed', last_error = ?,
                 processing_lease_until = NULL, dispatch_status = 'queued',
+                next_dispatch_at = NULL,
                 updated_at = datetime('now')
             WHERE job_key = ? AND generation = ?
             """,
@@ -1198,11 +1215,21 @@ class D1EnrichmentJobRepository:
     async def mark_dead_lettered(
         self, job_key: str, error: str, generation: int = 1
     ) -> None:
-        await self.mark_terminal(
+        await self._run(
+            """
+            UPDATE enrichment_jobs
+            SET status = 'terminal',
+                last_error = COALESCE(last_error, ?),
+                terminal_reason_code = 'retry_exhausted',
+                terminal_detail = ?, processing_lease_until = NULL,
+                dispatch_status = 'none', next_dispatch_at = NULL,
+                updated_at = datetime('now')
+            WHERE job_key = ? AND generation = ?
+            """,
+            error[:1000],
+            error[:1000],
             job_key,
-            error,
             generation,
-            reason_code="retry_exhausted",
         )
 
     async def _run(self, query: str, *params: object) -> Any:
