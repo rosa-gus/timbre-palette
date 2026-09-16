@@ -19,6 +19,7 @@ from typing import Any, Protocol
 INDEX_SCHEMA_VERSION = "musicbrainz-instrument-credits-v1"
 INDEX_OBJECT_PREFIX = "musicbrainz/instrument-credits/v1/recordings"
 DEFAULT_RECENT_INDEX_MAX_AGE_DAYS = 30
+MAX_SAFE_R2_READS = 8_000_000
 _MBID_PATTERN = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
     re.IGNORECASE,
@@ -124,16 +125,117 @@ class CreditIndex(Protocol):
     async def lookup(self, recording_mbid: str) -> CreditIndexEntry | None: ...
 
 
+class CreditIndexBudgetError(RuntimeError):
+    """Fail-closed errors raised before an R2 read is attempted."""
+
+    reason_code = "musicbrainz_credit_index_budget_error"
+    retry_after_seconds = 3600
+
+
+class CreditIndexBudgetExceeded(CreditIndexBudgetError):
+    reason_code = "musicbrainz_credit_index_budget_exceeded"
+
+
+class CreditIndexBudgetUnavailable(CreditIndexBudgetError):
+    reason_code = "musicbrainz_credit_index_budget_unavailable"
+
+
+class R2ReadBudget:
+    """Reserve a bounded number of R2 reads in D1 before calling R2.
+
+    The period key is supplied by deployment configuration instead of being
+    inferred from the calendar. This avoids accidentally resetting the guard
+    before the Cloudflare billing period has ended.
+    """
+
+    def __init__(self, db: Any, *, period_key: str, max_reads: int) -> None:
+        self._db = db
+        self._period_key = period_key.strip()
+        self._max_reads = min(MAX_SAFE_R2_READS, max(0, int(max_reads)))
+
+    async def reserve(self) -> None:
+        if not self._period_key:
+            raise CreditIndexBudgetUnavailable(
+                "MUSICBRAINZ_CREDIT_INDEX_USAGE_PERIOD is required."
+            )
+        if self._max_reads <= 0:
+            raise CreditIndexBudgetExceeded(
+                "The MusicBrainz R2 credit-index read budget is disabled."
+            )
+        try:
+            await _run(
+                self._db.prepare(
+                    """
+                    INSERT OR IGNORE INTO musicbrainz_credit_index_usage
+                        (period_key, read_limit)
+                    VALUES (?, ?)
+                    """
+                ).bind(self._period_key, self._max_reads)
+            )
+            result = await _run(
+                self._db.prepare(
+                    """
+                    UPDATE musicbrainz_credit_index_usage
+                    SET reads_reserved = reads_reserved + 1,
+                        updated_at = datetime('now')
+                    WHERE period_key = ?
+                      AND reads_reserved < MIN(read_limit, ?)
+                    """
+                ).bind(self._period_key, self._max_reads)
+            )
+        except Exception as error:
+            raise CreditIndexBudgetUnavailable(
+                "The MusicBrainz R2 credit-index budget could not be reserved."
+            ) from error
+
+        if _changes(result) == 1:
+            return
+
+        try:
+            row = await _first(
+                self._db.prepare(
+                    """
+                    SELECT read_limit, reads_reserved
+                    FROM musicbrainz_credit_index_usage
+                    WHERE period_key = ?
+                    """
+                ).bind(self._period_key)
+            )
+        except Exception as error:
+            raise CreditIndexBudgetUnavailable(
+                "The MusicBrainz R2 credit-index budget status could not be read."
+            ) from error
+        if row is None:
+            raise CreditIndexBudgetUnavailable(
+                "The MusicBrainz R2 credit-index budget row is missing."
+            )
+        limit = _value(row, "read_limit")
+        reads = _value(row, "reads_reserved")
+        raise CreditIndexBudgetExceeded(
+            f"The MusicBrainz R2 credit-index read budget is exhausted "
+            f"({reads}/{min(int(limit or 0), self._max_reads)})."
+        )
+
+
 class R2CreditIndex:
     """Reads one compact recording object from an R2 binding."""
 
-    def __init__(self, bucket: Any, *, object_prefix: str = INDEX_OBJECT_PREFIX) -> None:
+    def __init__(
+        self,
+        bucket: Any,
+        *,
+        object_prefix: str = INDEX_OBJECT_PREFIX,
+        read_budget: R2ReadBudget | None = None,
+    ) -> None:
         self._bucket = bucket
         self._object_prefix = object_prefix.rstrip("/")
+        self._read_budget = read_budget
 
     async def lookup(self, recording_mbid: str) -> CreditIndexEntry | None:
         if not _MBID_PATTERN.fullmatch(recording_mbid.strip()):
             return None
+        if self._read_budget is not None:
+            await self._read_budget.reserve()
         key = f"{self._object_prefix}/{recording_mbid.lower()}.json"
         obj = await self._bucket.get(key)
         if obj is None:
@@ -279,6 +381,14 @@ class CompositeCreditIndex:
         for index in self._indexes:
             try:
                 entry = await index.lookup(recording_mbid)
+            except CreditIndexBudgetError as error:
+                _log_event(
+                    "musicbrainz_credit_index_budget_blocked",
+                    index_type=type(index).__name__,
+                    error_type=type(error).__name__,
+                    reason_code=error.reason_code,
+                )
+                raise
             except Exception as error:
                 _log_event(
                     "musicbrainz_credit_index_error",
@@ -341,6 +451,13 @@ async def _first(statement: Any) -> Any:
     return await first_fn() if callable(first_fn) else None
 
 
+async def _run(statement: Any) -> Any:
+    run_fn = getattr(statement, "run", None)
+    if not callable(run_fn):
+        raise RuntimeError("The D1 binding does not provide command execution.")
+    return await run_fn()
+
+
 async def _all_rows(statement: Any) -> list[Any]:
     all_fn = getattr(statement, "all", None)
     result = await all_fn() if callable(all_fn) else None
@@ -363,6 +480,15 @@ def _text(value: object) -> str:
 def _optional_text(value: object) -> str | None:
     text = _text(value)
     return text or None
+
+
+def _changes(result: Any) -> int:
+    meta = _value(result, "meta")
+    changes = _value(meta, "changes") if meta is not None else None
+    try:
+        return int(changes or 0)
+    except (TypeError, ValueError):
+        return 0
 
 
 def _attributes_from_json(value: object) -> tuple[str, ...]:

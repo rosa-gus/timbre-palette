@@ -8,12 +8,16 @@ import pytest
 
 from palette_api.musicbrainz import D1IdentityRepository, MusicBrainzEnricher
 from palette_api.musicbrainz_index import (
+    CreditIndexBudgetExceeded,
     CreditIndexEntry,
+    CompositeCreditIndex,
     D1RecentCreditIndex,
+    R2ReadBudget,
     R2CreditIndex,
 )
 from palette_api.domain import Track
 from palette_api.tools.build_musicbrainz_index import build_index
+from palette_api.tools.preflight_musicbrainz_index import preflight_index
 from palette_api.tools.publish_musicbrainz_index import emit_sql, load_manifest
 
 
@@ -64,6 +68,8 @@ def test_build_index_keeps_recording_and_release_scope(tmp_path: Path) -> None:
 
     assert manifest["record_count"] == 1
     assert manifest["credit_count"] == 2
+    assert manifest["record_bytes"] > 0
+    assert manifest["estimated_class_a_operations"] == 3
     payload = json.loads(
         (output / "musicbrainz/instrument-credits/v1/recordings" / f"{RECORDING_MBID}.json")
         .read_text(encoding="utf-8")
@@ -74,6 +80,15 @@ def test_build_index_keeps_recording_and_release_scope(tmp_path: Path) -> None:
     }
     assert all(credit["artist_mbid"] == ARTIST_MBID for credit in payload["credits"])
     assert (output / "LICENSE-MUSICBRAINZ.txt").exists()
+
+    report = preflight_index(output)
+    assert report["ok"] is True
+    assert report["object_count"] == 1
+    assert report["estimated_class_a_operations"] == 4
+
+    blocked = preflight_index(output, max_records=0)
+    assert blocked["ok"] is False
+    assert any("object count" in error for error in blocked["errors"])
 
 
 def test_index_manifest_emits_d1_publication_sql(tmp_path: Path) -> None:
@@ -132,6 +147,66 @@ async def test_r2_index_reads_one_recording_object() -> None:
     assert entry is not None
     assert entry.credits[0].artist_mbid == ARTIST_MBID
     assert entry.credits[0].scope == "recording"
+
+
+@pytest.mark.anyio
+async def test_r2_read_budget_blocks_before_the_next_bucket_get() -> None:
+    payload = {
+        "recording_mbid": RECORDING_MBID,
+        "snapshot_version": "schema-30",
+        "source_url": f"https://musicbrainz.org/recording/{RECORDING_MBID}",
+        "credits": [],
+    }
+
+    class Object:
+        async def json(self) -> object:
+            return payload
+
+    class Bucket:
+        def __init__(self) -> None:
+            self.gets = 0
+
+        async def get(self, key: str) -> Object:
+            self.gets += 1
+            return Object()
+
+    connection = _seed_db()
+    bucket = Bucket()
+    index = R2CreditIndex(
+        bucket,
+        read_budget=R2ReadBudget(
+            Database(connection), period_key="test-period", max_reads=1
+        ),
+    )
+
+    assert await index.lookup(RECORDING_MBID) is not None
+    with pytest.raises(CreditIndexBudgetExceeded):
+        await index.lookup(RECORDING_MBID)
+
+    assert bucket.gets == 1
+    assert connection.execute(
+        "SELECT reads_reserved FROM musicbrainz_credit_index_usage "
+        "WHERE period_key = 'test-period'"
+    ).fetchone() == (1,)
+
+
+@pytest.mark.anyio
+async def test_budget_block_does_not_fall_through_to_musicbrainz_api() -> None:
+    class Index:
+        async def lookup(self, recording_mbid: str) -> CreditIndexEntry:
+            raise CreditIndexBudgetExceeded("budget exhausted")
+
+    class Resolver:
+        async def resolve(self, track: Track) -> object:
+            raise AssertionError("the API resolver must not run after a budget block")
+
+    enricher = MusicBrainzEnricher(
+        Resolver(),
+        object(),
+        credit_index=CompositeCreditIndex(Index()),
+    )
+    with pytest.raises(CreditIndexBudgetExceeded):
+        await enricher.enrich_track(Track("Song", "Artist", 1, mbid=RECORDING_MBID))
 
 
 class Statement:

@@ -27,8 +27,10 @@ from palette_api.musicbrainz import (
 )
 from palette_api.musicbrainz_index import (
     DEFAULT_RECENT_INDEX_MAX_AGE_DAYS,
+    MAX_SAFE_R2_READS,
     CompositeCreditIndex,
     D1RecentCreditIndex,
+    R2ReadBudget,
     R2CreditIndex,
 )
 from palette_api.queue_contract import parse_enrichment_message, retry_delay_seconds
@@ -97,8 +99,29 @@ class Default(WorkerEntrypoint):
             )
         ]
         credit_index_bucket = getattr(self.env, "MUSICBRAINZ_CREDIT_INDEX", None)
-        if credit_index_bucket is not None:
-            credit_indexes.append(R2CreditIndex(credit_index_bucket))
+        if _credit_index_enabled(self.env):
+            max_reads = _credit_index_max_reads(self.env)
+            usage_period = _credit_index_usage_period(self.env)
+            if credit_index_bucket is not None and max_reads > 0 and usage_period:
+                credit_indexes.append(
+                    R2CreditIndex(
+                        credit_index_bucket,
+                        read_budget=R2ReadBudget(
+                            self.env.DB,
+                            period_key=usage_period,
+                            max_reads=max_reads,
+                        ),
+                    )
+                )
+            else:
+                _log_event(
+                    "musicbrainz_credit_index_disabled",
+                    reason_code=(
+                        "missing_bucket"
+                        if credit_index_bucket is None
+                        else "invalid_read_budget_configuration"
+                    ),
+                )
         enricher = _make_enricher(
             resolver,
             D1IdentityRepository(self.env.DB),
@@ -951,6 +974,25 @@ def _credit_index_max_age_days(env: object) -> int:
     except (TypeError, ValueError):
         value = DEFAULT_RECENT_INDEX_MAX_AGE_DAYS
     return max(0, min(3650, value))
+
+
+def _credit_index_enabled(env: object) -> bool:
+    raw_value = getattr(env, "MUSICBRAINZ_CREDIT_INDEX_ENABLED", None)
+    return str(raw_value or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _credit_index_max_reads(env: object) -> int:
+    raw_value = getattr(env, "MUSICBRAINZ_CREDIT_INDEX_MAX_READS", None)
+    try:
+        value = int(str(raw_value)) if raw_value is not None else 0
+    except (TypeError, ValueError):
+        value = 0
+    return min(MAX_SAFE_R2_READS, max(0, value))
+
+
+def _credit_index_usage_period(env: object) -> str:
+    raw_value = getattr(env, "MUSICBRAINZ_CREDIT_INDEX_USAGE_PERIOD", None)
+    return _text(raw_value)
 
 
 def _make_enricher(resolver: object, repository: object, credit_index: object):

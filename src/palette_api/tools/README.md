@@ -111,6 +111,13 @@ yarn musicbrainz:index:build \
   --snapshot-version schema-30-2026-09-12
 ```
 
+Run the cost preflight before uploading the directory to R2:
+
+```sh
+yarn musicbrainz:index:preflight \
+  /data/index/musicbrainz-2026-09-12
+```
+
 The output contains one object per recording plus a manifest and a
 `LICENSE-MUSICBRAINZ.txt` notice. Publish the manifest metadata to D1 with:
 

@@ -361,6 +361,7 @@ def _write_index(
     digest = hashlib.sha256()
     record_count = 0
     credit_count = 0
+    record_bytes = 0
 
     relation_streams = [
         _relation_rows(
@@ -383,7 +384,7 @@ def _write_index(
     current_credits: dict[tuple[object, ...], dict[str, object]] = {}
 
     def flush() -> None:
-        nonlocal record_count, credit_count, current_mbid, current_credits
+        nonlocal record_count, credit_count, record_bytes, current_mbid, current_credits
         if current_mbid is None or not current_credits:
             return
         credits = sorted(
@@ -413,6 +414,7 @@ def _write_index(
         digest.update(encoded)
         record_count += 1
         credit_count += len(credits)
+        record_bytes += len(encoded)
         current_mbid = None
         current_credits = {}
 
@@ -445,6 +447,8 @@ def _write_index(
         "attribution": attribution,
         "record_count": record_count,
         "credit_count": credit_count,
+        "record_bytes": record_bytes,
+        "estimated_class_a_operations": record_count + 2,
         "manifest_hash": digest.hexdigest(),
         "object_prefix": INDEX_OBJECT_PREFIX,
         "key_template": f"{INDEX_OBJECT_PREFIX}/{{recording_mbid}}.json",

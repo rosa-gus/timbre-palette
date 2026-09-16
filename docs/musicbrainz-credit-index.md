@@ -53,6 +53,44 @@ R2 `get` for a recording rather than downloading a large shard. Upload the
 generated directory with the project's R2 publication job or S3-compatible R2
 sync process, preserving `manifest.json` and the license notice.
 
+## Cost preflight and runtime guard
+
+The index is not uploaded automatically. Run the fail-closed preflight before
+granting an uploader access to the bucket:
+
+```sh
+yarn musicbrainz:index:preflight \
+  /data/index/musicbrainz-2026-09-12
+```
+
+The default safety limits are deliberately below the current R2 Standard free
+tier: 8 GB for the generated directory, 700,000 recording objects, and an
+estimated 700,000 Class A upload operations. The preflight exits with status 1
+when a limit is exceeded or when the manifest count does not match the files on
+disk. These are project guardrails; the Cloudflare account may contain other
+R2 usage.
+
+The Python enrichment Worker starts with the R2 index disabled:
+
+```jsonc
+"MUSICBRAINZ_CREDIT_INDEX_ENABLED": "false"
+```
+
+When the bucket and snapshot have been validated, enable it manually and keep
+the read budget below the free-tier allowance. Each permitted R2 lookup is
+reserved in `musicbrainz_credit_index_usage` before the object is read. The
+default maximum is 8,000,000 reads per configured usage period. The period key
+must be changed manually only after confirming that the Cloudflare billing
+period has reset; leaving the old key in place fails closed instead of silently
+resetting the budget.
+
+The budget is intentionally conservative because Cloudflare budget alerts are
+notifications, not hard usage caps. Keep the bucket private and configure a
+low account budget alert in the Dashboard as a second line of defense. Do not
+schedule full snapshot uploads: each recording object is a Class A write, and
+replacing a complete snapshot can consume the allowance even when the stored
+data remains below 10 GB.
+
 ## Publish snapshot metadata to D1
 
 After the R2 objects are available, generate the D1 publication SQL and apply
@@ -83,7 +121,9 @@ The R2 binding is configured on the private Python enrichment Worker as
 `MUSICBRAINZ_CREDIT_INDEX`. Create the bucket named in
 `wrangler.enricher-python.jsonc` before deployment. The recent D1 cache defaults
 to 30 days and can be changed with
-`MUSICBRAINZ_CREDIT_INDEX_MAX_AGE_DAYS`.
+`MUSICBRAINZ_CREDIT_INDEX_MAX_AGE_DAYS`. The runtime guard uses
+`MUSICBRAINZ_CREDIT_INDEX_MAX_READS` and
+`MUSICBRAINZ_CREDIT_INDEX_USAGE_PERIOD`.
 
 ## Release-first enrichment
 
