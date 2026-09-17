@@ -1,55 +1,59 @@
 {
-  "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "timbre-palette-enricher-python",
-  "main": "src/enrichment_worker.py",
-  // This Worker remains a private Python service. Queue delivery is owned by
-  // timbre-palette-enricher, the TypeScript ingress Worker.
-  "compatibility_date": "2026-09-07",
-  "compatibility_flags": ["python_workers"],
-  "vars": {
-    "MUSICBRAINZ_USER_AGENT": "timbre-palette-api/0.4.2 (rosagus.contato@protonmail.com)",
-    "MUSICBRAINZ_MIN_INTERVAL_MS": "3000",
-    "MUSICBRAINZ_CREDIT_INDEX_MAX_AGE_DAYS": "30",
-    "MUSICBRAINZ_CREDIT_INDEX_ENABLED": "false",
-    "MUSICBRAINZ_CREDIT_INDEX_MAX_READS": "8000000",
-    "MUSICBRAINZ_CREDIT_INDEX_USAGE_PERIOD": "2026-09"
-  },
-  "observability": {
-    "enabled": true,
-    "logs": {
-      "head_sampling_rate": 1
-    }
-  },
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "timbre-palette",
-      "database_id": "de217b93-15a0-45be-802d-c9966582d66a",
-      "migrations_dir": "migrations"
-    }
-  ],
-  "triggers": {
-    "crons": ["* * * * *"]
-  },
-  "services": [
-    {
-      "binding": "MUSICBRAINZ_RATE_GATE",
-      "service": "timbre-palette-musicbrainz-gate",
-      "entrypoint": "RateGateService"
-    }
-  ],
-  "queues": {
-    "producers": [
-      {
-        "binding": "ENRICHMENT_QUEUE",
-        "queue": "timbre-palette-enrichment"
-      }
-    ]
-  },
-  "r2_buckets": [
-    {
-      "binding": "MUSICBRAINZ_CREDIT_INDEX",
-      "bucket_name": "timbre-palette-musicbrainz-credit-index"
-    }
-  ]
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "timbre-palette-enricher-python",
+	"main": "src/enrichment_worker.py",
+	// This Worker remains a private Python service. Queue delivery is owned by
+	// timbre-palette-enricher, the TypeScript ingress Worker.
+	"compatibility_date": "2026-09-07",
+	"compatibility_flags": [
+		"python_workers"
+	],
+	"vars": {
+		"MUSICBRAINZ_USER_AGENT": "timbre-palette-api/0.4.2 (rosagus.contato@protonmail.com)",
+		"MUSICBRAINZ_MIN_INTERVAL_MS": "3000",
+		"MUSICBRAINZ_CREDIT_INDEX_MAX_AGE_DAYS": "30",
+		"MUSICBRAINZ_CREDIT_INDEX_ENABLED": "false",
+		"MUSICBRAINZ_CREDIT_INDEX_MAX_READS": "8000000",
+		"MUSICBRAINZ_CREDIT_INDEX_USAGE_PERIOD": "2026-09"
+	},
+	"observability": {
+		"enabled": true,
+		"logs": {
+			"head_sampling_rate": 1
+		}
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "timbre-palette",
+			"database_id": "de217b93-15a0-45be-802d-c9966582d66a",
+			"migrations_dir": "migrations"
+		}
+	],
+	"triggers": {
+		"crons": [
+			"* * * * *"
+		]
+	},
+	"services": [
+		{
+			"binding": "MUSICBRAINZ_RATE_GATE",
+			"service": "timbre-palette-musicbrainz-gate",
+			"entrypoint": "RateGateService"
+		}
+	],
+	"queues": {
+		"producers": [
+			{
+				"binding": "ENRICHMENT_QUEUE",
+				"queue": "timbre-palette-enrichment"
+			}
+		]
+	},
+	"r2_buckets": [
+		{
+			"binding": "MUSICBRAINZ_CREDIT_INDEX",
+			"bucket_name": "timbre-palette-musicbrainz-credit-index"
+		}
+	]
 }
