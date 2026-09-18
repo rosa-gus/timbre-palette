@@ -18,6 +18,8 @@ import bz2
 import hashlib
 import io
 import json
+import math
+import re
 import sqlite3
 import sys
 import tarfile
@@ -26,6 +28,7 @@ import threading
 import time
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TextIO
@@ -33,6 +36,7 @@ from typing import TextIO
 from palette_api.musicbrainz_index import (
     INDEX_OBJECT_PREFIX,
     INDEX_SCHEMA_VERSION,
+    INDEX_TRACK_PREFIX,
     object_key,
 )
 
@@ -52,6 +56,48 @@ CORE_TABLES = (
     "l_artist_recording",
 )
 RELEASE_TABLES = ("release", "medium", "track", "l_artist_release")
+_MBID_RE = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+    re.IGNORECASE,
+)
+
+
+@dataclass(frozen=True, slots=True)
+class IndexTargets:
+    """The small slice of the dump that the catalog currently needs."""
+
+    recording_mbids: frozenset[str] = frozenset()
+    track_mbids: frozenset[str] = frozenset()
+    release_mbids: frozenset[str] = frozenset()
+
+    @classmethod
+    def from_path(cls, path: Path) -> "IndexTargets":
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(payload, dict):
+            raise ValueError("The target manifest must be a JSON object.")
+
+        def values(key: str) -> frozenset[str]:
+            raw = payload.get(key, [])
+            if not isinstance(raw, list):
+                raise ValueError(f"Target manifest field {key!r} must be a list.")
+            result = {
+                item.strip().lower()
+                for item in raw
+                if isinstance(item, str) and item.strip()
+            }
+            invalid = [item for item in result if not _is_mbid(item)]
+            if invalid:
+                raise ValueError(f"Invalid MusicBrainz MBID in {key}: {invalid[0]}")
+            return frozenset(result)
+
+        targets = cls(
+            recording_mbids=values("recording_mbids"),
+            track_mbids=values("track_mbids"),
+            release_mbids=values("release_mbids"),
+        )
+        if not any((targets.recording_mbids, targets.track_mbids, targets.release_mbids)):
+            raise ValueError("The target manifest does not contain any MBIDs.")
+        return targets
 
 
 class TableNotFound(FileNotFoundError):
@@ -321,6 +367,7 @@ def build_index(
     license_name: str = DEFAULT_LICENSE,
     attribution: str = DEFAULT_ATTRIBUTION,
     include_release_relations: bool = True,
+    targets: IndexTargets | None = None,
     staging_path: Path | None = None,
     progress: BuildProgress | None = None,
 ) -> dict[str, object]:
@@ -351,10 +398,20 @@ def build_index(
         connection = sqlite3.connect(staging_path)
         try:
             _create_staging_schema(connection)
-            _load_required_tables(source, connection, progress=progress)
-            has_release_tables = include_release_relations and _load_release_tables(
-                source, connection, progress=progress
-            )
+            if targets is None:
+                _load_required_tables(source, connection, progress=progress)
+                has_release_tables = include_release_relations and _load_release_tables(
+                    source, connection, progress=progress
+                )
+                track_aliases: list[tuple[str, str]] = []
+            else:
+                has_release_tables, track_aliases = _load_targeted_tables(
+                    source,
+                    connection,
+                    targets,
+                    include_release_relations=include_release_relations,
+                    progress=progress,
+                )
             manifest = _write_index(
                 connection,
                 output_dir,
@@ -365,6 +422,31 @@ def build_index(
                 include_release_relations=has_release_tables,
                 progress=progress,
             )
+            if targets is not None:
+                alias_count = _write_track_aliases(
+                    output_dir,
+                    track_aliases,
+                    snapshot_version=snapshot_version.strip(),
+                )
+                manifest.update(
+                    {
+                        "targeted": True,
+                        "target_recording_count": len(targets.recording_mbids),
+                        "target_track_count": len(targets.track_mbids),
+                        "target_release_count": len(targets.release_mbids),
+                        "track_alias_count": alias_count,
+                        "estimated_class_a_operations": math.ceil(
+                            (int(manifest["record_count"]) + alias_count) * 1.10
+                        )
+                        + 2,
+                        "track_object_prefix": INDEX_TRACK_PREFIX,
+                        "track_key_template": f"{INDEX_TRACK_PREFIX}/{{track_mbid}}.json",
+                    }
+                )
+                (output_dir / "manifest.json").write_text(
+                    json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
+                    encoding="utf-8",
+                )
         finally:
             connection.close()
     finally:
@@ -427,6 +509,301 @@ def _create_staging_schema(connection: sqlite3.Connection) -> None:
             ON tracks(medium_id);
         """
     )
+
+
+def _load_targeted_tables(
+    source: DumpSource,
+    connection: sqlite3.Connection,
+    targets: IndexTargets,
+    *,
+    include_release_relations: bool,
+    progress: BuildProgress | None = None,
+) -> tuple[bool, list[tuple[str, str]]]:
+    """Stage only rows reachable from the requested MBIDs.
+
+    The full dump is still streamed once per relevant table, but the large
+    relation tables never enter SQLite and no object is emitted outside the
+    requested recording/release/track slice. This is the important difference
+    from the catalog-wide ETL path.
+    """
+
+    release_rows: list[tuple[int, str]] = []
+    release_ids: set[int] = set()
+    has_release_tables = include_release_relations and all(
+        source.has_table(table_name) for table_name in RELEASE_TABLES
+    )
+    if has_release_tables:
+        def collect_release(row: list[str | None]) -> None:
+            values = _first_values(row, 2)
+            if values is None or str(values[1]).lower() not in targets.release_mbids:
+                return
+            release_id = int(values[0])
+            release_ids.add(release_id)
+            release_rows.append((release_id, str(values[1]).lower()))
+
+        _scan_table(source, "release", collect_release, progress=progress)
+    elif include_release_relations:
+        print(
+            "MusicBrainz release relation tables are incomplete; "
+            "targeted build will include recording-scoped credits only.",
+            file=sys.stderr,
+        )
+
+    medium_rows: list[tuple[int, int]] = []
+    medium_ids: set[int] = set()
+    if has_release_tables:
+        def collect_medium(row: list[str | None]) -> None:
+            values = _values(row, (0, 2), integer_indexes={0, 2})
+            if values is None or int(values[1]) not in release_ids:
+                return
+            medium_id, release_id = int(values[0]), int(values[1])
+            medium_ids.add(medium_id)
+            medium_rows.append((medium_id, release_id))
+
+        _scan_table(source, "medium", collect_medium, progress=progress)
+
+    raw_track_rows: list[tuple[str | None, int, int, int | None, str | None]] = []
+    target_track_mbid_set = targets.track_mbids
+    if has_release_tables:
+        def collect_track(row: list[str | None]) -> None:
+            if len(row) <= 3:
+                return
+            track_mbid = _optional_mbid(row[1])
+            recording_id = _integer(row[2])
+            medium_id = _integer(row[3])
+            if recording_id is None or medium_id is None:
+                return
+            if track_mbid not in target_track_mbid_set and medium_id not in medium_ids:
+                return
+            position = _integer(row[4]) if len(row) > 4 else None
+            title = _optional_text(row[6]) if len(row) > 6 else None
+            raw_track_rows.append(
+                (
+                    track_mbid,
+                    recording_id,
+                    medium_id,
+                    position,
+                    title,
+                )
+            )
+
+        _scan_table(source, "track", collect_track, progress=progress)
+    elif targets.track_mbids:
+        print(
+            "Track targets were supplied but release tables are unavailable; "
+            "track aliases cannot be built.",
+            file=sys.stderr,
+        )
+
+    target_recording_ids = {row[1] for row in raw_track_rows}
+    recording_rows: list[tuple[int, str]] = []
+
+    def collect_recording(row: list[str | None]) -> None:
+        values = _first_values(row, 2)
+        if values is None:
+            return
+        recording_id, recording_mbid = int(values[0]), str(values[1]).lower()
+        if recording_mbid not in targets.recording_mbids and recording_id not in target_recording_ids:
+            return
+        target_recording_ids.add(recording_id)
+        recording_rows.append((recording_id, recording_mbid))
+
+    _scan_table(source, "recording", collect_recording, progress=progress)
+    recording_mbid_by_id = {recording_id: mbid for recording_id, mbid in recording_rows}
+
+    recording_relation_rows: list[tuple[int, int, int]] = []
+    release_relation_rows: list[tuple[int, int, int]] = []
+    selected_link_ids: set[int] = set()
+    selected_artist_ids: set[int] = set()
+
+    def collect_recording_relation(row: list[str | None]) -> None:
+        values = _values(row, (1, 2, 3), integer_indexes={1, 2, 3})
+        if values is None or int(values[2]) not in target_recording_ids:
+            return
+        relation = (int(values[0]), int(values[1]), int(values[2]))
+        recording_relation_rows.append(relation)
+        selected_link_ids.add(relation[0])
+        selected_artist_ids.add(relation[1])
+
+    _scan_table(
+        source,
+        "l_artist_recording",
+        collect_recording_relation,
+        progress=progress,
+    )
+
+    if has_release_tables:
+        def collect_release_relation(row: list[str | None]) -> None:
+            values = _values(row, (1, 2, 3), integer_indexes={1, 2, 3})
+            if values is None or int(values[2]) not in release_ids:
+                return
+            relation = (int(values[0]), int(values[1]), int(values[2]))
+            release_relation_rows.append(relation)
+            selected_link_ids.add(relation[0])
+            selected_artist_ids.add(relation[1])
+
+        _scan_table(
+            source,
+            "l_artist_release",
+            collect_release_relation,
+            progress=progress,
+        )
+
+    connection.executemany(
+        "INSERT INTO recordings(id, mbid) VALUES (?, ?)", recording_rows
+    )
+    connection.executemany(
+        "INSERT INTO releases(id, mbid) VALUES (?, ?)", release_rows
+    )
+    connection.executemany(
+        "INSERT INTO media(id, release_id) VALUES (?, ?)", medium_rows
+    )
+    connection.executemany(
+        "INSERT INTO tracks(recording_id, medium_id) VALUES (?, ?)",
+        [(row[1], row[2]) for row in raw_track_rows],
+    )
+    connection.executemany(
+        "INSERT INTO artist_recording(link, artist_id, recording_id) VALUES (?, ?, ?)",
+        recording_relation_rows,
+    )
+    connection.executemany(
+        "INSERT INTO artist_release(link, artist_id, release_id) VALUES (?, ?, ?)",
+        release_relation_rows,
+    )
+    connection.commit()
+
+    _load_table(
+        source,
+        "artist",
+        connection,
+        "INSERT OR IGNORE INTO artists(id, mbid) VALUES (?, ?)",
+        lambda row: (
+            _values(row, (0, 1), integer_indexes={0})
+            if _integer(row[0]) in selected_artist_ids
+            else None
+        ),
+        progress=progress,
+    )
+    _load_table(
+        source,
+        "instrument",
+        connection,
+        "INSERT OR IGNORE INTO instruments(gid, name) VALUES (?, ?)",
+        lambda row: _values(row, (1, 2), integer_indexes=set()),
+        progress=progress,
+    )
+    _load_table(
+        source,
+        "link_type",
+        connection,
+        "INSERT OR IGNORE INTO link_types(id, name) VALUES (?, ?)",
+        lambda row: _values(row, (0, 6), integer_indexes={0}),
+        progress=progress,
+    )
+    _load_table(
+        source,
+        "link",
+        connection,
+        "INSERT OR IGNORE INTO links(id, link_type) VALUES (?, ?)",
+        lambda row: (
+            _values(row, (0, 1), integer_indexes={0, 1})
+            if _integer(row[0]) in selected_link_ids
+            else None
+        ),
+        progress=progress,
+    )
+    _load_table(
+        source,
+        "link_attribute_type",
+        connection,
+        "INSERT OR IGNORE INTO attribute_types(id, gid, name) VALUES (?, ?, ?)",
+        lambda row: _values(row, (0, 4, 5), integer_indexes={0}),
+        progress=progress,
+    )
+    _load_table(
+        source,
+        "link_attribute",
+        connection,
+        "INSERT OR IGNORE INTO link_attributes(link, attribute_type) VALUES (?, ?)",
+        lambda row: (
+            _values(row, (0, 1), integer_indexes={0, 1})
+            if _integer(row[0]) in selected_link_ids
+            else None
+        ),
+        progress=progress,
+    )
+    if source.has_table("link_attribute_credit"):
+        _load_table(
+            source,
+            "link_attribute_credit",
+            connection,
+            "INSERT OR IGNORE INTO attribute_credits(link, attribute_type, credited_as) VALUES (?, ?, ?)",
+            lambda row: (
+                _values(row, (0, 1, 2), integer_indexes={0, 1})
+                if _integer(row[0]) in selected_link_ids
+                else None
+            ),
+            progress=progress,
+        )
+
+    aliases = [
+        (track_mbid, recording_mbid_by_id[recording_id])
+        for track_mbid, recording_id, *_ in raw_track_rows
+        if track_mbid and recording_id in recording_mbid_by_id
+    ]
+    return has_release_tables, aliases
+
+
+def _scan_table(
+    source: DumpSource,
+    table_name: str,
+    consumer,
+    *,
+    progress: BuildProgress | None = None,
+) -> None:
+    if progress is not None:
+        progress.start_table(table_name, total_bytes=source.table_size(table_name))
+    try:
+        with source.table(table_name) as stream:
+            for row in _copy_rows(stream):
+                should_report = progress is not None and progress.row_processed()
+                consumer(row)
+                if should_report and progress is not None:
+                    progress.report_table(_stream_position(stream))
+    except TableNotFound as error:
+        raise RuntimeError(f"Required MusicBrainz dump table is missing: {table_name}") from error
+    if progress is not None:
+        progress.finish_table()
+
+
+def _write_track_aliases(
+    output_dir: Path,
+    aliases: list[tuple[str, str]],
+    *,
+    snapshot_version: str,
+) -> int:
+    written: set[str] = set()
+    for track_mbid, recording_mbid in aliases:
+        if not _is_mbid(track_mbid) or not _is_mbid(recording_mbid):
+            continue
+        normalized_track = track_mbid.lower()
+        if normalized_track in written:
+            continue
+        payload = {
+            "index_schema_version": INDEX_SCHEMA_VERSION,
+            "track_mbid": normalized_track,
+            "recording_mbid": recording_mbid.lower(),
+            "snapshot_version": snapshot_version,
+            "source_url": f"https://musicbrainz.org/track/{normalized_track}",
+        }
+        target = output_dir / INDEX_TRACK_PREFIX / f"{normalized_track}.json"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(
+            json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
+            encoding="utf-8",
+        )
+        written.add(normalized_track)
+    return len(written)
 
 
 def _planned_table_names(
@@ -753,7 +1130,7 @@ def _relation_rows(
         """
         source_select = "'https://musicbrainz.org/recording/' || recording.mbid"
         source_group = "recording.mbid"
-        order_by = "recording.mbid, artist.mbid, instrument.gid, rel.link"
+        order_by = "recording.mbid, rel.link"
     else:
         relation_join = """
             JOIN artist_release AS rel
@@ -771,7 +1148,7 @@ def _relation_rows(
         """
         source_select = "'https://musicbrainz.org/release/' || release.mbid"
         source_group = "recording.mbid, release.mbid"
-        order_by = "recording.mbid, artist.mbid, instrument.gid, release.mbid, rel.link"
+        order_by = "recording.mbid, rel.link"
 
     instrument_query = f"""
         SELECT recording.mbid, artist.mbid, instrument.gid, instrument.name,
@@ -799,8 +1176,6 @@ def _relation_rows(
                  instrument.name, {source_group}, rel.link
         ORDER BY {order_by}
     """
-    yield from connection.execute(instrument_query, (scope,))
-
     other_query = f"""
         SELECT recording.mbid, artist.mbid, NULL, NULL,
                GROUP_CONCAT(DISTINCT all_attribute_type.name),
@@ -828,9 +1203,17 @@ def _relation_rows(
           )
         GROUP BY recording.mbid, artist.mbid, link_type.name,
                  {source_group}, rel.link
-        ORDER BY recording.mbid, artist.mbid, lower(link_type.name), rel.link
+        ORDER BY recording.mbid, rel.link
     """
-    yield from connection.execute(other_query, (scope, *RELATION_TYPES))
+    import heapq
+
+    instrument_rows = connection.execute(instrument_query, (scope,))
+    other_rows = connection.execute(other_query, (scope, *RELATION_TYPES))
+    yield from heapq.merge(
+        instrument_rows,
+        other_rows,
+        key=lambda row: (str(row[0]), str(row[-1])),
+    )
 
 
 def _merge_sorted_rows(streams: Sequence[Iterator[tuple[object, ...]]]):
@@ -950,6 +1333,26 @@ def _optional_text(value: object) -> str | None:
     return normalized or None
 
 
+def _integer(value: object) -> int | None:
+    if value in {None, ""}:
+        return None
+    try:
+        return int(str(value))
+    except (TypeError, ValueError):
+        return None
+
+
+def _optional_mbid(value: object) -> str | None:
+    normalized = _optional_text(value)
+    if normalized is None or not _is_mbid(normalized):
+        return None
+    return normalized.lower()
+
+
+def _is_mbid(value: str) -> bool:
+    return bool(_MBID_RE.fullmatch(value))
+
+
 def _normalized_table_name(name: str) -> str:
     normalized = name.rsplit("/", 1)[-1]
     for suffix in (".bz2", ".gz", ".tsv", ".txt"):
@@ -988,6 +1391,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("dump", type=Path, help="mbdump directory or mbdump.tar.bz2")
     parser.add_argument("output", type=Path, help="empty directory for the R2 index")
+    parser.add_argument(
+        "--targets",
+        type=Path,
+        help=(
+            "JSON manifest with recording_mbids, track_mbids and/or "
+            "release_mbids; stages only this slice of the dump"
+        ),
+    )
     parser.add_argument("--snapshot-version", required=True)
     parser.add_argument("--source-url", default=DEFAULT_SOURCE_URL)
     parser.add_argument("--license", dest="license_name", default=DEFAULT_LICENSE)
@@ -1023,6 +1434,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         license_name=args.license_name,
         attribution=args.attribution,
         include_release_relations=not args.no_release_relations,
+        targets=IndexTargets.from_path(args.targets) if args.targets else None,
         staging_path=args.staging_path,
         progress=progress,
     )

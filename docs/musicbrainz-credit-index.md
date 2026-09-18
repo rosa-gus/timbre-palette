@@ -5,11 +5,11 @@ The enrichment path uses three layers:
 ```text
 MusicBrainz dump/replication snapshot
         ↓ offline ETL
-R2: one compact object per recording MBID
+R2: compact objects only for demanded recording MBIDs
         ↓ only demanded recordings
 D1: normalized candidates, claims and evidence
         ↓ cache miss or expired D1 evidence
-MusicBrainz API
+MusicBrainz API (optional fallback)
 ```
 
 This deliberately removes the full MusicBrainz database from the request and
@@ -34,6 +34,33 @@ database and writes a new, empty output directory:
   --attribution 'MusicBrainz; derived instrumental-credit index.'
 ```
 
+For this project, use the targeted mode. Export the MBIDs currently present in
+`catalog_demand` and the pending prepared releases into a manifest such as:
+
+```json
+{
+  "recording_mbids": ["00000000-0000-0000-0000-000000000001"],
+  "track_mbids": ["00000000-0000-0000-0000-000000000002"],
+  "release_mbids": ["00000000-0000-0000-0000-000000000003"]
+}
+```
+
+Then pass it to the same command:
+
+```sh
+.venv/bin/uv run python -m palette_api.tools.build_musicbrainz_index \
+  /data/musicbrainz/mbdump.tar.bz2 \
+  /data/index/musicbrainz-targeted-2026-09-12 \
+  --targets /data/index/musicbrainz-targets.json \
+  --snapshot-version schema-30-2026-09-12
+```
+
+The targeted path still streams the dump tables, but only selected rows are
+staged and only reachable recordings are emitted. A release target expands to
+its tracks; a track target emits a small track→recording alias. This preserves
+the common Last.fm track-MBID case without requiring the live
+`/recording/?query=tid:...` lookup.
+
 During the build, the tool writes periodic progress to `stderr`, showing the
 current table, percentage, row count, generated recordings, and elapsed time.
 Use `--progress-interval 10` to report every ten seconds, or `--no-progress`
@@ -52,6 +79,8 @@ The output contains:
 - `musicbrainz/instrument-credits/v1/recordings/<recording-mbid>.json`, with
   the recording MBID, artist MBID, instrument MBID/name, relation attributes,
   scope, source URL, and snapshot version.
+- `musicbrainz/instrument-credits/v1/tracks/<track-mbid>.json`, in targeted
+  builds, containing only the canonical recording MBID and snapshot metadata.
 
 The object layout is intentionally direct-addressed: a Worker can perform one
 R2 `get` for a recording rather than downloading a large shard. Upload the
@@ -80,6 +109,20 @@ The Python enrichment Worker starts with the R2 index disabled:
 ```jsonc
 "MUSICBRAINZ_CREDIT_INDEX_ENABLED": "false"
 ```
+
+After uploading and validating a targeted snapshot, enable both the index and,
+if the application must never contact MusicBrainz during the batch,
+`MUSICBRAINZ_CREDIT_INDEX_OFFLINE_ONLY`:
+
+```jsonc
+"MUSICBRAINZ_CREDIT_INDEX_ENABLED": "true",
+"MUSICBRAINZ_CREDIT_INDEX_OFFLINE_ONLY": "true"
+```
+
+Offline-only mode routes release-bearing tracks through the targeted recording
+jobs, defers prepared-album release jobs, and marks index misses as terminal.
+It never invokes the live album collector or recording resolver. Keep it false
+while an API fallback is desired.
 
 When the bucket and snapshot have been validated, enable it manually and keep
 the read budget below the free-tier allowance. Each permitted R2 lookup is
@@ -132,12 +175,11 @@ to 30 days and can be changed with
 
 ## Release-first enrichment
 
-When Last.fm supplies an album/release MBID, the scheduler creates one release
-job instead of one recording job. The existing release collector requests
-`recordings+recording-level-rels` in one MusicBrainz lookup and persists the
-recordings and their raw observations together. Tracks without a usable release
-MBID still use the R2/D1 lookup path before falling back to individual API
-resolution.
+When API fallback is enabled and Last.fm supplies an album/release MBID, the
+scheduler creates one release job instead of one recording job. In offline-only
+mode, the release MBID is only an ETL expansion target: each concrete track is
+resolved through its published alias and recording object, while prepared
+album targets remain pending until a release-capable offline artifact exists.
 
 The API include behavior follows the official
 [MusicBrainz API relationship documentation](https://musicbrainz.org/doc/MusicBrainz_API):

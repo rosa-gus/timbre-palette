@@ -111,6 +111,21 @@ yarn musicbrainz:index:build \
   --snapshot-version schema-30-2026-09-12
 ```
 
+For a catalog-sized build, pass a target manifest so only demanded recordings
+are staged and published:
+
+```sh
+yarn musicbrainz:index:build \
+  /data/musicbrainz/mbdump.tar.bz2 \
+  /data/index/musicbrainz-targeted-2026-09-12 \
+  --targets /data/index/musicbrainz-targets.json \
+  --snapshot-version schema-30-2026-09-12
+```
+
+The manifest accepts `recording_mbids`, `track_mbids`, and `release_mbids`.
+Release targets expand to their tracks, and track targets create aliases for
+the canonical recording MBID.
+
 The builder prints periodic progress to `stderr`, including the current table,
 percentage, row count, generated recordings, and elapsed time. Use
 `--progress-interval 10` to change the update interval or `--no-progress` for
@@ -123,7 +138,7 @@ yarn musicbrainz:index:preflight \
   /data/index/musicbrainz-2026-09-12
 ```
 
-The output contains one object per recording plus a manifest and a
+The output contains recording objects, optional track aliases, a manifest and a
 `LICENSE-MUSICBRAINZ.txt` notice. Publish the manifest metadata to D1 with:
 
 ```sh

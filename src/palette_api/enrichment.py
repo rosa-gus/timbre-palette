@@ -32,11 +32,17 @@ class D1QueueEnrichmentScheduler:
         queue: QueueSender | None,
         *,
         dispatch_on_schedule: bool = True,
+        offline_only: bool = False,
     ) -> None:
         self._db = db
         self._queue = queue
         self._dispatch_on_schedule = dispatch_on_schedule
+        self._offline_only = offline_only
         self._work_units_enabled: bool | None = None
+
+    @property
+    def offline_only(self) -> bool:
+        return self._offline_only
 
     async def schedule(self, tracks: tuple[Track, ...]) -> None:
         by_key = {_job_key(track): track for track in tracks}
@@ -46,9 +52,16 @@ class D1QueueEnrichmentScheduler:
         release_tracks: dict[str, Track] = {}
         recording_tracks: list[Track] = []
         for track in by_key.values():
-            if track.release_mbid and track.release_mbid.strip():
+            if (
+                not self._offline_only
+                and track.release_mbid
+                and track.release_mbid.strip()
+            ):
                 release_tracks.setdefault(track.release_mbid.strip(), track)
             else:
+                # In offline mode a release is only a target-expansion hint;
+                # each concrete track must use the published track alias and
+                # recording object, never the live album collector.
                 recording_tracks.append(track)
 
         recording_keys = tuple(_job_key(track) for track in recording_tracks)
@@ -754,6 +767,9 @@ class D1PreparedAlbumPlanner:
         self._scheduler = scheduler
 
     async def enqueue_due(self, limit: int = DISPATCH_BATCH_SIZE) -> int:
+        if self._scheduler.offline_only:
+            _log_event("album_targets_deferred_offline_index")
+            return 0
         try:
             rows = await _all_rows(
                 self._db.prepare(

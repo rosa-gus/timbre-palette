@@ -8,7 +8,7 @@ import math
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 
-from palette_api.musicbrainz_index import INDEX_OBJECT_PREFIX
+from palette_api.musicbrainz_index import INDEX_OBJECT_PREFIX, INDEX_TRACK_PREFIX
 
 
 # These are deliberately below the current R2 Standard free-tier allowances.
@@ -49,13 +49,17 @@ def preflight_index(
     records_dir = index_dir / INDEX_OBJECT_PREFIX
     object_paths = sorted(records_dir.rglob("*.json")) if records_dir.is_dir() else []
     object_count = len(object_paths)
+    tracks_dir = index_dir / INDEX_TRACK_PREFIX
+    track_paths = sorted(tracks_dir.rglob("*.json")) if tracks_dir.is_dir() else []
+    track_object_count = len(track_paths)
+    total_object_count = object_count + track_object_count
     total_bytes = sum(
         path.stat().st_size
         for path in index_dir.rglob("*")
         if path.is_file()
     )
     estimated_class_a_operations = (
-        math.ceil(object_count * CLASS_A_OVERHEAD_FACTOR) + 2
+        math.ceil(total_object_count * CLASS_A_OVERHEAD_FACTOR) + 2
     )
     manifest_record_count = _nonnegative_int(manifest.get("record_count"))
     errors: list[str] = []
@@ -64,13 +68,19 @@ def preflight_index(
             "record_count does not match the number of recording objects "
             f"({manifest_record_count} != {object_count})"
         )
+    manifest_track_count = _nonnegative_int(manifest.get("track_alias_count", 0))
+    if track_object_count != manifest_track_count:
+        errors.append(
+            "track_alias_count does not match the number of track alias objects "
+            f"({manifest_track_count} != {track_object_count})"
+        )
     if total_bytes > max_bytes:
         errors.append(
             f"index size {total_bytes} bytes exceeds the {max_bytes}-byte guard"
         )
-    if object_count > max_records:
+    if total_object_count > max_records:
         errors.append(
-            f"recording object count {object_count} exceeds the {max_records}-object guard"
+            f"total object count {total_object_count} exceeds the {max_records}-object guard"
         )
     if estimated_class_a_operations > max_class_a_operations:
         errors.append(
@@ -85,6 +95,8 @@ def preflight_index(
         "record_count": manifest_record_count,
         "credit_count": _nonnegative_int(manifest.get("credit_count")),
         "object_count": object_count,
+        "track_object_count": track_object_count,
+        "total_object_count": total_object_count,
         "total_bytes": total_bytes,
         "estimated_class_a_operations": estimated_class_a_operations,
         "limits": {

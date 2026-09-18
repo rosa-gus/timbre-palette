@@ -92,6 +92,7 @@ class Default(WorkerEntrypoint):
             rate_gate=getattr(self.env, "MUSICBRAINZ_RATE_GATE", None),
         )
         resolver = MusicBrainzResolver(transport)
+        offline_only = _credit_index_offline_only(self.env)
         credit_indexes = [
             D1RecentCreditIndex(
                 self.env.DB,
@@ -126,6 +127,7 @@ class Default(WorkerEntrypoint):
             resolver,
             D1IdentityRepository(self.env.DB),
             CompositeCreditIndex(*credit_indexes),
+            allow_upstream_api=not offline_only,
         )
         album_collector = MusicBrainzAlbumCollector(transport)
 
@@ -286,6 +288,24 @@ class Default(WorkerEntrypoint):
                             job_type=job_type,
                             target_mbid=target_mbid,
                             result="completed_cached",
+                            duration_ms=_duration_ms(started_at),
+                        )
+                        message.ack()
+                        continue
+                    if offline_only:
+                        await jobs.mark_terminal(
+                            parsed.job_key,
+                            "Release não encontrado no índice offline publicado.",
+                            generation,
+                            reason_code="offline_index_miss",
+                        )
+                        _log_event(
+                            "enrichment_processed",
+                            job_key=parsed.job_key,
+                            message_id=message_id,
+                            job_type=job_type,
+                            target_mbid=target_mbid,
+                            result="offline_index_miss",
                             duration_ms=_duration_ms(started_at),
                         )
                         message.ack()
@@ -597,6 +617,14 @@ class Default(WorkerEntrypoint):
                 await album_repository.mark_collected(release_mbid)
                 await jobs.mark_release_completed(job_key, generation)
                 return "completed_cached"
+            if _credit_index_offline_only(self.env):
+                await jobs.mark_terminal(
+                    job_key,
+                    "Release não encontrado no índice offline publicado.",
+                    generation,
+                    reason_code="offline_index_miss",
+                )
+                return "offline_index_miss"
             album = await album_collector.collect(release_mbid)
             if album is None:
                 await album_repository.mark_ignored(release_mbid)
@@ -636,6 +664,7 @@ class Default(WorkerEntrypoint):
         scheduler = D1QueueEnrichmentScheduler(
             self.env.DB,
             self.env.ENRICHMENT_QUEUE,
+            offline_only=_credit_index_offline_only(self.env),
         )
         try:
             planned_albums = await D1PreparedAlbumPlanner(
@@ -981,6 +1010,11 @@ def _credit_index_enabled(env: object) -> bool:
     return str(raw_value or "").strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _credit_index_offline_only(env: object) -> bool:
+    raw_value = getattr(env, "MUSICBRAINZ_CREDIT_INDEX_OFFLINE_ONLY", None)
+    return str(raw_value or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
 def _credit_index_max_reads(env: object) -> int:
     raw_value = getattr(env, "MUSICBRAINZ_CREDIT_INDEX_MAX_READS", None)
     try:
@@ -995,7 +1029,13 @@ def _credit_index_usage_period(env: object) -> str:
     return _text(raw_value)
 
 
-def _make_enricher(resolver: object, repository: object, credit_index: object):
+def _make_enricher(
+    resolver: object,
+    repository: object,
+    credit_index: object,
+    *,
+    allow_upstream_api: bool = True,
+):
     """Keep the constructor seam compatible with older test/service doubles."""
 
     try:
@@ -1006,11 +1046,13 @@ def _make_enricher(resolver: object, repository: object, credit_index: object):
         parameter.kind is inspect.Parameter.VAR_KEYWORD
         for parameter in parameters.values()
     ):
-        return MusicBrainzEnricher(
-            resolver,
-            repository,
-            credit_index=credit_index,
-        )
+        kwargs = {"credit_index": credit_index}
+        if "allow_upstream_api" in parameters or any(
+            parameter.kind is inspect.Parameter.VAR_KEYWORD
+            for parameter in parameters.values()
+        ):
+            kwargs["allow_upstream_api"] = allow_upstream_api
+        return MusicBrainzEnricher(resolver, repository, **kwargs)
     return MusicBrainzEnricher(resolver, repository)
 
 
