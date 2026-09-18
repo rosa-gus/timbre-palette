@@ -1,12 +1,13 @@
-//! Single-pass materialization stage for the next MusicBrainz ETL.
+//! MusicBrainz ETL command-line entry point.
 //!
-//! This command deliberately stops before relational aggregation. It turns a
-//! PostgreSQL COPY dump into compact, projected JSONL tables in one pass. The
-//! next stage can join these projections without decompressing the original
-//! dump again. The output is an intermediate artifact, not yet an R2 serving
-//! snapshot.
+//! The default invocation materializes PostgreSQL COPY tables into compact
+//! JSONL projections. The `aggregate` subcommand joins those projections into
+//! local evidence and vocabulary artifacts.
+
+mod aggregate;
 
 use std::collections::BTreeMap;
+use std::ffi::OsString;
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, BufRead, BufReader, Read, Write};
 use std::path::{Path, PathBuf};
@@ -221,7 +222,15 @@ impl Progress {
 }
 
 fn main() {
-    if let Err(error) = run() {
+    let raw_args: Vec<OsString> = std::env::args_os().collect();
+    let result = if raw_args.get(1).and_then(|value| value.to_str()) == Some("aggregate") {
+        let mut aggregate_args = raw_args;
+        aggregate_args.remove(1);
+        aggregate::run(aggregate::AggregateArgs::parse_from(aggregate_args))
+    } else {
+        run().map_err(|error| error.to_string())
+    };
+    if let Err(error) = result {
         eprintln!("musicbrainz-etl: {error}");
         std::process::exit(1);
     }
