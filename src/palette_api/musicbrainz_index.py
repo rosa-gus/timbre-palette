@@ -18,6 +18,7 @@ from typing import Any, Protocol
 
 INDEX_SCHEMA_VERSION = "musicbrainz-instrument-credits-v1"
 INDEX_OBJECT_PREFIX = "musicbrainz/instrument-credits/v1/recordings"
+INDEX_TRACK_PREFIX = "musicbrainz/instrument-credits/v1/tracks"
 DEFAULT_RECENT_INDEX_MAX_AGE_DAYS = 30
 MAX_SAFE_R2_READS = 8_000_000
 _MBID_PATTERN = re.compile(
@@ -225,18 +226,53 @@ class R2CreditIndex:
         bucket: Any,
         *,
         object_prefix: str = INDEX_OBJECT_PREFIX,
+        track_prefix: str = INDEX_TRACK_PREFIX,
         read_budget: R2ReadBudget | None = None,
     ) -> None:
         self._bucket = bucket
         self._object_prefix = object_prefix.rstrip("/")
+        self._track_prefix = track_prefix.rstrip("/")
         self._read_budget = read_budget
 
     async def lookup(self, recording_mbid: str) -> CreditIndexEntry | None:
-        if not _MBID_PATTERN.fullmatch(recording_mbid.strip()):
+        requested_mbid = recording_mbid.strip().lower()
+        if not _MBID_PATTERN.fullmatch(requested_mbid):
             return None
+        entry = await self._lookup_object(
+            f"{self._object_prefix}/{requested_mbid}.json",
+            requested_mbid=requested_mbid,
+        )
+        if entry is not None:
+            return entry
+
+        # Last.fm can provide a MusicBrainz track MBID while the useful
+        # relation lives on the canonical recording. Targeted ETL publishes
+        # this tiny alias instead of forcing a live /recording/?query=tid:...
+        # request for every track.
+        alias = await self._lookup_object(
+            f"{self._track_prefix}/{requested_mbid}.json",
+            requested_mbid=requested_mbid,
+            allow_alias=True,
+        )
+        if not isinstance(alias, Mapping):
+            return None
+        recording_mbid = _text(alias.get("recording_mbid"))
+        if not recording_mbid or not _MBID_PATTERN.fullmatch(recording_mbid):
+            return None
+        return await self._lookup_object(
+            f"{self._object_prefix}/{recording_mbid.lower()}.json",
+            requested_mbid=requested_mbid,
+        )
+
+    async def _lookup_object(
+        self,
+        key: str,
+        *,
+        requested_mbid: str,
+        allow_alias: bool = False,
+    ) -> object | None:
         if self._read_budget is not None:
             await self._read_budget.reserve()
-        key = f"{self._object_prefix}/{recording_mbid.lower()}.json"
         obj = await self._bucket.get(key)
         if obj is None:
             return None
@@ -253,7 +289,9 @@ class R2CreditIndex:
             if inspect.isawaitable(payload):
                 payload = await payload
             payload = json.loads(payload)
-        return CreditIndexEntry.from_payload(payload, requested_mbid=recording_mbid)
+        if allow_alias and isinstance(payload, Mapping) and "credits" not in payload:
+            return payload
+        return CreditIndexEntry.from_payload(payload, requested_mbid=requested_mbid)
 
 
 class D1RecentCreditIndex:

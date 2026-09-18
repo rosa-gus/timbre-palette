@@ -1,7 +1,5 @@
-import io
 import json
 import sqlite3
-import tarfile
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -17,135 +15,45 @@ from palette_api.musicbrainz_index import (
     R2CreditIndex,
 )
 from palette_api.domain import Track
-from palette_api.tools.build_musicbrainz_index import BuildProgress, build_index
-from palette_api.tools.preflight_musicbrainz_index import preflight_index
-from palette_api.tools.publish_musicbrainz_index import emit_sql, load_manifest
 
 
 RECORDING_MBID = "11111111-1111-4111-8111-111111111111"
 ARTIST_MBID = "22222222-2222-4222-8222-222222222222"
 INSTRUMENT_MBID = "33333333-3333-4333-8333-333333333333"
-RELEASE_MBID = "44444444-4444-4444-8444-444444444444"
-
-
-def _write_dump(directory: Path) -> None:
-    rows = {
-        "artist": [f"1\t{ARTIST_MBID}\tArtist"],
-        "recording": [f"1\t{RECORDING_MBID}\tSong"],
-        "instrument": [f"1\t{INSTRUMENT_MBID}\tElectric guitar"],
-        "link_type": ["1\t\\N\t0\tlink-type\tartist\trecording\tinstrument"],
-        "link": ["1\t1", "2\t1"],
-        "link_attribute_type": [
-            f"1\t\\N\t14\t0\t{INSTRUMENT_MBID}\tElectric guitar"
-        ],
-        "link_attribute": ["1\t1", "2\t1"],
-        "link_attribute_credit": ["1\t1\tguitar", "2\t1\tlead guitar"],
-        "l_artist_recording": ["1\t1\t1\t1"],
-        "release": [f"1\t{RELEASE_MBID}\tAlbum"],
-        "medium": ["1\tmedium-mbid\t1\t1"],
-        "track": ["1\ttrack-mbid\t1\t1\t1\t1\tSong"],
-        "l_artist_release": ["2\t1\t1\t1"],
+TRACK_MBID = "55555555-5555-4555-8555-555555555555"
+@pytest.mark.anyio
+async def test_r2_index_resolves_track_alias_to_recording() -> None:
+    recording_payload = {
+        "recording_mbid": RECORDING_MBID,
+        "snapshot_version": "schema-30",
+        "source_url": f"https://musicbrainz.org/recording/{RECORDING_MBID}",
+        "credits": [],
     }
-    for name, lines in rows.items():
-        (directory / name).write_text("\n".join(lines) + "\n", encoding="utf-8")
-
-
-def test_build_index_keeps_recording_and_release_scope(tmp_path: Path) -> None:
-    dump = tmp_path / "dump"
-    dump.mkdir()
-    _write_dump(dump)
-    archive = tmp_path / "mbdump.tar.bz2"
-    with tarfile.open(archive, mode="w:bz2") as tar:
-        for table in dump.iterdir():
-            tar.add(table, arcname=f"mbdump/{table.name}")
-    output = tmp_path / "index"
-
-    manifest = build_index(
-        archive,
-        output,
-        snapshot_version="schema-30-2026-09-12",
-        source_url="https://example.test/musicbrainz-dump",
-    )
-
-    assert manifest["record_count"] == 1
-    assert manifest["credit_count"] == 2
-    assert manifest["record_bytes"] > 0
-    assert manifest["estimated_class_a_operations"] == 3
-    payload = json.loads(
-        (output / "musicbrainz/instrument-credits/v1/recordings" / f"{RECORDING_MBID}.json")
-        .read_text(encoding="utf-8")
-    )
-    assert {credit["scope"] for credit in payload["credits"]} == {
-        "recording",
-        "release",
+    alias_payload = {
+        "track_mbid": TRACK_MBID,
+        "recording_mbid": RECORDING_MBID,
+        "snapshot_version": "schema-30",
+        "source_url": f"https://musicbrainz.org/track/{TRACK_MBID}",
     }
-    assert all(credit["artist_mbid"] == ARTIST_MBID for credit in payload["credits"])
-    assert (output / "LICENSE-MUSICBRAINZ.txt").exists()
 
-    report = preflight_index(output)
-    assert report["ok"] is True
-    assert report["object_count"] == 1
-    assert report["estimated_class_a_operations"] == 4
+    class Object:
+        def __init__(self, payload: object) -> None:
+            self.payload = payload
 
-    blocked = preflight_index(output, max_records=0)
-    assert blocked["ok"] is False
-    assert any("object count" in error for error in blocked["errors"])
+        async def json(self) -> object:
+            return self.payload
 
+    class Bucket:
+        async def get(self, key: str) -> Object | None:
+            if key.endswith(f"/tracks/{TRACK_MBID}.json"):
+                return Object(alias_payload)
+            if key.endswith(f"/recordings/{RECORDING_MBID}.json"):
+                return Object(recording_payload)
+            return None
 
-def test_build_index_reports_progress_without_polluting_manifest_output(
-    tmp_path: Path,
-) -> None:
-    dump = tmp_path / "dump"
-    dump.mkdir()
-    _write_dump(dump)
-    archive = tmp_path / "mbdump.tar.bz2"
-    with tarfile.open(archive, mode="w:bz2") as tar:
-        for table in dump.iterdir():
-            tar.add(table, arcname=f"mbdump/{table.name}")
-    output = tmp_path / "index"
-    progress_output = io.StringIO()
-
-    build_index(
-        archive,
-        output,
-        snapshot_version="schema-30-2026-09-12",
-        progress=BuildProgress(interval_seconds=60, stream=progress_output),
-    )
-
-    progress = progress_output.getvalue()
-    assert "inspecionando dump mbdump.tar.bz2" in progress
-    assert "dump catalogado:" in progress
-    assert "[  0.0%] iniciando ETL" in progress
-    assert "carregando artist" in progress
-    assert "gerando objetos do índice" in progress
-    assert "[100.0%] concluído" in progress
-    assert json.loads((output / "manifest.json").read_text(encoding="utf-8"))[
-        "record_count"
-    ] == 1
-
-
-def test_index_manifest_emits_d1_publication_sql(tmp_path: Path) -> None:
-    manifest_path = tmp_path / "manifest.json"
-    manifest_path.write_text(
-        json.dumps(
-            {
-                "index_schema_version": "musicbrainz-instrument-credits-v1",
-                "snapshot_version": "schema-30",
-                "source_url": "https://example.test/dump",
-                "license": "CC BY-NC-SA-3.0",
-                "attribution": "MusicBrainz",
-                "manifest_hash": "abc123",
-                "record_count": 1,
-                "credit_count": 2,
-                "generated_at": "2026-09-12T00:00:00+00:00",
-            }
-        ),
-        encoding="utf-8",
-    )
-    sql = emit_sql(load_manifest(manifest_path))
-    assert "musicbrainz_credit_index_snapshots" in sql
-    assert "CC BY-NC-SA-3.0" in sql
-    assert "status = 'superseded'" in sql
+    entry = await R2CreditIndex(Bucket()).lookup(TRACK_MBID)
+    assert entry is not None
+    assert entry.recording_mbid == RECORDING_MBID
 
 
 @pytest.mark.anyio
@@ -240,6 +148,26 @@ async def test_budget_block_does_not_fall_through_to_musicbrainz_api() -> None:
     )
     with pytest.raises(CreditIndexBudgetExceeded):
         await enricher.enrich_track(Track("Song", "Artist", 1, mbid=RECORDING_MBID))
+
+
+@pytest.mark.anyio
+async def test_offline_only_index_miss_does_not_call_musicbrainz_api() -> None:
+    class Resolver:
+        async def resolve(self, track: Track) -> object:
+            raise AssertionError("offline-only mode must not call MusicBrainz")
+
+    enricher = MusicBrainzEnricher(
+        Resolver(),
+        object(),
+        credit_index=CompositeCreditIndex(),
+        allow_upstream_api=False,
+    )
+    assert (
+        await enricher.enrich_track(
+            Track("Song", "Artist", 1, mbid=RECORDING_MBID)
+        )
+        is None
+    )
 
 
 class Statement:

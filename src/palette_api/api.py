@@ -152,7 +152,14 @@ async def get_palette_service(
         else MockInstrumentationProvider()
     )
     enrichment_scheduler = (
-        D1QueueEnrichmentScheduler(db, queue, dispatch_on_schedule=False)
+        D1QueueEnrichmentScheduler(
+            db,
+            queue,
+            dispatch_on_schedule=False,
+            offline_only=_environment_flag(
+                environment, "MUSICBRAINZ_CREDIT_INDEX_OFFLINE_ONLY"
+            ),
+        )
         if db is not None
         else None
     )
@@ -165,6 +172,15 @@ async def get_palette_service(
         enrichment_scheduler=enrichment_scheduler,
         image_catalog=image_catalog,
     )
+
+
+def _environment_flag(environment: object, name: str) -> bool:
+    value = (
+        environment.get(name)
+        if isinstance(environment, Mapping)
+        else getattr(environment, name, None)
+    )
+    return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
 
 
 async def get_instrument_catalog(request: Request) -> InstrumentCatalogProvider:

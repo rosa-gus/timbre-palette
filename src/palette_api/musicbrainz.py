@@ -1452,10 +1452,12 @@ class MusicBrainzEnricher:
         resolver: MusicBrainzResolver,
         repository: D1IdentityRepository,
         credit_index: Any | None = None,
+        allow_upstream_api: bool = True,
     ) -> None:
         self._resolver = resolver
         self._repository = repository
         self._credit_index = credit_index
+        self._allow_upstream_api = allow_upstream_api
 
     async def enrich_track(self, track: Track) -> int | None:
         if self._credit_index is not None and track.mbid:
@@ -1469,6 +1471,13 @@ class MusicBrainzEnricher:
                         source_mbid=track.mbid,
                     ),
                 )
+        if not self._allow_upstream_api:
+            _log_event(
+                "musicbrainz_credit_index_miss",
+                source_mbid=track.mbid,
+                offline_only=True,
+            )
+            return None
         match = await self._resolver.resolve(track)
         if match is None:
             return None

@@ -9,6 +9,7 @@ __pycache__/
 *.egg-info/
 node_modules/
 python_modules/
+etl/*/target/
 src/vendor/
 src/palette_api/_generated_image_catalog.json
 web/dist/
@@ -21,3 +22,5 @@ editorial/dist/
 !/assets/CREDITS.md
 !/assets/treated/
 !/assets/treated/**
+
+docs/research/*

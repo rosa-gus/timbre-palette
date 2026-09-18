@@ -102,38 +102,23 @@ uses an idempotent upsert for `prepared_album_targets`.
 
 ## MusicBrainz offline credit index
 
-Build the compact R2 dataset from a MusicBrainz dump:
+The offline ETL is a standalone Rust materializer. It scans the dump once and
+produces the staging projections used by the upcoming evidence and Artist
+Vocabulary aggregation stages:
 
 ```sh
-yarn musicbrainz:index:build \
+cargo run --release --manifest-path etl/musicbrainz-etl/Cargo.toml -- \
   /data/musicbrainz/mbdump.tar.bz2 \
-  /data/index/musicbrainz-2026-09-12 \
-  --snapshot-version schema-30-2026-09-12
+  /data/musicbrainz/staging/20260912-002318 \
+  --snapshot-version 20260912-002318
 ```
 
-The builder prints periodic progress to `stderr`, including the current table,
-percentage, row count, generated recordings, and elapsed time. Use
-`--progress-interval 10` to change the update interval or `--no-progress` for
-non-interactive automation.
-
-Run the cost preflight before uploading the directory to R2:
-
-```sh
-yarn musicbrainz:index:preflight \
-  /data/index/musicbrainz-2026-09-12
-```
-
-The output contains one object per recording plus a manifest and a
-`LICENSE-MUSICBRAINZ.txt` notice. Publish the manifest metadata to D1 with:
-
-```sh
-yarn musicbrainz:index:sql \
-  /data/index/musicbrainz-2026-09-12/manifest.json \
-  > /tmp/timbre-palette-musicbrainz-index.sql
-```
+The materializer writes projected JSONL tables, a schema-versioned manifest,
+and a `LICENSE-MUSICBRAINZ.txt` notice. It is an intermediate local artifact;
+aggregation and R2 publication will be implemented in Rust.
 
 See [MusicBrainz credit index](../../../docs/musicbrainz-credit-index.md) for
-the table selection, R2 layout, release-first behavior, and license rules.
+the runtime contract, release-first behavior, and provenance.
 
 ## Editorial publication
 
