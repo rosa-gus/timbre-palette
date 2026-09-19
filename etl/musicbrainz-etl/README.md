@@ -59,7 +59,8 @@ etl/musicbrainz-etl/target/release/musicbrainz-etl serve \
   /data/musicbrainz/aggregate/20260912-002318 \
   /data/musicbrainz/serving/20260912-002318 \
   --snapshot-version 20260912-002318 \
-  --shards 256 \
+  --recording-shards 4096 \
+  --auxiliary-shards 256 \
   --compression-level 6
 ```
 
@@ -68,5 +69,9 @@ The serving stage validates the aggregate manifest, discards unresolved
 credits only as a fallback when a recording has no direct evidence. It writes
 deterministic bzip2-compressed shards under `recordings/`, `tracks/`, and
 `artists/`, plus a serving manifest and license notice. The default 256
-hexadecimal-prefix shards keep individual R2 objects bounded while avoiding a
-per-recording object write.
+hexadecimal-prefix shards cover aliases and artists; recordings use 4096
+three-character-prefix shards so a Worker can decode an object within its
+memory budget. Release fallback credits are deduplicated semantically while
+retaining their source URLs in the serving record. Placeholder artist
+identities such as `[unknown]` and `Various Artists` are excluded from the
+artist vocabulary; the serving manifest reports how many rows were filtered.

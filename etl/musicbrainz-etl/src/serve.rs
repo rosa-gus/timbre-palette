@@ -6,7 +6,7 @@
 //! only when no direct evidence exists, aliases are grouped by track MBID,
 //! and vocabulary entries are grouped by artist MBID.
 
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, BufRead, BufReader, BufWriter, Write};
 use std::path::{Path, PathBuf};
@@ -21,11 +21,27 @@ use sha2::{Digest, Sha256};
 const AGGREGATE_SCHEMA_VERSION: &str = "musicbrainz-etl-aggregate-v1";
 const SERVING_SCHEMA_VERSION: &str = "musicbrainz-instrument-credits-serving-v1";
 const SERVING_OBJECT_PREFIX: &str = "musicbrainz/instrument-credits/v2";
-const DEFAULT_SHARDS: usize = 256;
+const DEFAULT_RECORDING_SHARDS: usize = 4096;
+const DEFAULT_AUXILIARY_SHARDS: usize = 256;
+const MAX_OPEN_SPOOL_WRITERS: usize = 512;
 const DEFAULT_COMPRESSION_LEVEL: u32 = 6;
 const DEFAULT_SOURCE_URL: &str = "https://musicbrainz.org/doc/MusicBrainz_Database/Download";
 const DEFAULT_ATTRIBUTION: &str = "MusicBrainz; derived instrumental-credit index.";
 const DEFAULT_LICENSE: &str = "CC0";
+const SPECIAL_ARTIST_MBIDS: &[&str] = &[
+    "125ec42a-7229-4250-afc5-e057484327fe", // [unknown]
+    "f731ccc4-e22a-43af-a747-64213329e088", // [anonymous]
+    "eec63d3c-3b81-4ad4-b1e4-7c147d4d2b61", // [no artist]
+    "c5dcb5d2-77e3-4ac8-9674-d0df027127b9", // [TEST]
+    "89ad4ac3-39f7-470e-963a-56509c546377", // Various Artists
+];
+const SPECIAL_ARTIST_NAMES: &[&str] = &[
+    "[unknown]",
+    "[anonymous]",
+    "[no artist]",
+    "[test]",
+    "various artists",
+];
 
 #[derive(Debug, Parser)]
 #[command(
@@ -44,9 +60,13 @@ pub(crate) struct ServeArgs {
     #[arg(long)]
     pub snapshot_version: String,
 
-    /// Number of hexadecimal-prefix shards. Must be a power of sixteen.
-    #[arg(long, default_value_t = DEFAULT_SHARDS, value_parser = positive_usize)]
-    pub shards: usize,
+    /// Number of recording hexadecimal-prefix shards. Must be a power of sixteen.
+    #[arg(long, default_value_t = DEFAULT_RECORDING_SHARDS, value_parser = positive_usize)]
+    pub recording_shards: usize,
+
+    /// Number of track and artist hexadecimal-prefix shards. Must be a power of sixteen.
+    #[arg(long, default_value_t = DEFAULT_AUXILIARY_SHARDS, value_parser = positive_usize)]
+    pub auxiliary_shards: usize,
 
     /// Bzip2 compression level for serving objects (1-9).
     #[arg(long, default_value_t = DEFAULT_COMPRESSION_LEVEL, value_parser = compression_level)]
@@ -130,10 +150,59 @@ struct ServeCredit {
     scope: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     source_url: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    source_urls: Vec<String>,
     relation_type: String,
     production_method: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     performer: Option<String>,
+}
+
+#[derive(Debug, Clone, Eq, Hash, Ord, PartialEq, PartialOrd)]
+struct CreditIdentity {
+    artist_mbid: Option<String>,
+    instrument_mbid: Option<String>,
+    instrument_name: String,
+    attributes: Vec<String>,
+    original_credit: Option<String>,
+    scope: String,
+    relation_type: String,
+    production_method: String,
+    performer: Option<String>,
+}
+
+impl ServeCredit {
+    fn identity(&self) -> CreditIdentity {
+        CreditIdentity {
+            artist_mbid: self.artist_mbid.clone(),
+            instrument_mbid: self.instrument_mbid.clone(),
+            instrument_name: self.instrument_name.clone(),
+            attributes: self.attributes.clone(),
+            original_credit: self.original_credit.clone(),
+            scope: self.scope.clone(),
+            relation_type: self.relation_type.clone(),
+            production_method: self.production_method.clone(),
+            performer: self.performer.clone(),
+        }
+    }
+
+    fn add_source(&mut self, source_url: Option<String>) {
+        if let Some(source_url) = source_url.filter(|value| !value.trim().is_empty()) {
+            self.source_urls.push(source_url);
+        }
+    }
+
+    fn normalize_sources(&mut self) {
+        if let Some(source_url) = self.source_url.take() {
+            self.source_urls.push(source_url);
+        }
+        self.source_urls.sort();
+        self.source_urls.dedup();
+        self.source_url = self.source_urls.first().cloned();
+        if self.source_urls.len() <= 1 {
+            self.source_urls.clear();
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -208,8 +277,12 @@ struct ServingManifest {
     attribution: String,
     aggregate_manifest_hash: String,
     object_prefix: &'static str,
-    shard_count: usize,
-    shard_width: usize,
+    recording_shard_count: usize,
+    recording_shard_width: usize,
+    track_shard_count: usize,
+    track_shard_width: usize,
+    artist_shard_count: usize,
+    artist_shard_width: usize,
     compression: &'static str,
     recording_count: u64,
     credit_count: u64,
@@ -222,6 +295,7 @@ struct ServingManifest {
     discarded_invalid_evidence_rows: u64,
     discarded_invalid_alias_rows: u64,
     discarded_invalid_vocabulary_rows: u64,
+    discarded_special_artist_vocabulary_rows: u64,
     file_count: usize,
     manifest_hash: String,
     files: BTreeMap<String, FileManifest>,
@@ -234,6 +308,7 @@ struct Counters {
     discarded_invalid_evidence_rows: u64,
     discarded_invalid_alias_rows: u64,
     discarded_invalid_vocabulary_rows: u64,
+    discarded_special_artist_vocabulary_rows: u64,
     recording_count: u64,
     credit_count: u64,
     release_fallback_recordings: u64,
@@ -245,38 +320,79 @@ struct Counters {
 
 struct ShardSpool {
     paths: Vec<PathBuf>,
-    writers: Vec<BufWriter<File>>,
+    writers: HashMap<usize, BufWriter<File>>,
+    lru: VecDeque<usize>,
 }
 
 impl ShardSpool {
     fn create(root: &Path, shard_count: usize, width: usize) -> Result<Self, String> {
         fs::create_dir_all(root).map_err(|error| format!("cannot create {}: {error}", root.display()))?;
         let mut paths = Vec::with_capacity(shard_count);
-        let mut writers = Vec::with_capacity(shard_count);
         for shard in 0..shard_count {
-            let path = root.join(format!("{shard:0width$x}.jsonl"));
-            let file = OpenOptions::new()
-                .create_new(true)
-                .write(true)
-                .open(&path)
-                .map_err(|error| format!("cannot create {}: {error}", path.display()))?;
-            paths.push(path);
-            writers.push(BufWriter::with_capacity(64 * 1024, file));
+            paths.push(root.join(format!("{shard:0width$x}.jsonl")));
         }
-        Ok(Self { paths, writers })
+        Ok(Self {
+            paths,
+            writers: HashMap::new(),
+            lru: VecDeque::new(),
+        })
     }
 
     fn write<T: Serialize>(&mut self, shard: usize, value: &T) -> Result<(), String> {
         let mut encoded = serde_json::to_vec(value).map_err(|error| error.to_string())?;
         encoded.push(b'\n');
-        self.writers[shard]
+        self.ensure_writer(shard)?;
+        self.touch(shard);
+        self.writers
+            .get_mut(&shard)
+            .expect("spool writer was created")
             .write_all(&encoded)
             .map_err(|error| error.to_string())
     }
 
+    fn ensure_writer(&mut self, shard: usize) -> Result<(), String> {
+        if self.writers.contains_key(&shard) {
+            return Ok(());
+        }
+        while self.writers.len() >= MAX_OPEN_SPOOL_WRITERS {
+            let Some(evicted) = self.lru.pop_front() else {
+                return Err("spool writer cache lost its LRU state".into());
+            };
+            if let Some(mut writer) = self.writers.remove(&evicted) {
+                writer.flush().map_err(|error| error.to_string())?;
+            }
+        }
+        let path = &self.paths[shard];
+        let file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(path)
+            .map_err(|error| format!("cannot create {}: {error}", path.display()))?;
+        self.writers
+            .insert(shard, BufWriter::with_capacity(64 * 1024, file));
+        self.lru.push_back(shard);
+        Ok(())
+    }
+
+    fn touch(&mut self, shard: usize) {
+        if let Some(position) = self.lru.iter().position(|value| *value == shard) {
+            self.lru.remove(position);
+        }
+        self.lru.push_back(shard);
+    }
+
     fn finish(mut self) -> Result<Vec<PathBuf>, String> {
-        for writer in &mut self.writers {
+        for writer in self.writers.values_mut() {
             writer.flush().map_err(|error| error.to_string())?;
+        }
+        for path in &self.paths {
+            if !path.exists() {
+                OpenOptions::new()
+                    .create_new(true)
+                    .write(true)
+                    .open(path)
+                    .map_err(|error| format!("cannot create {}: {error}", path.display()))?;
+            }
         }
         Ok(self.paths)
     }
@@ -303,14 +419,14 @@ impl Write for DigestWriter {
 
 struct RecordAccumulator {
     direct: HashSet<ServeCredit>,
-    release: HashSet<ServeCredit>,
+    release: HashMap<CreditIdentity, ServeCredit>,
 }
 
 impl Default for RecordAccumulator {
     fn default() -> Self {
         Self {
             direct: HashSet::new(),
-            release: HashSet::new(),
+            release: HashMap::new(),
         }
     }
 }
@@ -350,7 +466,8 @@ pub(crate) fn run(args: ServeArgs) -> Result<(), String> {
     if args.snapshot_version.trim().is_empty() {
         return Err("--snapshot-version is required".into());
     }
-    let shard_width = shard_width(args.shards)?;
+    let recording_shard_width = shard_width(args.recording_shards)?;
+    let auxiliary_shard_width = shard_width(args.auxiliary_shards)?;
     ensure_empty_output(&args.output)?;
     let input = read_aggregate_manifest(&args.aggregate)?;
     if input.schema_version != AGGREGATE_SCHEMA_VERSION {
@@ -378,22 +495,22 @@ pub(crate) fn run(args: ServeArgs) -> Result<(), String> {
     progress.report("particionando evidência", true);
     let mut evidence_spool = ShardSpool::create(
         &temporary.join("recordings"),
-        args.shards,
-        shard_width,
+        args.recording_shards,
+        recording_shard_width,
     )?;
     scan_evidence_file(
         &args.aggregate.join("direct-evidence.jsonl"),
         &args.snapshot_version,
-        args.shards,
-        shard_width,
+        args.recording_shards,
+        recording_shard_width,
         &mut evidence_spool,
         &mut counters,
     )?;
     scan_evidence_file(
         &args.aggregate.join("release-context.jsonl"),
         &args.snapshot_version,
-        args.shards,
-        shard_width,
+        args.recording_shards,
+        recording_shard_width,
         &mut evidence_spool,
         &mut counters,
     )?;
@@ -404,19 +521,23 @@ pub(crate) fn run(args: ServeArgs) -> Result<(), String> {
         &evidence_paths,
         &args.output.join("recordings"),
         &args.snapshot_version,
-        args.shards,
-        shard_width,
+        args.recording_shards,
+        recording_shard_width,
         args.compression_level,
         &mut files,
         &mut counters,
     )?;
 
     progress.report("particionando aliases", true);
-    let mut alias_spool = ShardSpool::create(&temporary.join("tracks"), args.shards, shard_width)?;
+    let mut alias_spool = ShardSpool::create(
+        &temporary.join("tracks"),
+        args.auxiliary_shards,
+        auxiliary_shard_width,
+    )?;
     scan_alias_file(
         &args.aggregate.join("track-aliases.jsonl"),
-        args.shards,
-        shard_width,
+        args.auxiliary_shards,
+        auxiliary_shard_width,
         &mut alias_spool,
         &mut counters,
     )?;
@@ -425,8 +546,8 @@ pub(crate) fn run(args: ServeArgs) -> Result<(), String> {
         &alias_paths,
         &args.output.join("tracks"),
         &args.snapshot_version,
-        args.shards,
-        shard_width,
+        args.auxiliary_shards,
+        auxiliary_shard_width,
         args.compression_level,
         &servable_recordings,
         &mut files,
@@ -434,11 +555,15 @@ pub(crate) fn run(args: ServeArgs) -> Result<(), String> {
     )?;
 
     progress.report("particionando vocabulário", true);
-    let mut vocabulary_spool = ShardSpool::create(&temporary.join("artists"), args.shards, shard_width)?;
+    let mut vocabulary_spool = ShardSpool::create(
+        &temporary.join("artists"),
+        args.auxiliary_shards,
+        auxiliary_shard_width,
+    )?;
     scan_vocabulary_file(
         &args.aggregate.join("artist-vocabulary.jsonl"),
-        args.shards,
-        shard_width,
+        args.auxiliary_shards,
+        auxiliary_shard_width,
         &mut vocabulary_spool,
         &mut counters,
     )?;
@@ -447,8 +572,8 @@ pub(crate) fn run(args: ServeArgs) -> Result<(), String> {
         &vocabulary_paths,
         &args.output.join("artists"),
         &args.snapshot_version,
-        args.shards,
-        shard_width,
+        args.auxiliary_shards,
+        auxiliary_shard_width,
         args.compression_level,
         &mut files,
     )?;
@@ -472,8 +597,12 @@ pub(crate) fn run(args: ServeArgs) -> Result<(), String> {
         attribution,
         aggregate_manifest_hash: input.manifest_hash,
         object_prefix: SERVING_OBJECT_PREFIX,
-        shard_count: args.shards,
-        shard_width,
+        recording_shard_count: args.recording_shards,
+        recording_shard_width,
+        track_shard_count: args.auxiliary_shards,
+        track_shard_width: auxiliary_shard_width,
+        artist_shard_count: args.auxiliary_shards,
+        artist_shard_width: auxiliary_shard_width,
         compression: "bzip2",
         recording_count: counters.recording_count,
         credit_count: counters.credit_count,
@@ -486,6 +615,7 @@ pub(crate) fn run(args: ServeArgs) -> Result<(), String> {
         discarded_invalid_evidence_rows: counters.discarded_invalid_evidence_rows,
         discarded_invalid_alias_rows: counters.discarded_invalid_alias_rows,
         discarded_invalid_vocabulary_rows: counters.discarded_invalid_vocabulary_rows,
+        discarded_special_artist_vocabulary_rows: counters.discarded_special_artist_vocabulary_rows,
         file_count: files.len(),
         manifest_hash: hex_digest(manifest_hasher.finalize()),
         files,
@@ -550,6 +680,7 @@ fn scan_evidence_file(
         if !attributes.iter().any(|value| value == &instrument_name) {
             attributes.push(instrument_name.clone());
         }
+        attributes.sort();
         let scope = match row.scope.trim() {
             "release" => "release",
             "recording" | "" => "recording",
@@ -570,6 +701,7 @@ fn scan_evidence_file(
             } else {
                 Some(row.source_url)
             },
+            source_urls: Vec::new(),
             relation_type,
             production_method: if row.production_method.trim().is_empty() {
                 "performed".into()
@@ -604,7 +736,12 @@ fn emit_recording_shards(
         for_each_typed_jsonl::<SpoolEvidence, _>(path, |row| {
             let entry = records.entry(row.recording_mbid).or_default();
             if row.credit.scope == "release" {
-                entry.release.insert(row.credit);
+                let identity = row.credit.identity();
+                if let Some(existing) = entry.release.get_mut(&identity) {
+                    existing.add_source(row.credit.source_url);
+                } else {
+                    entry.release.insert(identity, row.credit);
+                }
             } else {
                 entry.direct.insert(row.credit);
             }
@@ -618,12 +755,15 @@ fn emit_recording_shards(
         for (recording_mbid, accumulator) in records {
             let use_release = accumulator.direct.is_empty();
             let mut credits: Vec<ServeCredit> = if use_release {
-                accumulator.release.into_iter().collect()
+                accumulator.release.into_values().collect()
             } else {
                 accumulator.direct.into_iter().collect()
             };
             if credits.is_empty() {
                 continue;
+            }
+            for credit in &mut credits {
+                credit.normalize_sources();
             }
             credits.sort();
             if use_release {
@@ -761,6 +901,10 @@ fn scan_vocabulary_file(
             counters.discarded_invalid_vocabulary_rows += 1;
             return Ok(());
         };
+        if is_special_artist(&artist_mbid, row.artist_name.as_deref()) {
+            counters.discarded_special_artist_vocabulary_rows += 1;
+            return Ok(());
+        }
         let Some(instrument_mbid) = canonical_mbid(&row.instrument_mbid) else {
             counters.discarded_invalid_vocabulary_rows += 1;
             return Ok(());
@@ -968,7 +1112,7 @@ fn shard_index(mbid: &str, shard_count: usize, width: usize) -> usize {
 
 fn shard_width(shard_count: usize) -> Result<usize, String> {
     if shard_count == 0 {
-        return Err("--shards must be greater than zero".into());
+        return Err("shard count must be greater than zero".into());
     }
     let mut value = shard_count;
     let mut width = 0;
@@ -977,7 +1121,7 @@ fn shard_width(shard_count: usize) -> Result<usize, String> {
         width += 1;
     }
     if value != 1 || width == 0 || width > 8 {
-        return Err("--shards must be a power of sixteen between 16 and 4,294,967,296".into());
+        return Err("shard count must be a power of sixteen between 16 and 4,294,967,296".into());
     }
     Ok(width)
 }
@@ -1013,6 +1157,16 @@ fn now_unix() -> String {
 fn default_recording_scope() -> String { "recording".into() }
 fn default_instrument_relation() -> String { "instrument".into() }
 fn default_performed_method() -> String { "performed".into() }
+
+fn is_special_artist(artist_mbid: &str, artist_name: Option<&str>) -> bool {
+    if SPECIAL_ARTIST_MBIDS.contains(&artist_mbid) {
+        return true;
+    }
+    artist_name
+        .map(str::trim)
+        .map(|name| name.to_ascii_lowercase())
+        .is_some_and(|name| SPECIAL_ARTIST_NAMES.contains(&name.as_str()))
+}
 
 fn positive_usize(value: &str) -> Result<usize, String> {
     value.parse::<usize>().map_err(|_| "must be a positive integer".into())
@@ -1101,15 +1255,26 @@ mod tests {
         );
         write_jsonl(
             &aggregate.join("release-context.jsonl"),
-            &[serde_json::json!({
-                "recording_mbid": FALLBACK_RECORDING,
-                "instrument_mbid": INSTRUMENT,
-                "instrument_name": "piano",
-                "scope": "release",
-                "relation_type": "instrument",
-                "source_url": "https://musicbrainz.org/release/44444444-4444-4444-8444-444444444444",
-                "snapshot_version": "snapshot-1"
-            })],
+            &[
+                serde_json::json!({
+                    "recording_mbid": FALLBACK_RECORDING,
+                    "instrument_mbid": INSTRUMENT,
+                    "instrument_name": "piano",
+                    "scope": "release",
+                    "relation_type": "instrument",
+                    "source_url": "https://musicbrainz.org/release/44444444-4444-4444-8444-444444444444",
+                    "snapshot_version": "snapshot-1"
+                }),
+                serde_json::json!({
+                    "recording_mbid": FALLBACK_RECORDING,
+                    "instrument_mbid": INSTRUMENT,
+                    "instrument_name": "piano",
+                    "scope": "release",
+                    "relation_type": "instrument",
+                    "source_url": "https://musicbrainz.org/release/55555555-5555-4555-8555-555555555555",
+                    "snapshot_version": "snapshot-1"
+                }),
+            ],
         );
         write_jsonl(
             &aggregate.join("track-aliases.jsonl"),
@@ -1120,24 +1285,38 @@ mod tests {
         );
         write_jsonl(
             &aggregate.join("artist-vocabulary.jsonl"),
-            &[serde_json::json!({
-                "artist_mbid": RECORDING,
-                "artist_name": "Test artist",
-                "instrument_mbid": INSTRUMENT,
-                "instrument_name": "piano",
-                "distinct_recordings": 3,
-                "documented_recordings": 3,
-                "prevalence": 1.0,
-                "qualifying": true,
-                "snapshot_version": "snapshot-1"
-            })],
+            &[
+                serde_json::json!({
+                    "artist_mbid": RECORDING,
+                    "artist_name": "Test artist",
+                    "instrument_mbid": INSTRUMENT,
+                    "instrument_name": "piano",
+                    "distinct_recordings": 3,
+                    "documented_recordings": 3,
+                    "prevalence": 1.0,
+                    "qualifying": true,
+                    "snapshot_version": "snapshot-1"
+                }),
+                serde_json::json!({
+                    "artist_mbid": "125ec42a-7229-4250-afc5-e057484327fe",
+                    "artist_name": "[unknown]",
+                    "instrument_mbid": INSTRUMENT,
+                    "instrument_name": "piano",
+                    "distinct_recordings": 9,
+                    "documented_recordings": 9,
+                    "prevalence": 1.0,
+                    "qualifying": true,
+                    "snapshot_version": "snapshot-1"
+                }),
+            ],
         );
 
         run(ServeArgs {
             aggregate,
             output: output.clone(),
             snapshot_version: "snapshot-1".into(),
-            shards: 16,
+            recording_shards: 16,
+            auxiliary_shards: 16,
             compression_level: 1,
             progress_interval: 1.0,
             no_progress: true,
@@ -1150,6 +1329,9 @@ mod tests {
         assert_eq!(manifest["credit_count"], 2);
         assert_eq!(manifest["release_fallback_recordings"], 1);
         assert_eq!(manifest["discarded_unresolved_instrument_rows"], 1);
+        assert_eq!(manifest["discarded_special_artist_vocabulary_rows"], 1);
+        assert_eq!(manifest["vocabulary_entries"], 1);
+        assert_eq!(manifest["qualifying_vocabulary_entries"], 1);
         assert_eq!(manifest["alias_count"], 1);
         assert_eq!(manifest["orphan_alias_count"], 1);
 
@@ -1160,6 +1342,26 @@ mod tests {
             .unwrap();
         assert!(decoded.contains(RECORDING));
         assert!(!decoded.contains("\"instrument_mbid\":null"));
+
+        let fallback_shard = shard_name(shard_index(FALLBACK_RECORDING, 16, 1), 1);
+        let mut fallback_decoded = String::new();
+        BzDecoder::new(
+            File::open(output.join(format!("recordings/{fallback_shard}.json.bz2"))).unwrap(),
+        )
+        .read_to_string(&mut fallback_decoded)
+        .unwrap();
+        let fallback_payload: serde_json::Value = serde_json::from_str(&fallback_decoded).unwrap();
+        let fallback_credits = fallback_payload["records"][FALLBACK_RECORDING]["credits"]
+            .as_array()
+            .unwrap();
+        assert_eq!(fallback_credits.len(), 1);
+        assert_eq!(
+            fallback_credits[0]["source_urls"]
+                .as_array()
+                .unwrap()
+                .len(),
+            2
+        );
         fs::remove_dir_all(root).unwrap();
     }
 
@@ -1169,5 +1371,29 @@ mod tests {
         assert_eq!(compression_level("9"), Ok(9));
         assert!(compression_level("0").is_err());
         assert!(compression_level("10").is_err());
+        assert_eq!(shard_width(DEFAULT_RECORDING_SHARDS), Ok(3));
+        assert_eq!(shard_width(DEFAULT_AUXILIARY_SHARDS), Ok(2));
+    }
+
+    #[test]
+    fn spool_reopens_evicted_shards_without_losing_rows() {
+        let root = std::env::temp_dir().join(format!(
+            "musicbrainz-serving-spool-test-{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&root);
+        let shard_count = MAX_OPEN_SPOOL_WRITERS + 1;
+        let mut spool = ShardSpool::create(&root, shard_count, 3).unwrap();
+        for shard in 0..shard_count {
+            spool.write(shard, &serde_json::json!({"shard": shard})).unwrap();
+        }
+        spool
+            .write(0, &serde_json::json!({"shard": "reopened"}))
+            .unwrap();
+        let paths = spool.finish().unwrap();
+        let first = fs::read_to_string(&paths[0]).unwrap();
+        assert_eq!(first.lines().count(), 2);
+        assert_eq!(paths.len(), shard_count);
+        fs::remove_dir_all(root).unwrap();
     }
 }

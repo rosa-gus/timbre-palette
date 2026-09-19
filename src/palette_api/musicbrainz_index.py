@@ -19,7 +19,8 @@ from typing import Any, Protocol
 
 SERVING_SCHEMA_VERSION = "musicbrainz-instrument-credits-serving-v1"
 SHARDED_INDEX_PREFIX = "musicbrainz/instrument-credits/v2"
-SHARDED_INDEX_SHARD_WIDTH = 2
+SHARDED_RECORDING_SHARD_WIDTH = 3
+SHARDED_TRACK_SHARD_WIDTH = 2
 DEFAULT_RECENT_INDEX_MAX_AGE_DAYS = 30
 MAX_SAFE_R2_READS = 8_000_000
 _MBID_PATTERN = re.compile(
@@ -228,12 +229,14 @@ class R2CreditIndex:
         *,
         read_budget: R2ReadBudget | None = None,
         shard_prefix: str = SHARDED_INDEX_PREFIX,
-        shard_width: int = SHARDED_INDEX_SHARD_WIDTH,
+        recording_shard_width: int = SHARDED_RECORDING_SHARD_WIDTH,
+        track_shard_width: int = SHARDED_TRACK_SHARD_WIDTH,
     ) -> None:
         self._bucket = bucket
         self._read_budget = read_budget
         self._shard_prefix = shard_prefix.rstrip("/")
-        self._shard_width = max(1, int(shard_width))
+        self._recording_shard_width = max(1, int(recording_shard_width))
+        self._track_shard_width = max(1, int(track_shard_width))
 
     async def lookup(self, recording_mbid: str) -> CreditIndexEntry | None:
         requested_mbid = recording_mbid.strip().lower()
@@ -243,7 +246,7 @@ class R2CreditIndex:
 
     async def _lookup_sharded(self, requested_mbid: str) -> CreditIndexEntry | None:
         payload = await self._lookup_shard(
-            f"{self._shard_prefix}/recordings/{requested_mbid[:self._shard_width]}.json.bz2"
+            f"{self._shard_prefix}/recordings/{requested_mbid[:self._recording_shard_width]}.json.bz2"
         )
         if payload is not None:
             entry = _entry_from_shard(
@@ -255,9 +258,11 @@ class R2CreditIndex:
             )
             if entry is not None:
                 return entry
+        # Do not retain the first recording shard while resolving an alias.
+        payload = None
 
         alias_payload = await self._lookup_shard(
-            f"{self._shard_prefix}/tracks/{requested_mbid[:self._shard_width]}.json.bz2"
+            f"{self._shard_prefix}/tracks/{requested_mbid[:self._track_shard_width]}.json.bz2"
         )
         aliases = alias_payload.get("aliases") if isinstance(alias_payload, Mapping) else None
         recording_mbid = aliases.get(requested_mbid) if isinstance(aliases, Mapping) else None
@@ -265,7 +270,7 @@ class R2CreditIndex:
         if not _MBID_PATTERN.fullmatch(recording_mbid):
             return None
         recording_payload = await self._lookup_shard(
-            f"{self._shard_prefix}/recordings/{recording_mbid[:self._shard_width]}.json.bz2"
+            f"{self._shard_prefix}/recordings/{recording_mbid[:self._recording_shard_width]}.json.bz2"
         )
         if recording_payload is None:
             return None

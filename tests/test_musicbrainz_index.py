@@ -29,7 +29,7 @@ async def test_r2_sharded_index_reads_compressed_recording_shard() -> None:
     payload = {
         "schema_version": "musicbrainz-instrument-credits-serving-v1",
         "snapshot_version": "snapshot-1",
-        "shard": "11",
+        "shard": "111",
         "records": {
             RECORDING_MBID: {
                 "recording_mbid": RECORDING_MBID,
@@ -55,7 +55,7 @@ async def test_r2_sharded_index_reads_compressed_recording_shard() -> None:
 
     class Bucket:
         async def get(self, key: str) -> Object | None:
-            if key.endswith(f"/recordings/11.json.bz2"):
+            if key.endswith(f"/recordings/111.json.bz2"):
                 return Object()
             return None
 
@@ -70,7 +70,7 @@ async def test_r2_sharded_index_resolves_track_alias() -> None:
     recording_payload = {
         "schema_version": "musicbrainz-instrument-credits-serving-v1",
         "snapshot_version": "snapshot-1",
-        "shard": "11",
+        "shard": "111",
         "records": {
             RECORDING_MBID: {
                 "recording_mbid": RECORDING_MBID,
@@ -96,7 +96,7 @@ async def test_r2_sharded_index_resolves_track_alias() -> None:
         async def get(self, key: str) -> Object | None:
             if key.endswith("/tracks/55.json.bz2"):
                 return Object(alias_payload)
-            if key.endswith("/recordings/11.json.bz2"):
+            if key.endswith("/recordings/111.json.bz2"):
                 return Object(recording_payload)
             return None
 
@@ -110,7 +110,7 @@ async def test_r2_read_budget_blocks_before_the_next_bucket_get() -> None:
     payload = {
         "schema_version": "musicbrainz-instrument-credits-serving-v1",
         "snapshot_version": "schema-30",
-        "shard": "11",
+        "shard": "111",
         "records": {
             RECORDING_MBID: {
                 "recording_mbid": RECORDING_MBID,
@@ -131,7 +131,7 @@ async def test_r2_read_budget_blocks_before_the_next_bucket_get() -> None:
 
         async def get(self, key: str) -> Object | None:
             self.gets += 1
-            if key.endswith("/recordings/11.json.bz2"):
+            if key.endswith("/recordings/111.json.bz2"):
                 return Object()
             return None
 

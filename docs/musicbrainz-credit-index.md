@@ -51,8 +51,10 @@ cargo run --release --manifest-path etl/musicbrainz-etl/Cargo.toml -- \
 
 The output uses the `musicbrainz-instrument-credits-serving-v1` schema. It
 contains deterministic bzip2 shards under `recordings/`, `tracks/`, and
-`artists/`, with two hexadecimal characters selecting a shard. The Worker reads
-this sharded layout directly.
+`artists/`. Recordings use three hexadecimal characters; aliases and artist
+vocabulary use two. Release duplicates retain their distinct source URLs, and
+placeholder artist identities are excluded from the vocabulary. The Worker
+reads this sharded layout directly.
 
 ## Runtime guard
 
