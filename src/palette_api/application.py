@@ -6,9 +6,7 @@ from palette_api.domain import (
     ClaimLevel,
     Confidence,
     DataSource,
-    EnrichmentScheduler,
     InstrumentLayer,
-    InstrumentationProvider,
     ListeningHistory,
     ListeningHistoryProvider,
     ListeningPeriod,
@@ -82,14 +80,10 @@ class PaletteService:
     def __init__(
         self,
         history_provider: ListeningHistoryProvider,
-        instrumentation_provider: InstrumentationProvider | None = None,
-        enrichment_scheduler: EnrichmentScheduler | None = None,
         methodology: MethodologyPolicy = DEFAULT_METHODOLOGY,
         image_catalog: InstrumentImageCatalog = DEFAULT_IMAGE_CATALOG,
     ) -> None:
         self._history_provider = history_provider
-        self._instrumentation_provider = instrumentation_provider
-        self._enrichment_scheduler = enrichment_scheduler
         self._methodology = methodology
         self._image_catalog = image_catalog
 
@@ -99,13 +93,8 @@ class PaletteService:
         period: ListeningPeriod,
     ) -> PaletteReport:
         history = await self._history_provider.get_history(username, period)
-        if self._instrumentation_provider is not None:
-            history = await self._instrumentation_provider.enrich(history)
         if not history.tracks:
             raise EmptyListeningHistoryError(username)
-        if self._enrichment_scheduler is not None and history.pending_enrichment:
-            await self._enrichment_scheduler.schedule(history.pending_enrichment)
-
         return self._build_report(history)
 
     def build_report(self, history: ListeningHistory) -> PaletteReport:
@@ -639,13 +628,13 @@ class PaletteService:
         if recording_status is RecordingStatus.RESOLVED_WITHOUT_EVIDENCE:
             return "The recording was resolved, but has no accepted instrumental evidence."
         if recording_status is RecordingStatus.PENDING_ENRICHMENT:
-            return "The recording is awaiting automatic enrichment."
+            return "The recording is awaiting snapshot hydration."
         if recording_status is RecordingStatus.AMBIGUOUS:
             return "The match is ambiguous and awaiting review."
         if recording_status is RecordingStatus.TRANSIENT_FAILURE:
-            return "Enrichment failed transiently and can be retried."
+            return "Snapshot hydration failed transiently and can be retried."
         if recording_status is RecordingStatus.TERMINAL_FAILURE:
-            return "Enrichment ended without another automatic retry."
+            return "Snapshot hydration ended without another automatic retry."
         return None
 
     @staticmethod

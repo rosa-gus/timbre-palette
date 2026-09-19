@@ -121,11 +121,3 @@ class ListeningHistoryProvider(Protocol):
         username: str,
         period: ListeningPeriod,
     ) -> ListeningHistory: ...
-
-
-class InstrumentationProvider(Protocol):
-    async def enrich(self, history: ListeningHistory) -> ListeningHistory: ...
-
-
-class EnrichmentScheduler(Protocol):
-    async def schedule(self, tracks: tuple[Track, ...]) -> None: ...

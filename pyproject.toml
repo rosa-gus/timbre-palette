@@ -28,6 +28,7 @@ testpaths = ["tests"]
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["palette_api*"]
+exclude = ["palette_api.tools*"]
 
 [tool.setuptools.package-data]
 palette_api = ["_generated_image_catalog.json"]

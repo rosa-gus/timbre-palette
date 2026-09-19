@@ -1,8 +1,8 @@
 """API v2 analysis domain and its D1 snapshot projection reader.
 
-The HTTP Worker reads only compact, versioned D1 projections.  R2 is hydrated
-by the private enrichment Worker and is intentionally not a dependency of this
-module or of the public request path.
+The HTTP Worker reads only compact, versioned D1 projections. R2 is read by
+the snapshot hydrator and is intentionally not a dependency of this module or
+of the public request path.
 """
 
 from __future__ import annotations

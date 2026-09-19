@@ -122,7 +122,7 @@ class MethodologyPolicy:
         progress_capable: bool,
         has_published_evidence: bool,
     ) -> AnalysisStatus:
-        # A public request must never wait for asynchronous enrichment. A
+        # A public request must never wait for asynchronous snapshot hydration. A
         # report with any published evidence is immediately useful and can be
         # refined on a later visit; only a report with no evidence at all is
         # insufficient.

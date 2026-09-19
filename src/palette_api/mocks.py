@@ -1,10 +1,7 @@
-from dataclasses import replace
-
 from palette_api.editorial_catalog import EDITORIAL_INSTRUMENTS
 
 from palette_api.domain import (
     Confidence,
-    DataSource,
     InstrumentLayer,
     ListeningHistory,
     ListeningPeriod,
@@ -202,25 +199,6 @@ class MockListeningHistoryProvider:
         )
 
         return ListeningHistory(username=username, period=period, tracks=tracks)
-
-
-class MockInstrumentationProvider:
-    """Adds explicit fake layers to real tracks while the catalog is designed."""
-
-    async def enrich(self, history: ListeningHistory) -> ListeningHistory:
-        templates = await MockListeningHistoryProvider().get_history(
-            username="instrumentation-template",
-            period=history.period,
-        )
-        enriched_tracks = tuple(
-            replace(track, layers=templates.tracks[index % len(templates.tracks)].layers)
-            for index, track in enumerate(history.tracks)
-        )
-        return replace(
-            history,
-            tracks=enriched_tracks,
-            instrumentation_source=DataSource.MOCK,
-        )
 
 
 class MockInstrumentCatalog:
