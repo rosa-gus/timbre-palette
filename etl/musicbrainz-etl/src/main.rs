@@ -5,6 +5,7 @@
 //! local evidence and vocabulary artifacts.
 
 mod aggregate;
+mod serve;
 
 use std::collections::BTreeMap;
 use std::ffi::OsString;
@@ -223,12 +224,18 @@ impl Progress {
 
 fn main() {
     let raw_args: Vec<OsString> = std::env::args_os().collect();
-    let result = if raw_args.get(1).and_then(|value| value.to_str()) == Some("aggregate") {
-        let mut aggregate_args = raw_args;
-        aggregate_args.remove(1);
-        aggregate::run(aggregate::AggregateArgs::parse_from(aggregate_args))
-    } else {
-        run().map_err(|error| error.to_string())
+    let result = match raw_args.get(1).and_then(|value| value.to_str()) {
+        Some("aggregate") => {
+            let mut aggregate_args = raw_args;
+            aggregate_args.remove(1);
+            aggregate::run(aggregate::AggregateArgs::parse_from(aggregate_args))
+        }
+        Some("serve") => {
+            let mut serve_args = raw_args;
+            serve_args.remove(1);
+            serve::run(serve::ServeArgs::parse_from(serve_args))
+        }
+        _ => run().map_err(|error| error.to_string()),
     };
     if let Err(error) = result {
         eprintln!("musicbrainz-etl: {error}");

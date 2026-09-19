@@ -7,8 +7,8 @@ built through the Rust pipeline.
 MusicBrainz dump/replication snapshot
         ↓ Rust offline ETL
 staging projections → direct evidence + Artist Vocabulary aggregation
-        ↓ future Rust publisher
-R2 compact objects → Python Worker runtime → D1 evidence cache
+        ↓ Rust serving snapshot
+compressed R2 shards → Python Worker runtime → D1 evidence cache
 ```
 
 ## Rust ETL status
@@ -26,12 +26,33 @@ cargo run --release --manifest-path etl/musicbrainz-etl/Cargo.toml -- \
 It writes projected JSONL tables, a schema-versioned `manifest.json`, and a
 `LICENSE-MUSICBRAINZ.txt` notice. The staging directory is an intermediate
 local artifact. It is not an R2 serving snapshot and must not be uploaded
-directly. The next Rust stage will join the projections into recording-level
-evidence and Artist Vocabulary partitions before a new publisher is added.
+directly. The `aggregate` command joins the projections into recording-level
+evidence and Artist Vocabulary partitions; `serve` then emits the local R2
+artifact described below.
 
 The staging schema preserves recording-scoped and release-scoped relationships
-separately. Release context must never be promoted to a documented recording
-claim.
+separately. The serving stage keeps release context only as a fallback when a
+recording has no direct evidence; it never lets release context replace direct
+evidence for a recording that already has one. The aggregate directory is an
+intermediate local input to the serving command below and is not uploaded
+directly.
+
+## Serving snapshot
+
+Build the R2-ready local artifact from an aggregate directory:
+
+```sh
+cargo run --release --manifest-path etl/musicbrainz-etl/Cargo.toml -- \
+  serve \
+  /data/musicbrainz/aggregate/20260912-002318 \
+  /data/musicbrainz/serving/20260912-002318 \
+  --snapshot-version 20260912-002318
+```
+
+The output uses the `musicbrainz-instrument-credits-serving-v1` schema. It
+contains deterministic bzip2 shards under `recordings/`, `tracks/`, and
+`artists/`, with two hexadecimal characters selecting a shard. The Worker reads
+this sharded layout directly.
 
 ## Runtime guard
 
@@ -65,8 +86,9 @@ identifies the core dump as CC0 and supplementary dumps as CC BY-NC-SA 3.0.
 The [data license](https://musicbrainz.org/doc/About/Data_License) requires
 attribution and preservation of applicable conditions for derivative works.
 The Rust staging command therefore requires an explicit snapshot version and
-carries license and attribution into the intermediate artifact. The future
-publisher must preserve that provenance in R2 and D1 metadata.
+carries license and attribution into the intermediate artifact. The serving
+manifest and license notice preserve that provenance for the eventual R2
+publication and D1 metadata.
 
 The R2 binding is configured on the private Python enrichment Worker as
 `MUSICBRAINZ_CREDIT_INDEX`. The recent D1 cache defaults to 30 days and the

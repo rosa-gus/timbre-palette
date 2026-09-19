@@ -1,13 +1,14 @@
 """Offline MusicBrainz credit-index readers.
 
-The full MusicBrainz database stays outside the request path.  The ETL tool
-publishes one small JSON object per recording to R2.  This module contains the
-runtime readers for that object layout and the short-lived D1 projection that
+The full MusicBrainz database stays outside the request path. The ETL tool
+publishes a compressed, sharded serving snapshot to R2. This module contains
+the runtime reader for that snapshot and the short-lived D1 projection that
 avoids calling MusicBrainz again for a recently enriched recording.
 """
 
 from __future__ import annotations
 
+import bz2
 import inspect
 import json
 import re
@@ -16,9 +17,9 @@ from dataclasses import dataclass
 from typing import Any, Protocol
 
 
-INDEX_SCHEMA_VERSION = "musicbrainz-instrument-credits-v1"
-INDEX_OBJECT_PREFIX = "musicbrainz/instrument-credits/v1/recordings"
-INDEX_TRACK_PREFIX = "musicbrainz/instrument-credits/v1/tracks"
+SERVING_SCHEMA_VERSION = "musicbrainz-instrument-credits-serving-v1"
+SHARDED_INDEX_PREFIX = "musicbrainz/instrument-credits/v2"
+SHARDED_INDEX_SHARD_WIDTH = 2
 DEFAULT_RECENT_INDEX_MAX_AGE_DAYS = 30
 MAX_SAFE_R2_READS = 8_000_000
 _MBID_PATTERN = re.compile(
@@ -59,7 +60,7 @@ class CreditIndexEntry:
         if not isinstance(payload, Mapping):
             raise ValueError("The MusicBrainz credit index object is not a JSON object.")
         index_schema_version = _text(payload.get("index_schema_version"))
-        if index_schema_version and index_schema_version != INDEX_SCHEMA_VERSION:
+        if index_schema_version and index_schema_version != SERVING_SCHEMA_VERSION:
             raise ValueError("The MusicBrainz credit index schema is not supported.")
         recording_mbid = _text(payload.get("recording_mbid")) or requested_mbid
         snapshot_version = _text(payload.get("snapshot_version"))
@@ -100,7 +101,7 @@ class CreditIndexEntry:
             confidence=1.0,
             source_mbid=source_mbid,
             source_entity_type="recording",
-            resolver_version=INDEX_SCHEMA_VERSION,
+            resolver_version=SERVING_SCHEMA_VERSION,
             instrument_credits=tuple(
                 InstrumentCredit(
                     instrument_mbid=credit.instrument_mbid,
@@ -219,79 +220,132 @@ class R2ReadBudget:
 
 
 class R2CreditIndex:
-    """Reads one compact recording object from an R2 binding."""
+    """Reads the compressed, compact serving snapshot from R2."""
 
     def __init__(
         self,
         bucket: Any,
         *,
-        object_prefix: str = INDEX_OBJECT_PREFIX,
-        track_prefix: str = INDEX_TRACK_PREFIX,
         read_budget: R2ReadBudget | None = None,
+        shard_prefix: str = SHARDED_INDEX_PREFIX,
+        shard_width: int = SHARDED_INDEX_SHARD_WIDTH,
     ) -> None:
         self._bucket = bucket
-        self._object_prefix = object_prefix.rstrip("/")
-        self._track_prefix = track_prefix.rstrip("/")
         self._read_budget = read_budget
+        self._shard_prefix = shard_prefix.rstrip("/")
+        self._shard_width = max(1, int(shard_width))
 
     async def lookup(self, recording_mbid: str) -> CreditIndexEntry | None:
         requested_mbid = recording_mbid.strip().lower()
         if not _MBID_PATTERN.fullmatch(requested_mbid):
             return None
-        entry = await self._lookup_object(
-            f"{self._object_prefix}/{requested_mbid}.json",
-            requested_mbid=requested_mbid,
-        )
-        if entry is not None:
-            return entry
+        return await self._lookup_sharded(requested_mbid)
 
-        # Last.fm can provide a MusicBrainz track MBID while the useful
-        # relation lives on the canonical recording. Targeted ETL publishes
-        # this tiny alias instead of forcing a live /recording/?query=tid:...
-        # request for every track.
-        alias = await self._lookup_object(
-            f"{self._track_prefix}/{requested_mbid}.json",
-            requested_mbid=requested_mbid,
-            allow_alias=True,
+    async def _lookup_sharded(self, requested_mbid: str) -> CreditIndexEntry | None:
+        payload = await self._lookup_shard(
+            f"{self._shard_prefix}/recordings/{requested_mbid[:self._shard_width]}.json.bz2"
         )
-        if not isinstance(alias, Mapping):
+        if payload is not None:
+            entry = _entry_from_shard(
+                payload,
+                payload.get("records", {}).get(requested_mbid)
+                if isinstance(payload.get("records"), Mapping)
+                else None,
+                requested_mbid=requested_mbid,
+            )
+            if entry is not None:
+                return entry
+
+        alias_payload = await self._lookup_shard(
+            f"{self._shard_prefix}/tracks/{requested_mbid[:self._shard_width]}.json.bz2"
+        )
+        aliases = alias_payload.get("aliases") if isinstance(alias_payload, Mapping) else None
+        recording_mbid = aliases.get(requested_mbid) if isinstance(aliases, Mapping) else None
+        recording_mbid = _text(recording_mbid).lower()
+        if not _MBID_PATTERN.fullmatch(recording_mbid):
             return None
-        recording_mbid = _text(alias.get("recording_mbid"))
-        if not recording_mbid or not _MBID_PATTERN.fullmatch(recording_mbid):
+        recording_payload = await self._lookup_shard(
+            f"{self._shard_prefix}/recordings/{recording_mbid[:self._shard_width]}.json.bz2"
+        )
+        if recording_payload is None:
             return None
-        return await self._lookup_object(
-            f"{self._object_prefix}/{recording_mbid.lower()}.json",
+        return _entry_from_shard(
+            recording_payload,
+            recording_payload.get("records", {}).get(recording_mbid)
+            if isinstance(recording_payload.get("records"), Mapping)
+            else None,
             requested_mbid=requested_mbid,
+            recording_mbid=recording_mbid,
         )
 
-    async def _lookup_object(
-        self,
-        key: str,
-        *,
-        requested_mbid: str,
-        allow_alias: bool = False,
-    ) -> object | None:
+    async def _lookup_shard(self, key: str) -> Mapping[str, object] | None:
         if self._read_budget is not None:
             await self._read_budget.reserve()
         obj = await self._bucket.get(key)
         if obj is None:
             return None
-        json_method = getattr(obj, "json", None)
-        if callable(json_method):
-            payload = json_method()
-            if inspect.isawaitable(payload):
-                payload = await payload
-        else:
-            text_method = getattr(obj, "text", None)
-            if not callable(text_method):
-                raise ValueError("The R2 credit index object has no JSON reader.")
-            payload = text_method()
-            if inspect.isawaitable(payload):
-                payload = await payload
-            payload = json.loads(payload)
-        if allow_alias and isinstance(payload, Mapping) and "credits" not in payload:
-            return payload
-        return CreditIndexEntry.from_payload(payload, requested_mbid=requested_mbid)
+        raw = await _object_bytes(obj)
+        try:
+            payload = json.loads(bz2.decompress(raw))
+        except (OSError, TypeError, ValueError) as error:
+            raise ValueError(
+                "The sharded MusicBrainz credit object is not valid bzip2 JSON."
+            ) from error
+        if not isinstance(payload, Mapping):
+            return None
+        schema_version = _text(payload.get("schema_version"))
+        if schema_version != SERVING_SCHEMA_VERSION:
+            raise ValueError("The sharded MusicBrainz credit object schema is not supported.")
+        return payload
+
+
+def _entry_from_shard(
+    shard: Mapping[str, object],
+    raw_record: object,
+    *,
+    requested_mbid: str,
+    recording_mbid: str | None = None,
+) -> CreditIndexEntry | None:
+    if not isinstance(raw_record, Mapping):
+        return None
+    payload = dict(raw_record)
+    canonical_mbid = recording_mbid or _text(payload.get("recording_mbid")) or requested_mbid
+    snapshot_version = _text(payload.get("snapshot_version")) or _text(
+        shard.get("snapshot_version")
+    )
+    source_url = _text(payload.get("source_url")) or (
+        f"https://musicbrainz.org/recording/{canonical_mbid}"
+    )
+    payload.setdefault("recording_mbid", canonical_mbid)
+    payload.setdefault("snapshot_version", snapshot_version)
+    payload.setdefault("source_url", source_url)
+    if not snapshot_version:
+        return None
+    return CreditIndexEntry.from_payload(payload, requested_mbid=requested_mbid)
+
+
+async def _object_bytes(obj: object) -> bytes:
+    for method_name in ("array_buffer", "arrayBuffer"):
+        method = getattr(obj, method_name, None)
+        if callable(method):
+            value = method()
+            if inspect.isawaitable(value):
+                value = await value
+            try:
+                return bytes(value)
+            except (TypeError, ValueError) as error:
+                raise ValueError("The R2 object did not return binary data.") from error
+    body = getattr(obj, "body", None)
+    read_method = getattr(body, "read", None)
+    if callable(read_method):
+        value = read_method()
+        if inspect.isawaitable(value):
+            value = await value
+        try:
+            return bytes(value)
+        except (TypeError, ValueError) as error:
+            raise ValueError("The R2 object body did not return binary data.") from error
+    raise ValueError("The compressed R2 credit object has no binary reader.")
 
 
 class D1RecentCreditIndex:
@@ -437,14 +491,6 @@ class CompositeCreditIndex:
             if entry is not None:
                 return entry
         return None
-
-
-def object_key(recording_mbid: str) -> str:
-    """Return the canonical R2 key used by the offline publisher."""
-
-    if not _MBID_PATTERN.fullmatch(recording_mbid.strip()):
-        raise ValueError("recording_mbid must be a canonical MusicBrainz UUID.")
-    return f"{INDEX_OBJECT_PREFIX}/{recording_mbid.lower()}.json"
 
 
 def _parse_credit(

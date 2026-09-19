@@ -1,3 +1,4 @@
+import bz2
 import json
 import sqlite3
 from pathlib import Path
@@ -21,33 +22,81 @@ RECORDING_MBID = "11111111-1111-4111-8111-111111111111"
 ARTIST_MBID = "22222222-2222-4222-8222-222222222222"
 INSTRUMENT_MBID = "33333333-3333-4333-8333-333333333333"
 TRACK_MBID = "55555555-5555-4555-8555-555555555555"
+
+
 @pytest.mark.anyio
-async def test_r2_index_resolves_track_alias_to_recording() -> None:
-    recording_payload = {
-        "recording_mbid": RECORDING_MBID,
-        "snapshot_version": "schema-30",
-        "source_url": f"https://musicbrainz.org/recording/{RECORDING_MBID}",
-        "credits": [],
+async def test_r2_sharded_index_reads_compressed_recording_shard() -> None:
+    payload = {
+        "schema_version": "musicbrainz-instrument-credits-serving-v1",
+        "snapshot_version": "snapshot-1",
+        "shard": "11",
+        "records": {
+            RECORDING_MBID: {
+                "recording_mbid": RECORDING_MBID,
+                "source_url": f"https://musicbrainz.org/recording/{RECORDING_MBID}",
+                "credits": [
+                    {
+                        "artist_mbid": ARTIST_MBID,
+                        "instrument_mbid": INSTRUMENT_MBID,
+                        "instrument_name": "electric guitar",
+                        "scope": "recording",
+                        "relation_type": "instrument",
+                        "production_method": "performed",
+                    }
+                ],
+            }
+        },
     }
-    alias_payload = {
-        "track_mbid": TRACK_MBID,
-        "recording_mbid": RECORDING_MBID,
-        "snapshot_version": "schema-30",
-        "source_url": f"https://musicbrainz.org/track/{TRACK_MBID}",
-    }
+    compressed = bz2.compress(json.dumps(payload).encode("utf-8"))
 
     class Object:
-        def __init__(self, payload: object) -> None:
-            self.payload = payload
-
-        async def json(self) -> object:
-            return self.payload
+        async def array_buffer(self) -> bytes:
+            return compressed
 
     class Bucket:
         async def get(self, key: str) -> Object | None:
-            if key.endswith(f"/tracks/{TRACK_MBID}.json"):
+            if key.endswith(f"/recordings/11.json.bz2"):
+                return Object()
+            return None
+
+    entry = await R2CreditIndex(Bucket()).lookup(RECORDING_MBID)
+    assert entry is not None
+    assert entry.recording_mbid == RECORDING_MBID
+    assert entry.credits[0].instrument_mbid == INSTRUMENT_MBID
+
+
+@pytest.mark.anyio
+async def test_r2_sharded_index_resolves_track_alias() -> None:
+    recording_payload = {
+        "schema_version": "musicbrainz-instrument-credits-serving-v1",
+        "snapshot_version": "snapshot-1",
+        "shard": "11",
+        "records": {
+            RECORDING_MBID: {
+                "recording_mbid": RECORDING_MBID,
+                "credits": [],
+            }
+        },
+    }
+    alias_payload = {
+        "schema_version": "musicbrainz-instrument-credits-serving-v1",
+        "snapshot_version": "snapshot-1",
+        "shard": "55",
+        "aliases": {TRACK_MBID: RECORDING_MBID},
+    }
+
+    class Object:
+        def __init__(self, value: dict) -> None:
+            self.value = bz2.compress(json.dumps(value).encode("utf-8"))
+
+        async def array_buffer(self) -> bytes:
+            return self.value
+
+    class Bucket:
+        async def get(self, key: str) -> Object | None:
+            if key.endswith("/tracks/55.json.bz2"):
                 return Object(alias_payload)
-            if key.endswith(f"/recordings/{RECORDING_MBID}.json"):
+            if key.endswith("/recordings/11.json.bz2"):
                 return Object(recording_payload)
             return None
 
@@ -57,59 +106,34 @@ async def test_r2_index_resolves_track_alias_to_recording() -> None:
 
 
 @pytest.mark.anyio
-async def test_r2_index_reads_one_recording_object() -> None:
-    payload = {
-        "recording_mbid": RECORDING_MBID,
-        "snapshot_version": "schema-30",
-        "source_url": f"https://musicbrainz.org/recording/{RECORDING_MBID}",
-        "credits": [
-            {
-                "artist_mbid": ARTIST_MBID,
-                "instrument_mbid": INSTRUMENT_MBID,
-                "instrument_name": "Electric guitar",
-                "attributes": ["Electric guitar"],
-                "original_credit": "guitar",
-                "scope": "recording",
-                "source_url": "https://musicbrainz.org/recording/example",
-            }
-        ],
-    }
-
-    class Object:
-        async def json(self) -> object:
-            return payload
-
-    class Bucket:
-        async def get(self, key: str) -> Object:
-            assert key.endswith(f"/{RECORDING_MBID}.json")
-            return Object()
-
-    entry = await R2CreditIndex(Bucket()).lookup(RECORDING_MBID)
-    assert entry is not None
-    assert entry.credits[0].artist_mbid == ARTIST_MBID
-    assert entry.credits[0].scope == "recording"
-
-
-@pytest.mark.anyio
 async def test_r2_read_budget_blocks_before_the_next_bucket_get() -> None:
     payload = {
-        "recording_mbid": RECORDING_MBID,
+        "schema_version": "musicbrainz-instrument-credits-serving-v1",
         "snapshot_version": "schema-30",
-        "source_url": f"https://musicbrainz.org/recording/{RECORDING_MBID}",
-        "credits": [],
+        "shard": "11",
+        "records": {
+            RECORDING_MBID: {
+                "recording_mbid": RECORDING_MBID,
+                "source_url": f"https://musicbrainz.org/recording/{RECORDING_MBID}",
+                "credits": [],
+            }
+        },
     }
+    compressed = bz2.compress(json.dumps(payload).encode("utf-8"))
 
     class Object:
-        async def json(self) -> object:
-            return payload
+        async def array_buffer(self) -> bytes:
+            return compressed
 
     class Bucket:
         def __init__(self) -> None:
             self.gets = 0
 
-        async def get(self, key: str) -> Object:
+        async def get(self, key: str) -> Object | None:
             self.gets += 1
-            return Object()
+            if key.endswith("/recordings/11.json.bz2"):
+                return Object()
+            return None
 
     connection = _seed_db()
     bucket = Bucket()

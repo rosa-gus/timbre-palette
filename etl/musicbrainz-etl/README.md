@@ -51,3 +51,22 @@ vocabulary file reports distinct recordings, documented recordings,
 prevalence, and whether the configured minimum was reached. The command
 requires an empty output directory and validates the staging manifest before
 reading tables.
+
+## Build a serving snapshot
+
+```sh
+etl/musicbrainz-etl/target/release/musicbrainz-etl serve \
+  /data/musicbrainz/aggregate/20260912-002318 \
+  /data/musicbrainz/serving/20260912-002318 \
+  --snapshot-version 20260912-002318 \
+  --shards 256 \
+  --compression-level 6
+```
+
+The serving stage validates the aggregate manifest, discards unresolved
+`instrument` relations without an `instrument_mbid`, and keeps release-scoped
+credits only as a fallback when a recording has no direct evidence. It writes
+deterministic bzip2-compressed shards under `recordings/`, `tracks/`, and
+`artists/`, plus a serving manifest and license notice. The default 256
+hexadecimal-prefix shards keep individual R2 objects bounded while avoiding a
+per-recording object write.
