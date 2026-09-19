@@ -108,6 +108,18 @@ class PaletteService:
 
         return self._build_report(history)
 
+    def build_report(self, history: ListeningHistory) -> PaletteReport:
+        """Build the direct-evidence report from an already prepared history.
+
+        API v2 performs one Last.fm read and prepares both direct evidence and
+        artist vocabulary from the same history.  Keeping this entry point
+        public avoids fetching the profile twice while preserving the existing
+        direct-palette calculation in one place.
+        """
+        if not history.tracks:
+            raise EmptyListeningHistoryError(history.username)
+        return self._build_report(history)
+
     def _build_report(self, history: ListeningHistory) -> PaletteReport:
         recording_statuses = tuple(
             self._recording_status(track, history) for track in history.tracks

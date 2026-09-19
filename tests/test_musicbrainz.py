@@ -215,10 +215,9 @@ def seeded_db() -> sqlite3.Connection:
     root = Path(__file__).resolve().parent.parent
     conn.executescript((root / "migrations/0001_initial_schema.sql").read_text())
     conn.executescript((root / "migrations/0002_seed_taxonomy.sql").read_text())
-    conn.executescript((root / "migrations/0005_analysis_contract.sql").read_text())
-    conn.executescript((root / "migrations/0006_enrichment_outbox.sql").read_text())
+    conn.executescript((root / "migrations/0005_enrichment_outbox.sql").read_text())
     conn.executescript(
-        (root / "migrations/0007_family_claims_and_conservative_mapping.sql").read_text()
+        (root / "migrations/0006_family_claims_and_conservative_mapping.sql").read_text()
     )
     return conn
 
@@ -230,8 +229,7 @@ def legacy_db_with_generic_claim() -> sqlite3.Connection:
     for migration in (
         "0001_initial_schema.sql",
         "0002_seed_taxonomy.sql",
-        "0005_analysis_contract.sql",
-        "0006_enrichment_outbox.sql",
+        "0005_enrichment_outbox.sql",
     ):
         conn.executescript((root / "migrations" / migration).read_text())
     conn.execute(
@@ -343,7 +341,7 @@ def test_migration_reclassifies_old_generic_claim_without_losing_evidence() -> N
     root = Path(__file__).resolve().parent.parent
 
     conn.executescript(
-        (root / "migrations/0007_family_claims_and_conservative_mapping.sql").read_text()
+        (root / "migrations/0006_family_claims_and_conservative_mapping.sql").read_text()
     )
 
     assert conn.execute(

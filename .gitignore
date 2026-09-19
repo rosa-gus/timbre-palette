@@ -9,7 +9,7 @@ __pycache__/
 *.egg-info/
 node_modules/
 python_modules/
-etl/*/target/
+target/
 src/vendor/
 src/palette_api/_generated_image_catalog.json
 web/dist/

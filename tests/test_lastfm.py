@@ -3,8 +3,7 @@ from urllib.parse import parse_qs, urlparse
 import httpx
 import pytest
 
-from palette_api.api import app, get_palette_service
-from palette_api.application import PaletteService
+from palette_api.api import app, get_v2_analysis_service
 from palette_api.domain import DataSource, ListeningPeriod
 from palette_api.lastfm import (
     JsonHttpResponse,
@@ -15,7 +14,7 @@ from palette_api.lastfm import (
     LastFmRateLimitError,
     LastFmUnavailableError,
 )
-from palette_api.mocks import MockInstrumentationProvider
+from palette_api.v2 import MockSnapshotProjectionProvider, V2AnalysisService
 
 
 SUCCESS_RESPONSE = {
@@ -96,6 +95,7 @@ async def test_lastfm_provider_builds_request_and_parses_top_tracks() -> None:
     assert history.tracks[0].play_count == 42
     assert history.tracks[0].mbid == "test-track-mbid"
     assert history.tracks[0].release_mbid == "test-release-mbid"
+    assert history.tracks[0].artist_mbid == "test-artist-mbid"
     assert history.tracks[1].mbid is None
     assert history.tracks[0].layers == ()
 
@@ -180,19 +180,19 @@ async def test_lastfm_provider_maps_http_failure() -> None:
 
 
 @pytest.mark.anyio
-async def test_palette_endpoint_combines_lastfm_history_with_mock_instrumentation() -> None:
-    service = PaletteService(
+async def test_v2_endpoint_combines_lastfm_history_with_snapshot_projection() -> None:
+    service = V2AnalysisService(
         history_provider=LastFmListeningHistoryProvider(
             "test-api-key",
             StubJsonTransport(JsonHttpResponse(200, SUCCESS_RESPONSE)),
         ),
-        instrumentation_provider=MockInstrumentationProvider(),
+        snapshot_provider=MockSnapshotProjectionProvider(),
     )
 
-    async def get_test_palette_service() -> PaletteService:
+    async def get_test_analysis_service() -> V2AnalysisService:
         return service
 
-    app.dependency_overrides[get_palette_service] = get_test_palette_service
+    app.dependency_overrides[get_v2_analysis_service] = get_test_analysis_service
     transport = httpx.ASGITransport(app=app)
 
     try:
@@ -200,15 +200,14 @@ async def test_palette_endpoint_combines_lastfm_history_with_mock_instrumentatio
             transport=transport,
             base_url="http://testserver",
         ) as client:
-            response = await client.get("/v1/profiles/listener/palette")
+            response = await client.get("/v2/profiles/listener/analysis")
     finally:
         app.dependency_overrides.clear()
 
     assert response.status_code == 200
     body = response.json()
     assert body["profile"]["username"] == "CanonicalUser"
-    assert body["analysis"]["data_source"] == "hybrid"
-    assert body["analysis"]["history_source"] == "lastfm"
-    assert body["analysis"]["instrumentation_source"] == "mock"
-    assert any(track["artist"] == "Radiohead" for track in body["recordings"])
-    assert all(track["lastfm_url"].startswith("https://www.last.fm/") for track in body["recordings"])
+    assert body["track_palette"]["analysis"]["history_source"] == "lastfm"
+    assert body["track_palette"]["analysis"]["instrumentation_source"] == "mock"
+    assert any(track["artist"] == "Radiohead" for track in body["track_palette"]["recordings"])
+    assert all(track["lastfm_url"].startswith("https://www.last.fm/") for track in body["track_palette"]["recordings"])

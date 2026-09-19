@@ -250,7 +250,7 @@ class D1InstrumentationProvider:
                    i.name AS instrument_name,
                    f.name AS family_name,
                    i.sound_nature AS instrument_nature,
-                   COALESCE(i.discovery_eligible, 0) AS discovery_eligible,
+                   0 AS discovery_eligible,
                    ic.confidence_level, ic.role, ic.prominence,
                    ic.recording_id
             FROM instrument_claims AS ic
@@ -332,6 +332,8 @@ def replace_track(
         recording_status_detail=recording_status_detail
         if recording_status_detail is not None
         else track.recording_status_detail,
+        release_mbid=track.release_mbid,
+        artist_mbid=track.artist_mbid,
     )
 
 

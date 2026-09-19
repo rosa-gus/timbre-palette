@@ -231,7 +231,7 @@ CREATE TABLE IF NOT EXISTS enrichment_jobs (
     title TEXT NOT NULL,
     recording_id INTEGER REFERENCES recordings(id) ON DELETE SET NULL,
     status TEXT NOT NULL DEFAULT 'pending'
-        CHECK (status IN ('pending', 'processing', 'completed', 'failed', 'ambiguous')),
+        CHECK (status IN ('pending', 'processing', 'completed', 'failed', 'ambiguous', 'terminal')),
     attempts INTEGER NOT NULL DEFAULT 0,
     last_error TEXT,
     last_attempt_at TEXT,

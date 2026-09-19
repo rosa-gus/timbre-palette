@@ -238,3 +238,91 @@ class InstrumentResource(ApiModel):
 class ApiError(ApiModel):
     code: str
     message: str
+
+
+# ---------------------------------------------------------------------------
+# API v2 analysis contract
+# ---------------------------------------------------------------------------
+
+AnalysisV2Status = Literal["available", "pending", "insufficient"]
+AnalysisView = Literal["track_palette", "artist_vocabulary"]
+
+
+class SnapshotInfo(ApiModel):
+    snapshot_version: str
+    schema_version: str
+    manifest_hash: str
+    object_prefix: str
+    methodology_version: str
+
+
+class HydrationSummary(ApiModel):
+    status: Literal["complete", "pending"]
+    pending_recordings: int = Field(ge=0)
+    pending_artists: int = Field(ge=0)
+    pending_aliases: int = Field(ge=0)
+
+
+class VocabularyReach(ApiModel):
+    track_reach: float = Field(ge=0, le=1)
+    play_reach: float = Field(ge=0, le=1)
+    qualified_artists: int = Field(ge=0)
+    total_artists: int = Field(ge=0)
+    qualified_tracks: int = Field(ge=0)
+    total_tracks: int = Field(ge=0)
+    qualified_plays: int = Field(ge=0)
+    total_plays: int = Field(ge=0)
+
+
+class VocabularyEvidence(ApiModel):
+    source: Literal["musicbrainz_snapshot"]
+    scope: Literal["recording", "track"]
+    snapshot_version: str
+    quality: float = Field(ge=0, le=1)
+    documented_recordings: int = Field(ge=0)
+
+
+class VocabularyInstrument(ApiModel):
+    slug: str
+    name: str
+    distinct_recordings: int = Field(ge=0)
+    documented_recordings: int = Field(ge=0)
+    prevalence: float = Field(ge=0, le=1)
+    evidence: VocabularyEvidence
+
+
+class VocabularyFamily(ApiModel):
+    slug: str
+    name: str
+    score: float = Field(ge=0)
+    share: float = Field(ge=0, le=1)
+    prevalence: float = Field(ge=0, le=1)
+    supporting_artists: int = Field(ge=0)
+    instruments: list[VocabularyInstrument] = Field(default_factory=list)
+
+
+class VocabularyAvailability(ApiModel):
+    status: AnalysisV2Status
+    reason: str
+    pending_artists: int = Field(ge=0)
+    pending_tracks: int = Field(ge=0)
+
+
+class ArtistVocabulary(ApiModel):
+    status: AnalysisV2Status
+    methodology_version: str
+    availability: VocabularyAvailability
+    reach: VocabularyReach
+    concentration: float = Field(ge=0, le=1)
+    families: list[VocabularyFamily] = Field(default_factory=list)
+    notice: str
+
+
+class ProfileAnalysisV2(ApiModel):
+    profile: ProfileSummary
+    snapshot: SnapshotInfo
+    track_palette: PaletteReport
+    artist_vocabulary: ArtistVocabulary
+    available_views: list[AnalysisView]
+    default_view: AnalysisView | None
+    hydration: HydrationSummary

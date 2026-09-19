@@ -101,6 +101,7 @@ class Track:
     recording_status: RecordingStatus | None = None
     recording_status_detail: str | None = None
     release_mbid: str | None = None
+    artist_mbid: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

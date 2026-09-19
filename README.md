@@ -36,9 +36,9 @@ MusicBrainz is used by the asynchronous enrichment worker to resolve recording i
 
 The backend is a Python application built with FastAPI and designed to run on Cloudflare Workers. It exposes three primary resources:
 
-- `GET /v1/profiles/{username}/palette` — generates the best currently supported palette report for a public profile.
-- `GET /v1/instruments/{slug}` — returns a reviewed instrument or sound-family profile.
-- `GET /v1/catalog/stats` — returns a lightweight count of recordings with accepted evidence.
+- `GET /v2/profiles/{username}/analysis` — returns direct track evidence and, when supported, the artist vocabulary.
+- `GET /v2/instruments/{slug}` — returns a reviewed instrument or sound-family profile.
+- `GET /v2/catalog/stats` — returns a lightweight count from the active snapshot projection.
 
 FastAPI publishes the canonical OpenAPI schema at `GET /openapi.json` and interactive documentation at `GET /docs`. Palette requests return immediately with the available result and never wait for background enrichment.
 
@@ -67,7 +67,7 @@ flowchart LR
     Enricher -->|candidates and accepted claims| D1
 ```
 
-The HTTP Worker and enrichment service share the same application and domain modules. Slow or rate-limited enrichment work remains outside the request path. D1 owns demand, jobs, and grouped work units; the Python service is the scheduled Queue producer, while the TypeScript Worker owns Queue delivery, acknowledgements, retries, and the DLQ. Each message can process up to ten jobs sequentially.
+The HTTP Worker reads only compact, versioned snapshot projections from D1. Slow enrichment remains outside the request path: the private Worker reads R2 shards, groups targets by partition, and materializes the requested projections asynchronously. The HTTP request records missing targets and returns an explicit pending state.
 
 The MusicBrainz path first checks recent normalized D1 evidence and then a
 versioned offline credit index in R2. Only a miss in both local layers reaches

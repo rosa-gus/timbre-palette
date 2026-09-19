@@ -2,7 +2,7 @@
 
 Album collection is deliberately separate from public palette calculation:
 the collector stores a complete source document and raw observations first;
-only accepted claims are read by ``D1InstrumentationProvider``.
+only snapshot-projected evidence is read by the v2 analysis service.
 """
 
 from __future__ import annotations

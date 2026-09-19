@@ -2,6 +2,7 @@ import type {
   InstrumentResource,
   ListeningPeriod,
   PaletteReport,
+  ProfileAnalysisV2,
 } from "./types";
 import { storageKey } from "../storage";
 
@@ -9,10 +10,12 @@ const API_BASE_URL = (
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8787"
 ).replace(/\/$/, "");
 
-export const catalogStorageKey = storageKey("catalog", "last-seen");
+// v2 stats count the active snapshot projection; do not compare them with
+// values cached under the former catalog semantics.
+export const catalogStorageKey = storageKey("catalog", "last-seen", "v2");
 
 export async function getCatalogSize(signal: AbortSignal): Promise<number> {
-  const response = await fetch(`${API_BASE_URL}/v1/catalog/stats`, { signal });
+  const response = await fetch(`${API_BASE_URL}/v2/catalog/stats`, { signal });
   if (!response.ok) throw new Error("Catalog statistics unavailable");
   const value: unknown = await response.json();
   if (!isRecord(value) || !Number.isSafeInteger(value.recordings_with_evidence) ||
@@ -122,6 +125,41 @@ function isPaletteReport(value: unknown): value is PaletteReport {
   );
 }
 
+function isProfileAnalysisV2(value: unknown): value is ProfileAnalysisV2 {
+  if (!isRecord(value)) return false;
+  const snapshot = value.snapshot;
+  const hydration = value.hydration;
+  const vocabulary = value.artist_vocabulary;
+  const availableViews = value.available_views;
+  const defaultView = value.default_view;
+  return (
+    isRecord(value.profile) &&
+    isRecord(snapshot) &&
+    typeof snapshot.snapshot_version === "string" &&
+    typeof snapshot.schema_version === "string" &&
+    typeof snapshot.manifest_hash === "string" &&
+    typeof snapshot.object_prefix === "string" &&
+    typeof snapshot.methodology_version === "string" &&
+    isPaletteReport(value.track_palette) &&
+    isRecord(vocabulary) &&
+    ["available", "pending", "insufficient"].includes(vocabulary.status as string) &&
+    Array.isArray(availableViews) &&
+    availableViews.every((view) =>
+      view === "track_palette" || view === "artist_vocabulary",
+    ) &&
+    (defaultView === null ||
+      defaultView === "track_palette" ||
+      defaultView === "artist_vocabulary") &&
+    isRecord(hydration) &&
+    (hydration.status === "complete" || hydration.status === "pending") &&
+    [
+      "pending_recordings",
+      "pending_artists",
+      "pending_aliases",
+    ].every((key) => isFiniteNumber(hydration[key]))
+  );
+}
+
 function isInstrumentResource(value: unknown): value is InstrumentResource {
   return (
     isRecord(value) &&
@@ -200,17 +238,20 @@ export async function getPalette(
 ): Promise<PaletteReport> {
   const encodedUsername = encodeURIComponent(username);
   const result = await getJson<unknown>(
-    `/v1/profiles/${encodedUsername}/palette?period=${encodeURIComponent(period)}`,
+    `/v2/profiles/${encodedUsername}/analysis?period=${encodeURIComponent(period)}`,
     signal,
   );
-  if (!isPaletteReport(result.data)) {
+  if (!isProfileAnalysisV2(result.data)) {
     throw new PaletteApiError(
-      "A API devolveu uma paleta incompatível com o contrato.",
+      "A API devolveu uma análise incompatível com o contrato.",
       result.response.status,
       "invalid_report",
     );
   }
-  return result.data;
+  // The current interface still displays only the direct palette. The v2
+  // envelope already carries vocabulary data, but that view is intentionally
+  // deferred to a separate frontend change.
+  return result.data.track_palette;
 }
 
 export async function getInstrument(
@@ -218,7 +259,7 @@ export async function getInstrument(
   signal: AbortSignal,
 ): Promise<InstrumentResource> {
   const result = await getJson<InstrumentResource>(
-    `/v1/instruments/${encodeURIComponent(slug)}`,
+    `/v2/instruments/${encodeURIComponent(slug)}`,
     signal,
   );
   if (!isInstrumentResource(result.data)) {

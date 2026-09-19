@@ -173,8 +173,12 @@ class LastFmListeningHistoryProvider:
             artist = LastFmListeningHistoryProvider._optional_text(
                 artist_data.get("name")
             )
+            artist_mbid = LastFmListeningHistoryProvider._optional_text(
+                artist_data.get("mbid")
+            )
         else:
             artist = LastFmListeningHistoryProvider._optional_text(artist_data)
+            artist_mbid = None
 
         try:
             play_count = int(str(raw_track.get("playcount", "0")))
@@ -200,6 +204,7 @@ class LastFmListeningHistoryProvider:
                 raw_track.get("url")
             ),
             release_mbid=release_mbid,
+            artist_mbid=artist_mbid,
         )
 
     @staticmethod

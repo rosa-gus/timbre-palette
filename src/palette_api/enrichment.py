@@ -178,7 +178,7 @@ class D1QueueEnrichmentScheduler:
         try:
             rows = await _all_rows(self._db.prepare(query).bind(limit))
         except Exception:
-            # Fixtures created before migration 0009 contain only recording
+            # Fixtures created before migration 0007 contain only recording
             # jobs and use the smaller projection.
             rows = await _all_rows(
                 self._db.prepare(
@@ -234,7 +234,7 @@ class D1QueueEnrichmentScheduler:
             )
         except Exception as error:
             # Keep the v2 path usable during a rolling migration and in old
-            # local fixtures that do not have migration 0015 yet.
+            # local fixtures that do not have migration 0013 yet.
             self._work_units_enabled = False
             _log_event("enrichment_work_units_unavailable", error_type=type(error).__name__)
             return False
@@ -573,7 +573,7 @@ class D1QueueEnrichmentScheduler:
                     """
                 ).bind(*params).run()
         except Exception as error:
-            # Deployments must run migration 0009. This guard keeps the public
+            # Deployments must run migration 0007. This guard keeps the public
             # report available during a rolling local migration and surfaces
             # the omission in structured logs.
             _log_event("catalog_demand_unavailable", error_type=type(error).__name__)

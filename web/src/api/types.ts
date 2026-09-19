@@ -149,6 +149,58 @@ export interface PaletteReport {
   temperament: Temperament | null;
 }
 
+export type AnalysisV2Status = "available" | "pending" | "insufficient";
+export type AnalysisView = "track_palette" | "artist_vocabulary";
+
+export interface SnapshotInfo {
+  snapshot_version: string;
+  schema_version: string;
+  manifest_hash: string;
+  object_prefix: string;
+  methodology_version: string;
+}
+
+export interface HydrationSummary {
+  status: "complete" | "pending";
+  pending_recordings: number;
+  pending_artists: number;
+  pending_aliases: number;
+}
+
+export interface ArtistVocabulary {
+  status: AnalysisV2Status;
+  methodology_version: string;
+  availability: {
+    status: AnalysisV2Status;
+    reason: string;
+    pending_artists: number;
+    pending_tracks: number;
+  };
+  reach: {
+    track_reach: number;
+    play_reach: number;
+    qualified_artists: number;
+    total_artists: number;
+    qualified_tracks: number;
+    total_tracks: number;
+    qualified_plays: number;
+    total_plays: number;
+  };
+  concentration: number;
+  families: unknown[];
+  notice: string;
+}
+
+export interface ProfileAnalysisV2 {
+  profile: ProfileSummary;
+  snapshot: SnapshotInfo;
+  track_palette: PaletteReport;
+  artist_vocabulary: ArtistVocabulary;
+  available_views: AnalysisView[];
+  default_view: AnalysisView | null;
+  hydration: HydrationSummary;
+}
+
 export interface EditorialReview {
   source_metadata_verified: boolean;
   claim_support_verified: boolean;

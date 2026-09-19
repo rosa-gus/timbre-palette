@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "timbre-palette-api"
-version = "0.4.2"
+version = "2.0.0"
 description = "API pública para retratos instrumentais de perfis do Last.fm."
 requires-python = ">=3.13"
 dependencies = [

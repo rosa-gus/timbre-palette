@@ -84,7 +84,7 @@ with no accepted instrument claim ends it as `completed` with
 
 ## Prepared album catalog
 
-Migration `0009_prepared_album_catalog.sql` organizes album groups, releases,
+Migration `0007_prepared_album_catalog.sql` organizes album groups, releases,
 and tracks, with separate `source_documents`, `credit_observations`,
 `catalog_demand`, and `prepared_album_targets` tables. The versioned manifest
 and import flow are documented in
@@ -129,8 +129,8 @@ legacy maintenance must be explicit and separate.
 
 ## Rollout
 
-Apply migrations `0015_enrichment_work_units.sql` and
-`0016_musicbrainz_credit_index.sql`, create/populate the R2 credit index, and deploy
+Apply migrations `0013_enrichment_work_units.sql` and
+`0014_musicbrainz_credit_index.sql`, create/populate the R2 credit index, and deploy
 `timbre-palette-enricher-python` first, and then deploy the TypeScript
 `timbre-palette-enricher` Queue Worker. The TypeScript Worker must be active
 before the old Python Queue consumer is replaced. Do not replay the existing

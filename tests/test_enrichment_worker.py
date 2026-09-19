@@ -104,9 +104,8 @@ def seeded_db() -> sqlite3.Connection:
     for name in (
         "0001_initial_schema.sql",
         "0002_seed_taxonomy.sql",
-        "0005_analysis_contract.sql",
-        "0006_enrichment_outbox.sql",
-        "0007_family_claims_and_conservative_mapping.sql",
+        "0005_enrichment_outbox.sql",
+        "0006_family_claims_and_conservative_mapping.sql",
     ):
         conn.executescript((root / "migrations" / name).read_text())
     yield conn

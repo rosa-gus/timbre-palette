@@ -985,7 +985,7 @@ class D1IdentityRepository:
                 demand_key(track.artist, track.title, track.mbid),
             )
         except Exception:
-            # The demand projection is introduced by migration 0009; identity
+            # The demand projection is introduced by migration 0007; identity
             # persistence remains valid if a local database is mid-migration.
             pass
         return recording_id
@@ -1236,7 +1236,7 @@ class D1EnrichmentJobRepository:
                 ).bind(job_key)
             )
         except Exception:
-            # Keep v2 consumers readable while 0009 is being rolled out.
+            # Keep v2 consumers readable while 0007 is being rolled out.
             return await _first(
                 self._db.prepare(
                     """
