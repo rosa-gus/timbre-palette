@@ -87,7 +87,6 @@ class InstrumentLayer:
     role: str
     confidence: Confidence
     prominence: float = 1.0
-    unexpected: bool = False
     claim_level: ClaimLevel = ClaimLevel.INSTRUMENT
 
 

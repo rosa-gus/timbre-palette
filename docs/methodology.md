@@ -33,8 +33,19 @@ play coverage  = plays in covered tracks / total plays
 
 - a useful documented sample requires at least five covered tracks, 5% play
   reach, and two covered artists when the history contains two or more;
-- discovery, sound balance, and temperament keep their own stricter section
-  gates and do not change the palette's top-level status.
+- discovery and temperament use the same useful sample gate, then apply their
+  own recurrence and contrast checks. They do not change the palette's
+  top-level status.
+
+For `discovery`, an instrument-level claim must recur in at least three
+documented tracks from two artists and account for no more than 35% of the
+documented plays. The selection is based on the period's evidence; it does not
+depend on a manually assigned `unexpected` flag.
+
+For `temperament`, at least two families need three documented tracks each and
+the second family must reach 10% of the documented play share. The resulting
+text remains a deterministic editorial interpretation, not a claim about the
+listener's personality.
 
 `ready` means the first gate passed. `partial` means that some direct evidence
 can be shown but the sample is below that gate. `insufficient` means that no

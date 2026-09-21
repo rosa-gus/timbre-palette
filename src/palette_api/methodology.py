@@ -17,22 +17,23 @@ class MethodologyPolicy:
     # Candidate-pool expansion changes the coverage denominator and therefore
     # is a new public methodology revision.
     version: str = "0.5.0"
-    # The direct palette is a useful documented sample once it has five
-    # recordings, reaches 5% of plays, and includes two artists.  The stricter
-    # interpretation gate remains separate below.
+    # The direct palette and its interpretation sections use the same useful
+    # documented sample gate.  The sections add their own recurrence and
+    # contrast checks below.
     palette_track_ratio: float = 0.05
     palette_play_ratio: float = 0.05
-    interpretation_track_ratio: float = 0.40
-    interpretation_play_ratio: float = 0.40
+    interpretation_track_ratio: float = 0.05
+    interpretation_play_ratio: float = 0.05
     palette_track_floor: int = 5
-    interpretation_track_floor: int = 8
+    interpretation_track_floor: int = 5
     palette_artist_floor: int = 2
-    interpretation_artist_floor: int = 4
+    interpretation_artist_floor: int = 2
     known_nature_ratio: float = 0.80
     discovery_recording_floor: int = 3
     discovery_artist_floor: int = 2
+    discovery_max_play_share: float = 0.35
     temperament_family_recording_floor: int = 3
-    temperament_contrast_share: float = 0.15
+    temperament_contrast_share: float = 0.10
     temperament_pair_share: float = 0.15
     temperament_signal_share: float = 0.25
     temperament_sampled_signal_share: float = 0.15

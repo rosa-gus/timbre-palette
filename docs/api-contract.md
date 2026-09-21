@@ -46,8 +46,9 @@ MusicBrainz identity is reported as `unresolved_identity`; it does not create a
 hydration job.
 
 `discovery`, `sound_balance`, and `temperament` belong exclusively to the direct
-track palette and retain their own section gates. They are never unlocked by
-artist vocabulary.
+track palette and retain their own evidence gates. Discovery uses recurring
+instrument evidence from the period, while temperament uses recurring family
+contrast. They are never unlocked by artist vocabulary.
 
 The endpoint returns HTTP `200` for a valid history, including insufficient or
 pending analysis states. A missing Last.fm profile, invalid period, empty

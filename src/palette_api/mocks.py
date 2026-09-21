@@ -68,7 +68,6 @@ class MockListeningHistoryProvider:
                         role="Acrescenta uma ressonância inesperada ao pulso.",
                         confidence=Confidence.STRONGLY_ASSOCIATED,
                         prominence=0.35,
-                        unexpected=True,
                     ),
                     InstrumentLayer(
                         slug="drums",
@@ -144,7 +143,6 @@ class MockListeningHistoryProvider:
                         role="Cria um brilho menos óbvio na transição.",
                         confidence=Confidence.STRONGLY_ASSOCIATED,
                         prominence=0.3,
-                        unexpected=True,
                     ),
                 ),
             ),
@@ -162,7 +160,6 @@ class MockListeningHistoryProvider:
                         role="Introduz brilho e ressonância sem dominar o arranjo.",
                         confidence=Confidence.STRONGLY_ASSOCIATED,
                         prominence=0.65,
-                        unexpected=True,
                     ),
                     InstrumentLayer(
                         slug="sampler",

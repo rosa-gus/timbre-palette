@@ -425,7 +425,7 @@ class PaletteService:
         candidates: dict[str, _DiscoveryCandidate] = {}
         for track in covered_history:
             for layer in track.layers:
-                if layer.claim_level is not ClaimLevel.INSTRUMENT or not layer.unexpected:
+                if layer.claim_level is not ClaimLevel.INSTRUMENT:
                     continue
                 candidate = candidates.setdefault(
                     layer.slug,
@@ -443,19 +443,28 @@ class PaletteService:
                 candidate.tracks.add(self._track_key(track))
                 candidate.artists.add(self._artist_key(track.artist))
                 candidate.plays += track.play_count
+        total_covered_plays = sum(track.play_count for track in covered_history)
         eligible = [
             candidate
             for candidate in candidates.values()
             if len(candidate.tracks) >= self._methodology.discovery_recording_floor
             and len(candidate.artists) >= self._methodology.discovery_artist_floor
+            and (
+                candidate.plays / total_covered_plays
+                if total_covered_plays
+                else 0
+            )
+            <= self._methodology.discovery_max_play_share
         ]
         if not eligible:
             return None
         eligible.sort(
             key=lambda candidate: (
+                candidate.plays / total_covered_plays
+                if total_covered_plays
+                else 0,
                 -len(candidate.tracks),
                 -len(candidate.artists),
-                -candidate.plays,
                 candidate.layer.slug,
             )
         )
