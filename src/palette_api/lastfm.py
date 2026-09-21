@@ -7,7 +7,10 @@ from palette_api.domain import DataSource, ListeningHistory, ListeningPeriod, Tr
 
 
 LASTFM_API_URL = "https://ws.audioscrobbler.com/2.0/"
-TOP_TRACK_LIMIT = 50
+# Last.fm returns a ranked page for each period.  The API v2 uses a larger
+# candidate page so the local snapshot can find documented recordings beyond
+# the first 50 ranks without turning every candidate into hydration work.
+TOP_TRACK_LIMIT = 200
 
 
 class LastFmError(Exception):

@@ -14,7 +14,9 @@ class MethodologyPolicy:
     small period from producing an apparently authoritative portrait.
     """
 
-    version: str = "0.4.0"
+    # Candidate-pool expansion changes the coverage denominator and therefore
+    # is a new public methodology revision.
+    version: str = "0.5.0"
     # The direct palette is a useful documented sample once it has five
     # recordings, reaches 5% of plays, and includes two artists.  The stricter
     # interpretation gate remains separate below.

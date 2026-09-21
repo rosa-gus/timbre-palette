@@ -24,7 +24,7 @@ The project is currently a prototype. Its results are designed to be transparent
 
 ### Last.fm
 
-Last.fm provides the public listening history used as the input for an analysis. The API reads a profile's top tracks for the requested period; visitors do not authenticate with their Last.fm accounts. A project API key is required when running the real integration.
+Last.fm provides the public listening history used as the input for an analysis. The API reads up to 200 ranked tracks for the requested period, then checks the local snapshot in batches so documented tracks below the first 50 ranks can contribute. Visitors do not authenticate with their Last.fm accounts. A project API key is required when running the real integration.
 
 Last.fm is a listening-history source, not an authoritative source of instrumentation.
 

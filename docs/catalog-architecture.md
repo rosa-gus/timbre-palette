@@ -18,7 +18,7 @@ flowchart TD
 
 ## Public read model
 
-The API v2 reads the active snapshot metadata and its compact projections for recording evidence, track aliases, and artist vocabulary. A request with absent data records deduplicated hydration targets in D1 and returns the available state immediately.
+The API v2 reads the active snapshot metadata and its compact projections for recording evidence, track aliases, and artist vocabulary. A request can read up to 200 Last.fm candidates and sends their identities to the compact D1 projections in bounded batch queries. A request with absent data records deduplicated hydration targets in D1 and returns the available state immediately; missing recording/track targets are capped at 50 per request, so the larger read pool does not fan out into one job per candidate.
 
 Direct track evidence and Artist Vocabulary are separate products. Vocabulary never enters `Track.layers`, never raises direct-evidence coverage, and cannot unlock discovery, sound balance, or temperament.
 

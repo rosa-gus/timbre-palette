@@ -44,7 +44,7 @@ SUCCESS_RESPONSE = {
         "@attr": {
             "user": "CanonicalUser",
             "page": "1",
-            "perPage": "50",
+            "perPage": "200",
             "totalPages": "1",
             "total": "2",
         },
@@ -85,7 +85,7 @@ async def test_lastfm_provider_builds_request_and_parses_top_tracks() -> None:
         "api_key": ["test-api-key"],
         "format": ["json"],
         "period": ["6month"],
-        "limit": ["50"],
+        "limit": ["200"],
         "page": ["1"],
     }
     assert history.username == "CanonicalUser"
@@ -98,6 +98,36 @@ async def test_lastfm_provider_builds_request_and_parses_top_tracks() -> None:
     assert history.tracks[0].artist_mbid == "test-artist-mbid"
     assert history.tracks[1].mbid is None
     assert history.tracks[0].layers == ()
+
+
+def test_lastfm_provider_rejects_a_candidate_limit_above_two_hundred() -> None:
+    with pytest.raises(ValueError, match="between 1 and 200"):
+        LastFmListeningHistoryProvider(
+            "test-api-key",
+            StubJsonTransport(JsonHttpResponse(200, SUCCESS_RESPONSE)),
+            limit=201,
+        )
+
+
+@pytest.mark.anyio
+async def test_lastfm_provider_keeps_at_most_two_hundred_candidates() -> None:
+    tracks = [
+        {
+            "name": f"Track {index}",
+            "playcount": "1",
+            "artist": {"name": "Artist"},
+        }
+        for index in range(205)
+    ]
+    provider = LastFmListeningHistoryProvider(
+        "test-api-key",
+        StubJsonTransport(JsonHttpResponse(200, {"toptracks": {"track": tracks}})),
+    )
+
+    history = await provider.get_history("listener", ListeningPeriod.OVERALL)
+
+    assert len(history.tracks) == 200
+    assert history.tracks[-1].title == "Track 199"
 
 
 @pytest.mark.anyio

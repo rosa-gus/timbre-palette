@@ -20,6 +20,7 @@ from palette_api.v2 import (
     SnapshotVocabularyRow,
     HydrationTarget,
     V2AnalysisService,
+    _bounded_hydration_targets,
     _shard_key,
 )
 
@@ -42,6 +43,29 @@ def test_hydration_targets_use_serving_snapshot_shard_widths() -> None:
     assert _shard_key("recording", mbid) == "abcd"
     assert _shard_key("track", mbid) == "abcd"
     assert _shard_key("artist", mbid) == "abc"
+
+
+def test_recording_hydration_is_bounded_but_artist_targets_are_deduplicated() -> None:
+    recording_targets = [
+        HydrationTarget("recording", f"recording-{index}")
+        for index in range(60)
+    ]
+    artist_targets = [
+        HydrationTarget("artist", f"artist-{index}")
+        for index in range(3)
+    ]
+
+    selected = _bounded_hydration_targets(
+        recording_targets + artist_targets + [recording_targets[0]]
+    )
+
+    assert len(selected) == 53
+    assert selected[:2] == (
+        HydrationTarget("recording", "recording-0"),
+        HydrationTarget("recording", "recording-1"),
+    )
+    assert selected[49] == HydrationTarget("recording", "recording-49")
+    assert selected[50:] == tuple(artist_targets)
 
 
 @pytest.mark.anyio

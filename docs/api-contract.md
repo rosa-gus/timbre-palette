@@ -17,6 +17,15 @@ The response also contains `snapshot`, `hydration`, `available_views`, and
 coverage belong only to `track_palette`; vocabulary reach belongs only to
 `artist_vocabulary`.
 
+The Last.fm history read requests up to 200 ranked candidates for the selected
+period. The direct palette's denominators include every valid candidate
+returned by that read, including candidates that are not yet documented. The
+snapshot provider checks those identities in batched local D1 projections, so a
+documented recording can contribute even when it is below the first 50 ranks.
+Missing recording/track identities are capped at 50 new hydration targets per
+request and are kept in Last.fm rank order. Artist targets remain deduplicated
+separately because one artist hydration can serve many candidate tracks.
+
 The vocabulary is available only when its configured recurrence, track reach,
 play reach, artist diversity, and concentration gates are satisfied. If pending
 artists could still change an insufficient result, its status is `pending`; if

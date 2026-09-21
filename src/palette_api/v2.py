@@ -48,6 +48,11 @@ MIN_REACH = 0.10
 MIN_QUALIFIED_ARTISTS = 3
 MAX_ARTIST_WEIGHT = 0.40
 MAX_ARTIST_CONCENTRATION = 0.70
+# Keep request-driven hydration bounded even though the read-side candidate
+# pool is larger.  The first recording/track targets retain Last.fm rank order;
+# artist targets are deduplicated separately because one artist target can
+# benefit many tracks.
+MAX_RECORDING_HYDRATION_TARGETS = 50
 
 
 class SnapshotUnavailableError(RuntimeError):
@@ -128,6 +133,9 @@ class D1SnapshotProjectionProvider:
 
     async def prepare(self, history: ListeningHistory) -> SnapshotPreparation:
         snapshot = await self._active_snapshot()
+        # Keep the candidate page in one compact JSON parameter per projection
+        # query. This lets D1 resolve all local identities in batches instead
+        # of issuing one statement per Last.fm track.
         track_mbids = tuple(
             sorted({track.mbid.strip().lower() for track in history.tracks if track.mbid})
         )
@@ -237,7 +245,7 @@ class D1SnapshotProjectionProvider:
             history=enriched_history,
             vocabulary_rows=tuple(vocabulary_rows),
             pending_artist_mbids=pending_artists,
-            targets=tuple(dict.fromkeys(targets)),
+            targets=_bounded_hydration_targets(targets),
         )
 
     async def _active_snapshot(self) -> SnapshotInfo:
@@ -466,7 +474,10 @@ class D1SnapshotHydrationScheduler:
         snapshot_version: str,
         targets: tuple[HydrationTarget, ...],
     ) -> None:
-        unique = tuple(dict.fromkeys(targets))
+        # Keep the scheduler safe for alternate providers as well; the D1
+        # projection provider already applies this bound before building the
+        # public hydration summary.
+        unique = _bounded_hydration_targets(targets)
         if not unique:
             return
         payload = json.dumps(
@@ -492,6 +503,32 @@ class D1SnapshotHydrationScheduler:
                 """
             ).bind(snapshot_version, payload)
         )
+
+
+def _bounded_hydration_targets(
+    targets: list[HydrationTarget] | tuple[HydrationTarget, ...],
+    *,
+    max_recording_targets: int = MAX_RECORDING_HYDRATION_TARGETS,
+) -> tuple[HydrationTarget, ...]:
+    """Keep recording hydration bounded while preserving artist fan-out.
+
+    The provider may inspect up to 200 Last.fm candidates in one request.  A
+    missing recording identity is therefore not allowed to enqueue one job
+    per candidate.  Recording/track targets keep their original Last.fm order
+    and are capped; artist targets are cheap shared lookups and remain
+    deduplicated so Artist Vocabulary can continue to make progress.
+    """
+    if max_recording_targets < 0:
+        raise ValueError("max_recording_targets must be non-negative")
+
+    unique = tuple(dict.fromkeys(targets))
+    recording_targets = tuple(
+        target
+        for target in unique
+        if target.kind in {"track", "recording"}
+    )[:max_recording_targets]
+    artist_targets = tuple(target for target in unique if target.kind == "artist")
+    return recording_targets + artist_targets
 
 
 class VocabularyAnalyzer:

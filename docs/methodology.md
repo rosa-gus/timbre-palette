@@ -1,5 +1,7 @@
 # Analysis methodology — API v2
 
+Current direct-palette methodology version: `0.5.0`.
+
 The API v2 keeps two products independent and versioned:
 
 - `track_palette` uses direct recording/track evidence and owns coverage,
@@ -12,6 +14,14 @@ The API v2 keeps two products independent and versioned:
 Only mapped instrument or family facts with `recording` or `track` scope count
 as direct evidence. Release context, unresolved relationships, programming,
 samples, and pending hydration do not increase direct coverage.
+
+The Last.fm adapter reads up to 200 ranked candidates in one page. The catalog
+projection is queried in batches for the whole candidate page; the analysis
+does not discard undocumented candidates before calculating its denominator.
+This allows already-materialized evidence below rank 50 to be used without
+turning catalog discovery into an evidence-biased sample. Hydration remains a
+separate budget: at most 50 missing recording/track identities from a request
+are enqueued, preserving Last.fm rank order.
 
 ```text
 track coverage = covered tracks / total tracks
