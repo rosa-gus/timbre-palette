@@ -19,6 +19,10 @@ class ProfileSummary(ApiModel):
     period: ListeningPeriod
     tracks_analyzed: int = Field(ge=0)
     total_plays: int = Field(ge=0)
+    profile_url: str | None = None
+    avatar_url: str | None = None
+    realname: str | None = None
+    total_scrobbles: int | None = Field(default=None, ge=0)
 
 
 class RecordingStatusCounts(ApiModel):

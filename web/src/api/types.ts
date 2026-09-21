@@ -29,6 +29,10 @@ export interface ProfileSummary {
   period: ListeningPeriod;
   tracks_analyzed: number;
   total_plays: number;
+  profile_url?: string | null;
+  avatar_url?: string | null;
+  realname?: string | null;
+  total_scrobbles?: number | null;
 }
 
 export interface RecordingStatusCounts {
@@ -191,8 +195,33 @@ export interface ArtistVocabulary {
     unresolved_tracks: number;
   };
   concentration: number;
-  families: unknown[];
+  families: VocabularyFamily[];
   notice: string;
+}
+
+export interface VocabularyInstrument {
+  slug: string;
+  name: string;
+  distinct_recordings: number;
+  documented_recordings: number;
+  prevalence: number;
+  evidence: {
+    source: "musicbrainz_snapshot";
+    scope: "recording" | "track";
+    snapshot_version: string;
+    quality: number;
+    documented_recordings: number;
+  };
+}
+
+export interface VocabularyFamily {
+  slug: string;
+  name: string;
+  score: number;
+  share: number;
+  prevalence: number;
+  supporting_artists: number;
+  instruments: VocabularyInstrument[];
 }
 
 export interface ProfileAnalysisV2 {

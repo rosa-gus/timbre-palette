@@ -3,7 +3,13 @@ from dataclasses import dataclass
 from typing import Protocol
 from urllib.parse import urlencode
 
-from palette_api.domain import DataSource, ListeningHistory, ListeningPeriod, Track
+from palette_api.domain import (
+    DataSource,
+    ListeningHistory,
+    ListeningPeriod,
+    ProfileDetails,
+    Track,
+)
 
 
 LASTFM_API_URL = "https://ws.audioscrobbler.com/2.0/"
@@ -118,12 +124,14 @@ class LastFmListeningHistoryProvider:
 
         canonical_username = self._canonical_username(top_tracks, username)
         tracks = self._parse_tracks(top_tracks.get("track", []))
+        profile = await self._get_profile(canonical_username)
         return ListeningHistory(
             username=canonical_username,
             period=period,
             tracks=tracks,
             history_source=DataSource.LASTFM,
             instrumentation_source=DataSource.MOCK,
+            profile=profile,
         )
 
     def _build_top_tracks_url(
@@ -143,6 +151,58 @@ class LastFmListeningHistoryProvider:
             }
         )
         return f"{LASTFM_API_URL}?{query}"
+
+    def _build_user_info_url(self, username: str) -> str:
+        query = urlencode(
+            {
+                "method": "user.getinfo",
+                "user": username,
+                "api_key": self._api_key,
+                "format": "json",
+            }
+        )
+        return f"{LASTFM_API_URL}?{query}"
+
+    async def _get_profile(self, username: str) -> ProfileDetails | None:
+        """Read optional profile metadata without compromising the history read."""
+        try:
+            response = await self._transport.get_json(
+                self._build_user_info_url(username)
+            )
+        except LastFmError:
+            return None
+
+        if response.status_code >= 400 or not isinstance(response.body, Mapping):
+            return None
+        if "error" in response.body:
+            return None
+
+        raw_user = response.body.get("user")
+        if not isinstance(raw_user, Mapping):
+            return None
+        return self._parse_profile(raw_user)
+
+    @classmethod
+    def _parse_profile(cls, raw_user: Mapping[object, object]) -> ProfileDetails:
+        total_scrobbles = cls._optional_nonnegative_int(raw_user.get("playcount"))
+        return ProfileDetails(
+            profile_url=cls._optional_text(raw_user.get("url")),
+            avatar_url=cls._parse_avatar_url(raw_user.get("image")),
+            realname=cls._optional_text(raw_user.get("realname")),
+            total_scrobbles=total_scrobbles,
+        )
+
+    @classmethod
+    def _parse_avatar_url(cls, value: object) -> str | None:
+        candidates: list[str] = []
+        raw_values = value if isinstance(value, list) else [value]
+        for raw_value in raw_values:
+            if isinstance(raw_value, Mapping):
+                raw_value = raw_value.get("#text") or raw_value.get("url")
+            candidate = cls._optional_text(raw_value)
+            if candidate and candidate.startswith(("http://", "https://")):
+                candidates.append(candidate)
+        return candidates[-1] if candidates else None
 
     def _parse_tracks(self, raw_tracks: object) -> tuple[Track, ...]:
         if isinstance(raw_tracks, Mapping):
@@ -245,3 +305,11 @@ class LastFmListeningHistoryProvider:
             return None
         normalized = value.strip()
         return normalized or None
+
+    @staticmethod
+    def _optional_nonnegative_int(value: object) -> int | None:
+        try:
+            normalized = int(str(value))
+        except (TypeError, ValueError):
+            return None
+        return normalized if normalized >= 0 else None

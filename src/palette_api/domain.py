@@ -105,6 +105,16 @@ class Track:
 
 
 @dataclass(frozen=True, slots=True)
+class ProfileDetails:
+    """Optional profile metadata returned by Last.fm's user.getInfo."""
+
+    profile_url: str | None = None
+    avatar_url: str | None = None
+    realname: str | None = None
+    total_scrobbles: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class ListeningHistory:
     username: str
     period: ListeningPeriod
@@ -113,6 +123,7 @@ class ListeningHistory:
     instrumentation_source: DataSource = DataSource.MOCK
     pending_enrichment: tuple[Track, ...] = ()
     catalog_version: str | None = None
+    profile: ProfileDetails | None = None
 
 
 class ListeningHistoryProvider(Protocol):

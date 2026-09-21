@@ -84,15 +84,12 @@
     animation: terminal-characters 800ms step-end infinite;
   }
   @keyframes terminal-arrow {
-    0% { opacity: 0; }
-    50%, 100% { opacity: 1; }
+    0%, 49.99% { opacity: 1; }
+    50%, 100% { opacity: 0; }
   }
   @keyframes terminal-characters {
-    0% { content: "&"; }
-    12.5% { content: "*"; }
-    25% { content: "$"; }
-    37.5% { content: "%"; }
-    50%, 100% { content: ""; }
+    0%, 49.99% { content: ""; }
+    50%, 100% { content: "*"; }
   }
   @media (prefers-reduced-motion: reduce) {
     .ui-button--terminal:is(:hover, :focus-visible):not(:disabled) .terminal-arrow,

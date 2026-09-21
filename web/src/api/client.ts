@@ -2,6 +2,7 @@ import type {
   InstrumentResource,
   ListeningPeriod,
   PaletteReport,
+  ProfileSummary,
   ProfileAnalysisV2,
 } from "./types";
 import { storageKey } from "../storage";
@@ -48,6 +49,28 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
+function isOptionalText(value: unknown): value is string | null | undefined {
+  return value === undefined || value === null || typeof value === "string";
+}
+
+function isProfileSummary(value: unknown): value is ProfileSummary {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.username === "string" &&
+    typeof value.period === "string" &&
+    isFiniteNumber(value.tracks_analyzed) &&
+    isFiniteNumber(value.total_plays) &&
+    isOptionalText(value.profile_url) &&
+    isOptionalText(value.avatar_url) &&
+    isOptionalText(value.realname) &&
+    (value.total_scrobbles === undefined ||
+      value.total_scrobbles === null ||
+      (typeof value.total_scrobbles === "number" &&
+        Number.isSafeInteger(value.total_scrobbles) &&
+        value.total_scrobbles >= 0))
+  );
+}
+
 function isAvailability(value: unknown): boolean {
   return [
     "available",
@@ -84,11 +107,7 @@ function isPaletteReport(value: unknown): value is PaletteReport {
   const families = value.families;
   const recordings = value.recordings;
   return (
-    isRecord(profile) &&
-    typeof profile.username === "string" &&
-    typeof profile.period === "string" &&
-    isFiniteNumber(profile.tracks_analyzed) &&
-    isFiniteNumber(profile.total_plays) &&
+    isProfileSummary(profile) &&
     isRecord(analysis) &&
     (analysis.status === "partial" ||
       analysis.status === "ready" ||
@@ -130,10 +149,12 @@ function isProfileAnalysisV2(value: unknown): value is ProfileAnalysisV2 {
   const snapshot = value.snapshot;
   const hydration = value.hydration;
   const vocabulary = value.artist_vocabulary;
+  const reach = isRecord(vocabulary) ? vocabulary.reach : null;
+  const vocabularyAvailability = isRecord(vocabulary) ? vocabulary.availability : null;
   const availableViews = value.available_views;
   const defaultView = value.default_view;
   return (
-    isRecord(value.profile) &&
+    isProfileSummary(value.profile) &&
     isRecord(snapshot) &&
     typeof snapshot.snapshot_version === "string" &&
     typeof snapshot.schema_version === "string" &&
@@ -143,6 +164,23 @@ function isProfileAnalysisV2(value: unknown): value is ProfileAnalysisV2 {
     isPaletteReport(value.track_palette) &&
     isRecord(vocabulary) &&
     ["available", "pending", "insufficient"].includes(vocabulary.status as string) &&
+    typeof vocabulary.notice === "string" &&
+    typeof vocabulary.methodology_version === "string" &&
+    isRecord(vocabularyAvailability) &&
+    typeof vocabularyAvailability.reason === "string" &&
+    isRecord(reach) &&
+    ["track_reach", "play_reach", "qualified_artists", "total_artists",
+      "qualified_tracks", "total_tracks", "qualified_plays", "total_plays",
+      "unresolved_artists", "unresolved_tracks"].every((key) => isFiniteNumber(reach[key])) &&
+    Array.isArray(vocabulary.families) &&
+    vocabulary.families.every((family) => isRecord(family) &&
+      typeof family.name === "string" && isFiniteNumber(family.share) &&
+      isFiniteNumber(family.supporting_artists) && Array.isArray(family.instruments) &&
+      family.instruments.every((instrument) => isRecord(instrument) &&
+        typeof instrument.name === "string" &&
+        isFiniteNumber(instrument.distinct_recordings) &&
+        isRecord(instrument.evidence) &&
+        (instrument.evidence.scope === "recording" || instrument.evidence.scope === "track"))) &&
     Array.isArray(availableViews) &&
     availableViews.every((view) =>
       view === "track_palette" || view === "artist_vocabulary",
@@ -231,11 +269,11 @@ export function normalizeUsername(value: string): string {
   return input.replace(/^@+/, "").replace(/\s+/g, "");
 }
 
-export async function getPalette(
+export async function getAnalysis(
   username: string,
   period: ListeningPeriod,
   signal: AbortSignal,
-): Promise<PaletteReport> {
+): Promise<ProfileAnalysisV2> {
   const encodedUsername = encodeURIComponent(username);
   const result = await getJson<unknown>(
     `/v2/profiles/${encodedUsername}/analysis?period=${encodeURIComponent(period)}`,
@@ -248,10 +286,7 @@ export async function getPalette(
       "invalid_report",
     );
   }
-  // The current interface still displays only the direct palette. The v2
-  // envelope already carries vocabulary data, but that view is intentionally
-  // deferred to a separate frontend change.
-  return result.data.track_palette;
+  return result.data;
 }
 
 export async function getInstrument(

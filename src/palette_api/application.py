@@ -172,6 +172,12 @@ class PaletteService:
             period=history.period,
             tracks_analyzed=total_tracks,
             total_plays=total_plays,
+            profile_url=history.profile.profile_url if history.profile else None,
+            avatar_url=history.profile.avatar_url if history.profile else None,
+            realname=history.profile.realname if history.profile else None,
+            total_scrobbles=(
+                history.profile.total_scrobbles if history.profile else None
+            ),
         )
         recording_items = sorted(
             zip(history.tracks, recording_statuses, strict=True),

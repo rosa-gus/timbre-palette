@@ -209,6 +209,7 @@ class D1SnapshotProjectionProvider:
             tracks=tuple(enriched_tracks),
             history_source=history.history_source,
             instrumentation_source=DataSource.CATALOG,
+            profile=history.profile,
             pending_enrichment=tuple(
                 track
                 for track in enriched_tracks

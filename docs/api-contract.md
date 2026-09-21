@@ -26,6 +26,13 @@ Missing recording/track identities are capped at 50 new hydration targets per
 request and are kept in Last.fm rank order. Artist targets remain deduplicated
 separately because one artist hydration can serve many candidate tracks.
 
+The top-level `profile` object (and the nested `track_palette.profile` copy)
+also includes optional Last.fm metadata populated by a `user.getInfo` request:
+`profile_url`, `avatar_url`, and `realname` are strings, while
+`total_scrobbles` is a non-negative integer. Each field may be `null` when
+Last.fm omits it or the optional metadata request is unavailable; this does not
+invalidate the listening history or the analysis.
+
 The vocabulary is available only when its configured recurrence, track reach,
 play reach, artist diversity, and concentration gates are satisfied. If pending
 artists could still change an insufficient result, its status is `pending`; if
