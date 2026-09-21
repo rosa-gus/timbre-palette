@@ -69,6 +69,7 @@ class RecordingStatus(str, Enum):
     """
 
     RESOLVED = "resolved"
+    UNRESOLVED_IDENTITY = "unresolved_identity"
     PENDING_ENRICHMENT = "pending_enrichment"
     AMBIGUOUS = "ambiguous"
     RESOLVED_WITHOUT_EVIDENCE = "resolved_without_evidence"

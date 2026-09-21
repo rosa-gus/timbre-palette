@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from palette_api.domain import AnalysisStatus, RecordingStatus
+from palette_api.domain import AnalysisStatus
 
 
 @dataclass(frozen=True, slots=True)
@@ -14,14 +14,17 @@ class MethodologyPolicy:
     small period from producing an apparently authoritative portrait.
     """
 
-    version: str = "0.3.0"
-    palette_track_ratio: float = 0.20
-    palette_play_ratio: float = 0.20
+    version: str = "0.4.0"
+    # The direct palette is a useful documented sample once it has five
+    # recordings, reaches 5% of plays, and includes two artists.  The stricter
+    # interpretation gate remains separate below.
+    palette_track_ratio: float = 0.05
+    palette_play_ratio: float = 0.05
     interpretation_track_ratio: float = 0.40
     interpretation_play_ratio: float = 0.40
     palette_track_floor: int = 5
     interpretation_track_floor: int = 8
-    palette_artist_floor: int = 3
+    palette_artist_floor: int = 2
     interpretation_artist_floor: int = 4
     known_nature_ratio: float = 0.80
     discovery_recording_floor: int = 3
@@ -118,33 +121,20 @@ class MethodologyPolicy:
         self,
         *,
         palette_ready: bool,
-        interpretation_ready: bool,
-        progress_capable: bool,
         has_published_evidence: bool,
     ) -> AnalysisStatus:
-        # A public request must never wait for asynchronous snapshot hydration. A
-        # report with any published evidence is immediately useful and can be
-        # refined on a later visit; only a report with no evidence at all is
-        # insufficient.
+        """Describe the direct product independently from hydration progress.
+
+        Hydration is reported in the v2 envelope. It must not turn an otherwise
+        sufficient documented sample into a permanently partial report.
+        """
         if not palette_ready:
             return (
                 AnalysisStatus.PARTIAL
                 if has_published_evidence
                 else AnalysisStatus.INSUFFICIENT
             )
-        if not interpretation_ready or progress_capable:
-            return AnalysisStatus.PARTIAL
         return AnalysisStatus.READY
-
-    @staticmethod
-    def progress_capable_statuses() -> frozenset[RecordingStatus]:
-        return frozenset(
-            {
-                RecordingStatus.PENDING_ENRICHMENT,
-                RecordingStatus.TRANSIENT_FAILURE,
-            }
-        )
-
 
 def _ceil(value: float) -> int:
     integer = int(value)

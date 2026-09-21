@@ -162,14 +162,8 @@ class PaletteService:
             play_ratio=self._methodology.interpretation_play_ratio,
             track_floor=self._methodology.interpretation_track_floor,
         )
-        progress_capable = any(
-            recording_status in self._methodology.progress_capable_statuses()
-            for recording_status in recording_statuses
-        )
         status = self._methodology.status(
             palette_ready=palette_ready,
-            interpretation_ready=interpretation_ready,
-            progress_capable=progress_capable,
             has_published_evidence=covered_tracks > 0,
         )
 
@@ -600,6 +594,8 @@ class PaletteService:
         }
         if PaletteService._track_key(track) in pending_keys:
             return RecordingStatus.PENDING_ENRICHMENT
+        if not track.mbid:
+            return RecordingStatus.UNRESOLVED_IDENTITY
         return RecordingStatus.RESOLVED_WITHOUT_EVIDENCE
 
     @staticmethod
@@ -627,6 +623,8 @@ class PaletteService:
             return track.recording_status_detail
         if recording_status is RecordingStatus.RESOLVED_WITHOUT_EVIDENCE:
             return "The recording was resolved, but has no accepted instrumental evidence."
+        if recording_status is RecordingStatus.UNRESOLVED_IDENTITY:
+            return "Last.fm did not provide a MusicBrainz identity for this recording."
         if recording_status is RecordingStatus.PENDING_ENRICHMENT:
             return "The recording is awaiting snapshot hydration."
         if recording_status is RecordingStatus.AMBIGUOUS:

@@ -19,19 +19,28 @@ play coverage  = plays in covered tracks / total plays
 ```
 
 `coverage_tracks` and `coverage_plays` remain exclusive to
-`track_palette`. The existing direct palette gates and interpretation sections
-are preserved under their own methodology version.
+`track_palette`. The direct palette has two levels:
+
+- a useful documented sample requires at least five covered tracks, 5% play
+  reach, and two covered artists when the history contains two or more;
+- discovery, sound balance, and temperament keep their own stricter section
+  gates and do not change the palette's top-level status.
+
+`ready` means the first gate passed. `partial` means that some direct evidence
+can be shown but the sample is below that gate. `insufficient` means that no
+track has accepted direct evidence. Asynchronous hydration is reported in the
+separate `hydration` object and does not downgrade a ready sample.
 
 ## Artist vocabulary candidate
 
 The candidate policy is deliberately configurable and is not frozen by the
-small research sample. An instrument qualifies for an artist when it appears in
-at least three distinct documented recordings. The artist vocabulary gate then
-requires:
+the initial research sample. An instrument qualifies for an artist when it
+appears in at least three distinct documented recordings. The initial vocabulary
+gate then requires:
 
-- track reach of at least 40%;
-- play reach of at least 40%;
-- at least four qualified artists when the history contains four or more;
+- track reach of at least 10%;
+- play reach of at least 10%;
+- at least three qualified artists when the history contains three or more;
 - artist contribution below the configured concentration limit.
 
 ```text
@@ -49,15 +58,20 @@ snapshot contains direct relationships, so its initial evidence quality is
 
 Vocabulary reach is not direct coverage. A missing artist MBID, an unmapped
 instrument, or pending hydration remains visible in availability and never
-becomes inferred evidence.
+becomes inferred evidence. If the materialized rows already pass the gate, the
+vocabulary can be `available` while additional artist rows are still pending.
+Pending is reserved for work that could still change an insufficient result;
+work that cannot meet the thresholds is reported as `insufficient`.
 
 ## Availability and versioning
 
-Both products expose `available`, `pending`, or `insufficient` states. The
-default view is the direct palette when it is sufficient, the artist vocabulary
-when only it is sufficient, and null when neither is sufficient.
+The vocabulary exposes `available`, `pending`, or `insufficient`. The direct
+palette uses `ready`, `partial`, or `insufficient`. The default view is the
+direct palette when it is ready, the artist vocabulary when it is available and
+the direct palette is not ready, and null when neither product has a primary
+result. A partial direct palette remains in the response as a limited view.
 
-Every response identifies the active snapshot and methodology version. Any
+Every response identifies the active snapshot and methodology versions. Any
 change to recurrence, reach, weighting, concentration, evidence eligibility, or
 section gates requires a methodology version increment and updated regression
 fixtures.

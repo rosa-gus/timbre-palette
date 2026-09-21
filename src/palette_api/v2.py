@@ -41,11 +41,11 @@ from palette_api.schemas import (
 )
 
 
-VOCABULARY_METHODOLOGY_VERSION = "artist-vocabulary-candidate-1"
+VOCABULARY_METHODOLOGY_VERSION = "artist-vocabulary-candidate-2"
 SNAPSHOT_SCHEMA_VERSION = "musicbrainz-instrument-credits-serving-v2"
 MIN_QUALIFYING_RECORDINGS = 3
-MIN_REACH = 0.40
-MIN_QUALIFIED_ARTISTS = 4
+MIN_REACH = 0.10
+MIN_QUALIFIED_ARTISTS = 3
 MAX_ARTIST_WEIGHT = 0.40
 MAX_ARTIST_CONCENTRATION = 0.70
 
@@ -152,6 +152,11 @@ class D1SnapshotProjectionProvider:
             state = statuses.get(canonical_mbid or "")
             if layers:
                 status = RecordingStatus.RESOLVED
+            elif not source_mbid:
+                # There is no executable hydration target without a recording
+                # or track MBID. Keep this distinct from pending work so the
+                # report does not promise progress that the queue cannot make.
+                status = RecordingStatus.UNRESOLVED_IDENTITY
             elif state in {"complete", "complete_empty"}:
                 status = RecordingStatus.RESOLVED_WITHOUT_EVIDENCE
             elif state == "failed":
@@ -520,6 +525,12 @@ class VocabularyAnalyzer:
             (track.artist_mbid or f"name:{track.artist.casefold().strip()}").lower()
             for track in history.tracks
         }
+        unresolved_artist_keys = {
+            f"name:{track.artist.casefold().strip()}"
+            for track in history.tracks
+            if not track.artist_mbid
+        }
+        unresolved_tracks = sum(1 for track in history.tracks if not track.artist_mbid)
         qualified_rows = [
             row for row in rows if row.distinct_recordings >= self.min_recordings
         ]
@@ -550,6 +561,8 @@ class VocabularyAnalyzer:
             total_tracks=total_tracks,
             qualified_plays=qualified_play_count,
             total_plays=total_plays,
+            unresolved_artists=len(unresolved_artist_keys),
+            unresolved_tracks=unresolved_tracks,
         )
 
         artist_plays: dict[str, int] = defaultdict(int)
@@ -621,20 +634,34 @@ class VocabularyAnalyzer:
             )
 
         required_artists = min(self.min_qualified_artists, len(artist_keys))
-        reason = "available"
-        status = "available"
-        if pending_artist_mbids:
+        current_gate = self._gate_result(
+            qualified_rows=qualified_rows,
+            track_reach=track_reach,
+            play_reach=play_reach,
+            qualified_artists=len(qualified_artists),
+            required_artists=required_artists,
+            concentration=concentration,
+        )
+
+        # Pending artists are useful only while they can still change the
+        # outcome. Once the materialized rows already pass, expose the result
+        # immediately and report the remaining work alongside it.
+        if current_gate is None:
+            status, reason = "available", (
+                "available_with_pending_hydration"
+                if pending_artist_mbids
+                else "available"
+            )
+        elif pending_artist_mbids and self._pending_can_satisfy(
+            history=history,
+            qualified_artists=qualified_artists,
+            pending_artist_mbids=pending_artist_mbids,
+            required_artists=required_artists,
+            gate_reason=current_gate,
+        ):
             status, reason = "pending", "snapshot_hydration_pending"
-        elif not qualified_rows:
-            status, reason = "insufficient", "no_mapped_evidence"
-        elif track_reach < self.min_reach:
-            status, reason = "insufficient", "insufficient_track_reach"
-        elif play_reach < self.min_reach:
-            status, reason = "insufficient", "insufficient_play_reach"
-        elif len(qualified_artists) < required_artists:
-            status, reason = "insufficient", "insufficient_artist_diversity"
-        elif concentration > self.max_artist_concentration:
-            status, reason = "insufficient", "excessive_artist_concentration"
+        else:
+            status, reason = "insufficient", current_gate
 
         return ArtistVocabulary(
             status=status,
@@ -652,6 +679,68 @@ class VocabularyAnalyzer:
                 "Recorre em gravações documentadas destes artistas; não descreve "
                 "necessariamente cada faixa ou a presença de um instrumento no áudio."
             ),
+        )
+
+    def _gate_result(
+        self,
+        *,
+        qualified_rows: list[SnapshotVocabularyRow],
+        track_reach: float,
+        play_reach: float,
+        qualified_artists: int,
+        required_artists: int,
+        concentration: float,
+    ) -> str | None:
+        if not qualified_rows:
+            return "no_mapped_evidence"
+        if track_reach < self.min_reach:
+            return "insufficient_track_reach"
+        if play_reach < self.min_reach:
+            return "insufficient_play_reach"
+        if qualified_artists < required_artists:
+            return "insufficient_artist_diversity"
+        if concentration > self.max_artist_concentration:
+            return "excessive_artist_concentration"
+        return None
+
+    def _pending_can_satisfy(
+        self,
+        *,
+        history: ListeningHistory,
+        qualified_artists: set[str],
+        pending_artist_mbids: frozenset[str],
+        required_artists: int,
+        gate_reason: str,
+    ) -> bool:
+        """Return whether unresolved artist rows could change the gate.
+
+        This is intentionally an upper bound: every pending artist is treated
+        as qualifying, while concentration is considered potentially
+        improvable. It prevents a permanently pending response when the
+        remaining work cannot possibly reach the configured thresholds.
+        """
+        if gate_reason == "no_mapped_evidence":
+            potential_artists = set(pending_artist_mbids)
+        else:
+            potential_artists = set(qualified_artists) | set(pending_artist_mbids)
+        potential_tracks = sum(
+            1
+            for track in history.tracks
+            if (track.artist_mbid or "").strip().lower() in potential_artists
+        )
+        potential_plays = sum(
+            track.play_count
+            for track in history.tracks
+            if (track.artist_mbid or "").strip().lower() in potential_artists
+        )
+        total_tracks = len(history.tracks)
+        total_plays = sum(track.play_count for track in history.tracks)
+        potential_track_reach = potential_tracks / total_tracks if total_tracks else 0
+        potential_play_reach = potential_plays / total_plays if total_plays else 0
+        return (
+            potential_track_reach >= self.min_reach
+            and potential_play_reach >= self.min_reach
+            and len(potential_artists) >= required_artists
         )
 
 
@@ -711,7 +800,7 @@ class V2AnalysisService:
             available_views.append("artist_vocabulary")
         default_view = (
             "track_palette"
-            if palette_available
+            if palette.analysis.status == "ready" and palette_available
             else "artist_vocabulary"
             if vocabulary_available
             else None

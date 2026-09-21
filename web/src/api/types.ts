@@ -10,6 +10,7 @@ export type AnalysisStatus = "partial" | "ready" | "insufficient";
 export type Confidence = "documented" | "strongly_associated" | "estimated";
 export type RecordingStatus =
   | "resolved"
+  | "unresolved_identity"
   | "pending_enrichment"
   | "ambiguous"
   | "resolved_without_evidence"
@@ -32,6 +33,7 @@ export interface ProfileSummary {
 
 export interface RecordingStatusCounts {
   resolved: number;
+  unresolved_identity: number;
   pending_enrichment: number;
   ambiguous: number;
   resolved_without_evidence: number;
@@ -185,6 +187,8 @@ export interface ArtistVocabulary {
     total_tracks: number;
     qualified_plays: number;
     total_plays: number;
+    unresolved_artists: number;
+    unresolved_tracks: number;
   };
   concentration: number;
   families: unknown[];

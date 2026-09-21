@@ -25,6 +25,7 @@ class RecordingStatusCounts(ApiModel):
     """Counts for every recording state, including zero-valued states."""
 
     resolved: int = Field(ge=0)
+    unresolved_identity: int = Field(ge=0)
     pending_enrichment: int = Field(ge=0)
     ambiguous: int = Field(ge=0)
     resolved_without_evidence: int = Field(ge=0)
@@ -272,6 +273,8 @@ class VocabularyReach(ApiModel):
     total_tracks: int = Field(ge=0)
     qualified_plays: int = Field(ge=0)
     total_plays: int = Field(ge=0)
+    unresolved_artists: int = Field(ge=0)
+    unresolved_tracks: int = Field(ge=0)
 
 
 class VocabularyEvidence(ApiModel):

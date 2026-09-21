@@ -12,7 +12,7 @@ from typing import Any
 
 
 SERVING_SCHEMA_VERSION = "musicbrainz-instrument-credits-serving-v2"
-DEFAULT_METHODOLOGY_VERSION = "artist-vocabulary-candidate-1"
+DEFAULT_METHODOLOGY_VERSION = "artist-vocabulary-candidate-2"
 MANIFEST_HASH_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 
 

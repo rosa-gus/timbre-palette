@@ -18,13 +18,27 @@ coverage belong only to `track_palette`; vocabulary reach belongs only to
 `artist_vocabulary`.
 
 The vocabulary is available only when its configured recurrence, track reach,
-play reach, artist diversity, and concentration gates are satisfied. A pending
-snapshot hydration is represented explicitly and is not treated as an empty
-catalog. Instrument and family rows are accepted only when they resolve to the
-editorial D1 taxonomy.
+play reach, artist diversity, and concentration gates are satisfied. If pending
+artists could still change an insufficient result, its status is `pending`; if
+the materialized rows already pass, it can be `available` with pending counts.
+A pending snapshot hydration is represented explicitly and is not treated as an
+empty catalog. Instrument and family rows are accepted only when they resolve
+to the editorial D1 taxonomy.
+
+`artist_vocabulary.reach.unresolved_artists` and `unresolved_tracks` count
+history entries without an artist MBID. They are identity gaps, not pending
+hydration work.
+
+The direct palette uses `ready`, `partial`, and `insufficient` to describe the
+amount of accepted recording evidence. `ready` is the useful five-track,
+5%-play, two-artist sample gate. `partial` means direct evidence exists below
+that gate. Hydration progress does not change these states. A track without a
+MusicBrainz identity is reported as `unresolved_identity`; it does not create a
+hydration job.
 
 `discovery`, `sound_balance`, and `temperament` belong exclusively to the direct
-track palette. They are never unlocked by artist vocabulary.
+track palette and retain their own section gates. They are never unlocked by
+artist vocabulary.
 
 The endpoint returns HTTP `200` for a valid history, including insufficient or
 pending analysis states. A missing Last.fm profile, invalid period, empty

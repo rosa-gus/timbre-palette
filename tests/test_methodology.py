@@ -12,6 +12,7 @@ from palette_api.domain import (
     InstrumentLayer,
     ListeningHistory,
     ListeningPeriod,
+    RecordingStatus,
     Track,
 )
 from palette_api.methodology import DEFAULT_METHODOLOGY
@@ -55,7 +56,7 @@ def test_methodology_requires_both_coverage_dimensions_and_diversity() -> None:
     )
     assert not policy.meets_palette_gate(
         coverage_tracks=0.5,
-        coverage_plays=0.19,
+        coverage_plays=0.04,
         covered_tracks=5,
         total_tracks=10,
         covered_artists=3,
@@ -66,7 +67,7 @@ def test_methodology_requires_both_coverage_dimensions_and_diversity() -> None:
         coverage_plays=0.5,
         covered_tracks=5,
         total_tracks=10,
-        covered_artists=2,
+        covered_artists=1,
         total_artists=5,
     )
 
@@ -204,9 +205,35 @@ async def test_discovery_requires_recurrence_and_interpretation_coverage() -> No
     )
     report = await _report(tracks)
 
-    assert report.analysis.status.value == "partial"
+    # The direct palette is now a ready documented sample even though the
+    # interpretation sections still require their stricter gate.
+    assert report.analysis.status.value == "ready"
     assert report.discovery is None
     assert report.analysis.section_availability.discovery == "insufficient_coverage"
+
+
+@pytest.mark.anyio
+async def test_pending_recordings_do_not_downgrade_a_ready_palette() -> None:
+    tracks = tuple(
+        Track(
+            f"track-{index}",
+            f"artist-{index % 2}",
+            10,
+            mbid=f"recording-{index}",
+            layers=(_layer("piano", "acoustic-keys"),)
+            if index < 5
+            else (),
+            recording_status=(
+                RecordingStatus.PENDING_ENRICHMENT if index == 5 else None
+            ),
+        )
+        for index in range(6)
+    )
+
+    report = await _report(tracks)
+
+    assert report.analysis.status.value == "ready"
+    assert report.analysis.recording_status_counts.pending_enrichment == 1
 
 
 @pytest.mark.anyio
