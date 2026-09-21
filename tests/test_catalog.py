@@ -120,6 +120,7 @@ def seeded_sqlite_conn() -> sqlite3.Connection:
     migration_14 = project_root / "migrations" / "0014_musicbrainz_credit_index.sql"
     migration_15 = project_root / "migrations" / "0015_musicbrainz_credit_index_usage.sql"
     migration_16 = project_root / "migrations" / "0016_api_v2_snapshot_projections.sql"
+    migration_17 = project_root / "migrations" / "0017_hydrator_runtime_contract.sql"
 
     for migration in (
         migration_1,
@@ -132,6 +133,7 @@ def seeded_sqlite_conn() -> sqlite3.Connection:
         migration_14,
         migration_15,
         migration_16,
+        migration_17,
     ):
         with open(migration, encoding="utf-8") as f:
             conn.executescript(f.read())

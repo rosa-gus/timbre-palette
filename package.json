@@ -16,10 +16,12 @@
     "dev:api:mock": ".venv/bin/uv run pywrangler dev --var PALETTE_API_MODE:mock",
     "musicbrainz:etl:build": "cargo build --release --manifest-path etl/musicbrainz-etl/Cargo.toml",
     "musicbrainz:etl:test": "cargo test --manifest-path etl/musicbrainz-etl/Cargo.toml",
+    "musicbrainz:publish": "python3 scripts/publish_snapshot.py",
     "editorial:validate": "python3 src/palette_api/tools/publish_editorial.py editorial/src/instruments.json",
     "editorial:sql": "python3 src/palette_api/tools/publish_editorial.py editorial/src/instruments.json --sql",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json && svelte-check --tsconfig ./tsconfig.web.json",
     "typecheck:editorial": "tsc --noEmit -p tsconfig.editorial.json && svelte-check --tsconfig ./tsconfig.editorial.json",
+    "typecheck:hydrator": "tsc --noEmit -p workers/hydrator/tsconfig.json",
     "build:web": "yarn prepare:images && yarn typecheck:web && vite build",
     "build:editorial": "yarn typecheck:editorial && vite build --config vite.editorial.config.ts",
     "test:web": "yarn typecheck:web"

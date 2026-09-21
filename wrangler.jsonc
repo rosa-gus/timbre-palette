@@ -30,7 +30,7 @@
     {
       "binding": "DB",
       "database_name": "timbre-palette",
-      "database_id": "de217b93-15a0-45be-802d-c9966582d66a",
+      "database_id": "32fa319e-eeb6-4b3b-b981-ddcc92d75605",
       "migrations_dir": "migrations"
     }
   ]

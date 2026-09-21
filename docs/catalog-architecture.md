@@ -24,7 +24,7 @@ Direct track evidence and Artist Vocabulary are separate products. Vocabulary ne
 
 ## Snapshot hydration
 
-The snapshot hydrator is the only runtime component that reads the R2 credit index. It claims pending D1 jobs, groups keys by snapshot, object kind, and shard, reads each required object once per batch, and writes idempotent projections back to D1.
+The snapshot hydrator is the only runtime component that reads the R2 credit index. A two-minute Cron claims one pending D1 job, calculates its immutable object key, reads one shard, and writes an idempotent projection transaction. Track aliases enqueue a follow-up recording job; this keeps each invocation within the Workers Free CPU budget.
 
 Hydration is offline-only: an R2 miss remains a miss for that published snapshot. There is no live MusicBrainz request path. Snapshot version and evidence provenance remain attached to every materialized result.
 

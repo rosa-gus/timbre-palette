@@ -47,11 +47,28 @@ Credits that cannot be resolved to an instrument or family in the project taxono
 
 ## Hydration contract
 
-The API records missing snapshot targets in `snapshot_hydration_jobs`. The snapshot hydrator claims those jobs in batches, groups keys that share an R2 object, validates the manifest and object metadata, and materializes D1 projections idempotently.
+The API records missing snapshot targets in `snapshot_hydration_jobs`. The TypeScript snapshot hydrator runs on a two-minute Cron, claims one target at a time, reads one calculated R2 shard, validates the v2 envelope, resolves the controlled taxonomy, and materializes D1 projections idempotently. It does not parse the large manifest at runtime; publication stores the complete immutable R2 prefix in the active D1 snapshot row.
+
+Recording projections preserve both instrument-level and family-level claims. Artist Vocabulary only accepts mappings to specific instruments. Missing targets become `complete_empty`; malformed or missing shards are terminal failures for that snapshot, while transient R2/D1 errors use bounded retries.
 
 An object miss is terminal for the targeted snapshot version. The hydrator does not fall back to a network API. A later MusicBrainz dump can supply new evidence through a new immutable snapshot.
 
-The HTTP API has no R2 binding. The hydrator owns the R2 binding and D1 write access; the API owns only D1 reads and hydration-job scheduling.
+The HTTP Worker has no R2 binding. The hydrator owns the R2 binding and D1 write access; the API owns only D1 reads and hydration-job scheduling. The hydrator binding uses the existing Standard R2 bucket in the `eu` jurisdiction and keeps a daily D1-write guard plus the monthly R2-read guard.
+
+### Publishing a serving snapshot
+
+R2 upload and D1 publication are separate steps. After validating the serving
+directory, render the idempotent D1 publication SQL from its manifest:
+
+```sh
+yarn musicbrainz:publish \
+  /data/musicbrainz/serving/20260912-002318/manifest.json \
+  > /tmp/publish-20260912-002318.sql
+```
+
+Review the generated SQL, then apply it to the intended D1 database with
+Wrangler. The publication marks the previous active snapshot as superseded
+and activates the manifest's immutable prefix, schema, counts, and hash.
 
 ## License and refresh policy
 

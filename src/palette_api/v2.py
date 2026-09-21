@@ -152,17 +152,27 @@ class D1SnapshotProjectionProvider:
             state = statuses.get(canonical_mbid or "")
             if layers:
                 status = RecordingStatus.RESOLVED
-            elif state == "complete_empty":
+            elif state in {"complete", "complete_empty"}:
                 status = RecordingStatus.RESOLVED_WITHOUT_EVIDENCE
             elif state == "failed":
-                status = RecordingStatus.TRANSIENT_FAILURE
+                status = RecordingStatus.TERMINAL_FAILURE
             else:
                 status = RecordingStatus.PENDING_ENRICHMENT
                 if source_mbid:
+                    target_kind = (
+                        "recording"
+                        if canonical_mbid in statuses or canonical_mbid != source_mbid
+                        else "track"
+                    )
+                    target_mbid = (
+                        canonical_mbid
+                        if target_kind == "recording" and canonical_mbid
+                        else source_mbid
+                    )
                     targets.append(
                         HydrationTarget(
-                            "recording" if source_mbid in statuses else "track",
-                            source_mbid,
+                            target_kind,
+                            target_mbid,
                         )
                     )
             enriched_tracks.append(
@@ -211,7 +221,8 @@ class D1SnapshotProjectionProvider:
         pending_artists = frozenset(
             artist_mbid
             for artist_mbid in artist_mbids
-            if artist_statuses.get(artist_mbid) not in {"complete", "complete_empty"}
+            if artist_statuses.get(artist_mbid)
+            not in {"complete", "complete_empty", "failed"}
         )
         for artist_mbid in pending_artists:
             targets.append(HydrationTarget("artist", artist_mbid))
@@ -299,8 +310,21 @@ class D1SnapshotProjectionProvider:
                 FROM snapshot_recordings
                 WHERE snapshot_version = ?
                   AND recording_mbid IN (SELECT value FROM json_each(?))
+                UNION ALL
+                SELECT target_mbid AS recording_mbid, 'failed' AS status
+                FROM snapshot_hydration_jobs
+                WHERE snapshot_version = ?
+                  AND target_kind = 'track'
+                  AND status = 'failed'
+                  AND attempts >= 5
+                  AND target_mbid IN (SELECT value FROM json_each(?))
                 """
-            ).bind(snapshot_version, json.dumps(mbids))
+            ).bind(
+                snapshot_version,
+                json.dumps(mbids),
+                snapshot_version,
+                json.dumps(mbids),
+            )
         )
         return {
             _text(_value(row, "recording_mbid")).lower(): _text(_value(row, "status"))
@@ -318,12 +342,15 @@ class D1SnapshotProjectionProvider:
         rows = await _all_rows(
             self._db.prepare(
                 """
-                SELECT projection.recording_mbid, projection.instrument_slug,
-                       projection.family_slug, instruments.name AS instrument_name,
+                SELECT projection.recording_mbid, projection.claim_level,
+                       projection.subject_slug, projection.instrument_slug,
+                       projection.family_slug,
+                       instruments.name AS instrument_name,
                        families.name AS family_name,
-                       instruments.sound_nature AS sound_nature
+                       COALESCE(instruments.sound_nature, families.sound_nature)
+                           AS sound_nature
                 FROM snapshot_recording_instruments AS projection
-                JOIN instruments ON instruments.slug = projection.instrument_slug
+                LEFT JOIN instruments ON instruments.slug = projection.instrument_slug
                 JOIN instrument_families AS families
                   ON families.slug = projection.family_slug
                 WHERE projection.snapshot_version = ?
@@ -336,21 +363,29 @@ class D1SnapshotProjectionProvider:
         layers: dict[str, dict[str, InstrumentLayer]] = defaultdict(dict)
         for row in rows:
             recording_mbid = _text(_value(row, "recording_mbid")).lower()
+            claim_level = _text(_value(row, "claim_level"))
+            subject_slug = _text(_value(row, "subject_slug"))
             instrument_slug = _text(_value(row, "instrument_slug"))
             family_slug = _text(_value(row, "family_slug"))
-            if not recording_mbid or not instrument_slug or not family_slug:
+            if not recording_mbid or not subject_slug or not family_slug:
+                continue
+            if claim_level not in {ClaimLevel.INSTRUMENT.value, ClaimLevel.FAMILY.value}:
+                continue
+            if claim_level == ClaimLevel.INSTRUMENT.value and not instrument_slug:
                 continue
             layer = InstrumentLayer(
-                slug=instrument_slug,
-                name=_text(_value(row, "instrument_name")) or instrument_slug,
+                slug=subject_slug,
+                name=_text(_value(row, "instrument_name"))
+                or _text(_value(row, "family_name"))
+                or subject_slug,
                 family_slug=family_slug,
                 family_name=_text(_value(row, "family_name")) or family_slug,
                 nature=_sound_nature(_value(row, "sound_nature")),
                 role="",
                 confidence=Confidence.DOCUMENTED,
-                claim_level=ClaimLevel.INSTRUMENT,
+                claim_level=ClaimLevel(claim_level),
             )
-            layers[recording_mbid][instrument_slug] = layer
+            layers[recording_mbid][subject_slug] = layer
         return {
             recording_mbid: tuple(values.values())
             for recording_mbid, values in layers.items()
