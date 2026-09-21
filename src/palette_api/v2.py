@@ -42,7 +42,7 @@ from palette_api.schemas import (
 
 
 VOCABULARY_METHODOLOGY_VERSION = "artist-vocabulary-candidate-1"
-SNAPSHOT_SCHEMA_VERSION = "musicbrainz-instrument-credits-serving-v1"
+SNAPSHOT_SCHEMA_VERSION = "musicbrainz-instrument-credits-serving-v2"
 MIN_QUALIFYING_RECORDINGS = 3
 MIN_REACH = 0.40
 MIN_QUALIFIED_ARTISTS = 4
@@ -715,7 +715,7 @@ def _unique_instruments(rows: list[SnapshotVocabularyRow]) -> list[SnapshotVocab
 
 
 def _shard_key(kind: str, mbid: str) -> str:
-    width = 2 if kind in {"track", "artist"} else 3
+    width = 3 if kind == "artist" else 4
     return mbid.strip().lower()[:width]
 
 

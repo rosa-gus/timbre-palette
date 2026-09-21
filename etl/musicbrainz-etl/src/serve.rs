@@ -1,7 +1,7 @@
 //! Serving snapshot builder for the aggregated MusicBrainz evidence.
 //!
 //! The aggregate is intentionally verbose and useful for audits. This stage
-//! converts it into deterministic bzip2-compressed shards suitable for R2:
+//! converts it into deterministic gzip-compressed shards suitable for R2:
 //! recording evidence is grouped by recording MBID, release evidence is kept
 //! only when no direct evidence exists, aliases are grouped by track MBID,
 //! and vocabulary entries are grouped by artist MBID.
@@ -11,20 +11,21 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{self, BufRead, BufReader, BufWriter, Write};
 use std::path::{Path, PathBuf};
 
-use bzip2::write::BzEncoder;
-use bzip2::Compression;
 use clap::Parser;
+use flate2::write::GzEncoder;
+use flate2::Compression;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 const AGGREGATE_SCHEMA_VERSION: &str = "musicbrainz-etl-aggregate-v1";
-const SERVING_SCHEMA_VERSION: &str = "musicbrainz-instrument-credits-serving-v1";
+const SERVING_SCHEMA_VERSION: &str = "musicbrainz-instrument-credits-serving-v2";
 const SERVING_OBJECT_PREFIX: &str = "musicbrainz/instrument-credits/v2";
-const DEFAULT_RECORDING_SHARDS: usize = 4096;
-const DEFAULT_AUXILIARY_SHARDS: usize = 256;
+const DEFAULT_RECORDING_SHARDS: usize = 65_536;
+const DEFAULT_TRACK_SHARDS: usize = 65_536;
+const DEFAULT_ARTIST_SHARDS: usize = 4096;
 const MAX_OPEN_SPOOL_WRITERS: usize = 512;
-const DEFAULT_COMPRESSION_LEVEL: u32 = 6;
+const DEFAULT_COMPRESSION_LEVEL: u32 = 9;
 const DEFAULT_SOURCE_URL: &str = "https://musicbrainz.org/doc/MusicBrainz_Database/Download";
 const DEFAULT_ATTRIBUTION: &str = "MusicBrainz; derived instrumental-credit index.";
 const DEFAULT_LICENSE: &str = "CC0";
@@ -64,11 +65,15 @@ pub(crate) struct ServeArgs {
     #[arg(long, default_value_t = DEFAULT_RECORDING_SHARDS, value_parser = positive_usize)]
     pub recording_shards: usize,
 
-    /// Number of track and artist hexadecimal-prefix shards. Must be a power of sixteen.
-    #[arg(long, default_value_t = DEFAULT_AUXILIARY_SHARDS, value_parser = positive_usize)]
-    pub auxiliary_shards: usize,
+    /// Number of track hexadecimal-prefix shards. Must be a power of sixteen.
+    #[arg(long, default_value_t = DEFAULT_TRACK_SHARDS, value_parser = positive_usize)]
+    pub track_shards: usize,
 
-    /// Bzip2 compression level for serving objects (1-9).
+    /// Number of artist hexadecimal-prefix shards. Must be a power of sixteen.
+    #[arg(long, default_value_t = DEFAULT_ARTIST_SHARDS, value_parser = positive_usize)]
+    pub artist_shards: usize,
+
+    /// Gzip compression level for serving objects (1-9).
     #[arg(long, default_value_t = DEFAULT_COMPRESSION_LEVEL, value_parser = compression_level)]
     pub compression_level: u32,
 
@@ -164,7 +169,6 @@ struct CreditIdentity {
     instrument_mbid: Option<String>,
     instrument_name: String,
     attributes: Vec<String>,
-    original_credit: Option<String>,
     scope: String,
     relation_type: String,
     production_method: String,
@@ -178,7 +182,6 @@ impl ServeCredit {
             instrument_mbid: self.instrument_mbid.clone(),
             instrument_name: self.instrument_name.clone(),
             attributes: self.attributes.clone(),
-            original_credit: self.original_credit.clone(),
             scope: self.scope.clone(),
             relation_type: self.relation_type.clone(),
             production_method: self.production_method.clone(),
@@ -205,6 +208,149 @@ impl ServeCredit {
     }
 }
 
+#[derive(Debug, Clone, Eq, Hash, Ord, PartialEq, PartialOrd)]
+struct ClaimIdentity {
+    instrument_mbid: Option<String>,
+    instrument_name: String,
+    attributes: Vec<String>,
+    scope: String,
+    relation_type: String,
+    production_method: String,
+}
+
+impl From<&ServeCredit> for ClaimIdentity {
+    fn from(credit: &ServeCredit) -> Self {
+        Self {
+            instrument_mbid: credit.instrument_mbid.clone(),
+            instrument_name: credit.instrument_name.clone(),
+            attributes: credit.attributes.clone(),
+            scope: credit.scope.clone(),
+            relation_type: credit.relation_type.clone(),
+            production_method: credit.production_method.clone(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize)]
+struct ServingClaim {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    instrument_mbid: Option<String>,
+    instrument_name: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    attributes: Vec<String>,
+    scope: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    source_url: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    source_urls: Vec<String>,
+    relation_type: String,
+    production_method: String,
+    credit_count: u64,
+    performer_count: u64,
+}
+
+struct ClaimAccumulator {
+    template: ServeCredit,
+    credit_count: u64,
+    performers: HashSet<String>,
+    source_urls: HashSet<String>,
+}
+
+impl ClaimAccumulator {
+    fn new(credit: ServeCredit) -> Self {
+        let mut accumulator = Self {
+            template: credit.clone(),
+            credit_count: 0,
+            performers: HashSet::new(),
+            source_urls: HashSet::new(),
+        };
+        accumulator.add(credit);
+        accumulator
+    }
+
+    fn add(&mut self, credit: ServeCredit) {
+        self.credit_count += 1;
+        if let Some(performer) = credit.performer_identity() {
+            self.performers.insert(performer);
+        }
+        self.source_urls.extend(credit.source_urls);
+        if let Some(source_url) = credit.source_url {
+            if !source_url.trim().is_empty() {
+                self.source_urls.insert(source_url);
+            }
+        }
+    }
+
+    fn finish(self) -> ServingClaim {
+        let mut source_urls: Vec<String> = self.source_urls.into_iter().collect();
+        source_urls.sort();
+        let source_url = source_urls.first().cloned();
+        if source_urls.len() <= 1 {
+            source_urls.clear();
+        }
+        ServingClaim {
+            instrument_mbid: self.template.instrument_mbid,
+            instrument_name: self.template.instrument_name,
+            attributes: self.template.attributes,
+            scope: self.template.scope,
+            source_url,
+            source_urls,
+            relation_type: self.template.relation_type,
+            production_method: self.template.production_method,
+            credit_count: self.credit_count,
+            performer_count: self.performers.len() as u64,
+        }
+    }
+}
+
+impl ServeCredit {
+    fn performer_identity(&self) -> Option<String> {
+        self.artist_mbid
+            .as_ref()
+            .map(|mbid| format!("mbid:{mbid}"))
+            .or_else(|| {
+                self.performer
+                    .as_ref()
+                    .map(|name| format!("name:{}", name.trim().to_lowercase()))
+            })
+    }
+}
+
+fn aggregate_claims(credits: Vec<ServeCredit>) -> Vec<ServingClaim> {
+    let mut claims: HashMap<ClaimIdentity, ClaimAccumulator> = HashMap::new();
+    for credit in credits {
+        let identity = ClaimIdentity::from(&credit);
+        if let Some(existing) = claims.get_mut(&identity) {
+            existing.add(credit);
+        } else {
+            claims.insert(identity, ClaimAccumulator::new(credit));
+        }
+    }
+    let mut claims: Vec<ServingClaim> = claims
+        .into_values()
+        .map(ClaimAccumulator::finish)
+        .collect();
+    claims.sort_by(|left, right| {
+        (
+            &left.instrument_mbid,
+            &left.instrument_name,
+            &left.scope,
+            &left.relation_type,
+            &left.production_method,
+            &left.attributes,
+        )
+            .cmp(&(
+                &right.instrument_mbid,
+                &right.instrument_name,
+                &right.scope,
+                &right.relation_type,
+                &right.production_method,
+                &right.attributes,
+            ))
+    });
+    claims
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 struct SpoolEvidence {
     recording_mbid: String,
@@ -215,7 +361,7 @@ struct SpoolEvidence {
 struct ServingRecord {
     recording_mbid: String,
     source_url: String,
-    credits: Vec<ServeCredit>,
+    claims: Vec<ServingClaim>,
 }
 
 #[derive(Debug, Serialize)]
@@ -286,6 +432,7 @@ struct ServingManifest {
     compression: &'static str,
     recording_count: u64,
     credit_count: u64,
+    claim_count: u64,
     release_fallback_recordings: u64,
     alias_count: u64,
     orphan_alias_count: u64,
@@ -311,6 +458,7 @@ struct Counters {
     discarded_special_artist_vocabulary_rows: u64,
     recording_count: u64,
     credit_count: u64,
+    claim_count: u64,
     release_fallback_recordings: u64,
     alias_count: u64,
     orphan_alias_count: u64,
@@ -418,14 +566,14 @@ impl Write for DigestWriter {
 }
 
 struct RecordAccumulator {
-    direct: HashSet<ServeCredit>,
+    direct: HashMap<CreditIdentity, ServeCredit>,
     release: HashMap<CreditIdentity, ServeCredit>,
 }
 
 impl Default for RecordAccumulator {
     fn default() -> Self {
         Self {
-            direct: HashSet::new(),
+            direct: HashMap::new(),
             release: HashMap::new(),
         }
     }
@@ -467,7 +615,8 @@ pub(crate) fn run(args: ServeArgs) -> Result<(), String> {
         return Err("--snapshot-version is required".into());
     }
     let recording_shard_width = shard_width(args.recording_shards)?;
-    let auxiliary_shard_width = shard_width(args.auxiliary_shards)?;
+    let track_shard_width = shard_width(args.track_shards)?;
+    let artist_shard_width = shard_width(args.artist_shards)?;
     ensure_empty_output(&args.output)?;
     let input = read_aggregate_manifest(&args.aggregate)?;
     if input.schema_version != AGGREGATE_SCHEMA_VERSION {
@@ -531,13 +680,13 @@ pub(crate) fn run(args: ServeArgs) -> Result<(), String> {
     progress.report("particionando aliases", true);
     let mut alias_spool = ShardSpool::create(
         &temporary.join("tracks"),
-        args.auxiliary_shards,
-        auxiliary_shard_width,
+        args.track_shards,
+        track_shard_width,
     )?;
     scan_alias_file(
         &args.aggregate.join("track-aliases.jsonl"),
-        args.auxiliary_shards,
-        auxiliary_shard_width,
+        args.track_shards,
+        track_shard_width,
         &mut alias_spool,
         &mut counters,
     )?;
@@ -546,8 +695,8 @@ pub(crate) fn run(args: ServeArgs) -> Result<(), String> {
         &alias_paths,
         &args.output.join("tracks"),
         &args.snapshot_version,
-        args.auxiliary_shards,
-        auxiliary_shard_width,
+        args.track_shards,
+        track_shard_width,
         args.compression_level,
         &servable_recordings,
         &mut files,
@@ -557,13 +706,13 @@ pub(crate) fn run(args: ServeArgs) -> Result<(), String> {
     progress.report("particionando vocabulário", true);
     let mut vocabulary_spool = ShardSpool::create(
         &temporary.join("artists"),
-        args.auxiliary_shards,
-        auxiliary_shard_width,
+        args.artist_shards,
+        artist_shard_width,
     )?;
     scan_vocabulary_file(
         &args.aggregate.join("artist-vocabulary.jsonl"),
-        args.auxiliary_shards,
-        auxiliary_shard_width,
+        args.artist_shards,
+        artist_shard_width,
         &mut vocabulary_spool,
         &mut counters,
     )?;
@@ -572,8 +721,8 @@ pub(crate) fn run(args: ServeArgs) -> Result<(), String> {
         &vocabulary_paths,
         &args.output.join("artists"),
         &args.snapshot_version,
-        args.auxiliary_shards,
-        auxiliary_shard_width,
+        args.artist_shards,
+        artist_shard_width,
         args.compression_level,
         &mut files,
     )?;
@@ -599,13 +748,14 @@ pub(crate) fn run(args: ServeArgs) -> Result<(), String> {
         object_prefix: SERVING_OBJECT_PREFIX,
         recording_shard_count: args.recording_shards,
         recording_shard_width,
-        track_shard_count: args.auxiliary_shards,
-        track_shard_width: auxiliary_shard_width,
-        artist_shard_count: args.auxiliary_shards,
-        artist_shard_width: auxiliary_shard_width,
-        compression: "bzip2",
+        track_shard_count: args.track_shards,
+        track_shard_width,
+        artist_shard_count: args.artist_shards,
+        artist_shard_width,
+        compression: "gzip",
         recording_count: counters.recording_count,
         credit_count: counters.credit_count,
+        claim_count: counters.claim_count,
         release_fallback_recordings: counters.release_fallback_recordings,
         alias_count: counters.alias_count,
         orphan_alias_count: counters.orphan_alias_count,
@@ -743,7 +893,12 @@ fn emit_recording_shards(
                     entry.release.insert(identity, row.credit);
                 }
             } else {
-                entry.direct.insert(row.credit);
+                let identity = row.credit.identity();
+                if let Some(existing) = entry.direct.get_mut(&identity) {
+                    existing.add_source(row.credit.source_url);
+                } else {
+                    entry.direct.insert(identity, row.credit);
+                }
             }
             Ok(())
         })?;
@@ -757,7 +912,7 @@ fn emit_recording_shards(
             let mut credits: Vec<ServeCredit> = if use_release {
                 accumulator.release.into_values().collect()
             } else {
-                accumulator.direct.into_iter().collect()
+                accumulator.direct.into_values().collect()
             };
             if credits.is_empty() {
                 continue;
@@ -765,19 +920,23 @@ fn emit_recording_shards(
             for credit in &mut credits {
                 credit.normalize_sources();
             }
-            credits.sort();
+            let claims = aggregate_claims(credits);
+            if claims.is_empty() {
+                continue;
+            }
             if use_release {
                 counters.release_fallback_recordings += 1;
             }
             counters.recording_count += 1;
-            counters.credit_count += credits.len() as u64;
+            counters.credit_count += claims.iter().map(|claim| claim.credit_count).sum::<u64>();
+            counters.claim_count += claims.len() as u64;
             servable.insert(recording_mbid.clone());
             output_records.insert(
                 recording_mbid.clone(),
                 ServingRecord {
                     recording_mbid: recording_mbid.clone(),
                     source_url: format!("https://musicbrainz.org/recording/{recording_mbid}"),
-                    credits,
+                    claims,
                 },
             );
         }
@@ -786,8 +945,8 @@ fn emit_recording_shards(
             continue;
         }
         let shard_name = shard_name(shard, shard_width);
-        let relative = format!("recordings/{shard_name}.json.bz2");
-        let output_path = output.join(format!("{shard_name}.json.bz2"));
+        let relative = format!("recordings/{shard_name}.json.gz");
+        let output_path = output.join(format!("{shard_name}.json.gz"));
         let row_count = output_records.len() as u64;
         let file_manifest = write_compressed_json(
             &output_path,
@@ -866,8 +1025,8 @@ fn emit_alias_shards(
         }
         counters.alias_count += aliases.len() as u64;
         let shard_name = shard_name(shard, shard_width);
-        let relative = format!("tracks/{shard_name}.json.bz2");
-        let output_path = output.join(format!("{shard_name}.json.bz2"));
+        let relative = format!("tracks/{shard_name}.json.gz");
+        let output_path = output.join(format!("{shard_name}.json.gz"));
         let row_count = aliases.len() as u64;
         let file_manifest = write_compressed_json(
             &output_path,
@@ -980,8 +1139,8 @@ fn emit_vocabulary_shards(
             );
         }
         let shard_name = shard_name(shard, shard_width);
-        let relative = format!("artists/{shard_name}.json.bz2");
-        let output_path = output.join(format!("{shard_name}.json.bz2"));
+        let relative = format!("artists/{shard_name}.json.gz");
+        let output_path = output.join(format!("{shard_name}.json.gz"));
         let row_count = output_artists.len() as u64;
         let file_manifest = write_compressed_json(
             &output_path,
@@ -1019,7 +1178,7 @@ fn write_compressed_json<T: Serialize>(
         digest: Sha256::new(),
         bytes: 0,
     };
-    let mut encoder = BzEncoder::new(sink, Compression::new(compression_level));
+    let mut encoder = GzEncoder::new(sink, Compression::new(compression_level));
     serde_json::to_writer(&mut encoder, value).map_err(|error| error.to_string())?;
     let mut sink = encoder.finish().map_err(|error| error.to_string())?;
     sink.flush().map_err(|error| error.to_string())?;
@@ -1191,7 +1350,7 @@ fn positive_float(value: &str) -> Result<f64, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bzip2::read::BzDecoder;
+    use flate2::read::GzDecoder;
     use std::io::Read;
 
     const RECORDING: &str = "11111111-1111-4111-8111-111111111111";
@@ -1316,7 +1475,8 @@ mod tests {
             output: output.clone(),
             snapshot_version: "snapshot-1".into(),
             recording_shards: 16,
-            auxiliary_shards: 16,
+            track_shards: 16,
+            artist_shards: 16,
             compression_level: 1,
             progress_interval: 1.0,
             no_progress: true,
@@ -1327,6 +1487,7 @@ mod tests {
             serde_json::from_slice(&fs::read(output.join("manifest.json")).unwrap()).unwrap();
         assert_eq!(manifest["recording_count"], 2);
         assert_eq!(manifest["credit_count"], 2);
+        assert_eq!(manifest["claim_count"], 2);
         assert_eq!(manifest["release_fallback_recordings"], 1);
         assert_eq!(manifest["discarded_unresolved_instrument_rows"], 1);
         assert_eq!(manifest["discarded_special_artist_vocabulary_rows"], 1);
@@ -1337,26 +1498,31 @@ mod tests {
 
         let shard = shard_name(shard_index(RECORDING, 16, 1), 1);
         let mut decoded = String::new();
-        BzDecoder::new(File::open(output.join(format!("recordings/{shard}.json.bz2"))).unwrap())
+        GzDecoder::new(File::open(output.join(format!("recordings/{shard}.json.gz"))).unwrap())
             .read_to_string(&mut decoded)
             .unwrap();
         assert!(decoded.contains(RECORDING));
+        assert!(decoded.contains("\"claims\""));
+        assert!(!decoded.contains("\"credits\""));
+        assert!(!decoded.contains("\"performer\""));
         assert!(!decoded.contains("\"instrument_mbid\":null"));
 
         let fallback_shard = shard_name(shard_index(FALLBACK_RECORDING, 16, 1), 1);
         let mut fallback_decoded = String::new();
-        BzDecoder::new(
-            File::open(output.join(format!("recordings/{fallback_shard}.json.bz2"))).unwrap(),
+        GzDecoder::new(
+            File::open(output.join(format!("recordings/{fallback_shard}.json.gz"))).unwrap(),
         )
         .read_to_string(&mut fallback_decoded)
         .unwrap();
         let fallback_payload: serde_json::Value = serde_json::from_str(&fallback_decoded).unwrap();
-        let fallback_credits = fallback_payload["records"][FALLBACK_RECORDING]["credits"]
+        let fallback_claims = fallback_payload["records"][FALLBACK_RECORDING]["claims"]
             .as_array()
             .unwrap();
-        assert_eq!(fallback_credits.len(), 1);
+        assert_eq!(fallback_claims.len(), 1);
+        assert_eq!(fallback_claims[0]["credit_count"], 1);
+        assert_eq!(fallback_claims[0]["performer_count"], 0);
         assert_eq!(
-            fallback_credits[0]["source_urls"]
+            fallback_claims[0]["source_urls"]
                 .as_array()
                 .unwrap()
                 .len(),
@@ -1366,13 +1532,59 @@ mod tests {
     }
 
     #[test]
-    fn compression_level_matches_bzip2_supported_range() {
+    fn pre_aggregates_performers_without_merging_distinct_claims() {
+        let credits = (0..100)
+            .map(|index| ServeCredit {
+                artist_mbid: Some(format!(
+                    "00000000-0000-4000-8000-{index:012}"
+                )),
+                instrument_mbid: Some(INSTRUMENT.into()),
+                instrument_name: "piano".into(),
+                attributes: vec!["piano".into()],
+                original_credit: None,
+                scope: "recording".into(),
+                source_url: Some("https://example.test/recording".into()),
+                source_urls: Vec::new(),
+                relation_type: "instrument".into(),
+                production_method: "performed".into(),
+                performer: Some(format!("Performer {index}")),
+            })
+            .chain(std::iter::once(ServeCredit {
+                artist_mbid: None,
+                instrument_mbid: Some(INSTRUMENT.into()),
+                instrument_name: "piano".into(),
+                attributes: vec!["piano".into()],
+                original_credit: None,
+                scope: "release".into(),
+                source_url: Some("https://example.test/release".into()),
+                source_urls: Vec::new(),
+                relation_type: "instrument".into(),
+                production_method: "performed".into(),
+                performer: None,
+            }))
+            .collect::<Vec<_>>();
+
+        let claims = aggregate_claims(credits);
+
+        assert_eq!(claims.len(), 2);
+        let recording = claims
+            .iter()
+            .find(|claim| claim.scope == "recording")
+            .unwrap();
+        assert_eq!(recording.credit_count, 100);
+        assert_eq!(recording.performer_count, 100);
+    }
+
+    #[test]
+    fn compression_level_matches_gzip_supported_range() {
         assert_eq!(compression_level("1"), Ok(1));
         assert_eq!(compression_level("9"), Ok(9));
+        assert_eq!(DEFAULT_COMPRESSION_LEVEL, 9);
         assert!(compression_level("0").is_err());
         assert!(compression_level("10").is_err());
-        assert_eq!(shard_width(DEFAULT_RECORDING_SHARDS), Ok(3));
-        assert_eq!(shard_width(DEFAULT_AUXILIARY_SHARDS), Ok(2));
+        assert_eq!(shard_width(DEFAULT_RECORDING_SHARDS), Ok(4));
+        assert_eq!(shard_width(DEFAULT_TRACK_SHARDS), Ok(4));
+        assert_eq!(shard_width(DEFAULT_ARTIST_SHARDS), Ok(3));
     }
 
     #[test]

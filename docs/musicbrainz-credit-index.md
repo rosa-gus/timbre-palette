@@ -41,7 +41,7 @@ cargo run --release --manifest-path etl/musicbrainz-etl/Cargo.toml -- \
   --snapshot-version 20260912-002318
 ```
 
-The output uses the `musicbrainz-instrument-credits-serving-v1` schema and deterministic bzip2 shards under `recordings/`, `tracks/`, and `artists/`. Recordings use three hexadecimal partition characters; aliases and artist vocabulary use two. Release duplicates retain distinct source URLs, and placeholder artist identities are excluded from vocabulary.
+The output uses the `musicbrainz-instrument-credits-serving-v2` schema and deterministic gzip shards under `recordings/`, `tracks/`, and `artists/`. Recording claims are pre-aggregated by instrument identity, scope, relation, production method, and attributes; performer and source counts remain attached to each claim. Gzip is emitted at maximum compression by default so the serving Worker can use the Workers runtime's native decompressor. Recordings and track aliases use four hexadecimal partition characters; artist vocabulary uses three. Release duplicates retain distinct source URLs, and placeholder artist identities are excluded from vocabulary.
 
 Credits that cannot be resolved to an instrument or family in the project taxonomy are discarded before serving publication.
 

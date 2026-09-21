@@ -68,7 +68,7 @@ async def test_catalog_stats_counts_unique_recordings_with_accepted_evidence(
         INSERT INTO musicbrainz_credit_index_snapshots
             (snapshot_version, index_schema_version, source_url, license,
              attribution, manifest_hash, status, published_at)
-        VALUES ('snapshot-v2', 'musicbrainz-instrument-credits-serving-v1',
+        VALUES ('snapshot-v2', 'musicbrainz-instrument-credits-serving-v2',
                 'https://example.test/musicbrainz', 'CC0', 'MusicBrainz',
                 'manifest', 'active', datetime('now'))
         """

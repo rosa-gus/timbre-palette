@@ -10,6 +10,7 @@ from palette_api.v2 import (
     SnapshotPreparation,
     SnapshotVocabularyRow,
     V2AnalysisService,
+    _shard_key,
 )
 
 
@@ -23,6 +24,14 @@ def clear_dependency_overrides():
     app.dependency_overrides.clear()
     yield
     app.dependency_overrides.clear()
+
+
+def test_hydration_targets_use_serving_snapshot_shard_widths() -> None:
+    mbid = "abcdef12-3456-4789-abcd-ef1234567890"
+
+    assert _shard_key("recording", mbid) == "abcd"
+    assert _shard_key("track", mbid) == "abcd"
+    assert _shard_key("artist", mbid) == "abc"
 
 
 @pytest.mark.anyio
@@ -71,7 +80,7 @@ class StaticVocabularyProvider:
     async def prepare(self, history: ListeningHistory) -> SnapshotPreparation:
         snapshot = SnapshotInfo(
             snapshot_version="test-snapshot",
-            schema_version="musicbrainz-instrument-credits-serving-v1",
+            schema_version="musicbrainz-instrument-credits-serving-v2",
             manifest_hash="test-hash",
             object_prefix="test-prefix",
             methodology_version="artist-vocabulary-candidate-1",
