@@ -189,6 +189,10 @@ async function findCandidate(db: D1Database): Promise<JobRow | null> {
       JOIN musicbrainz_credit_index_snapshots AS snapshots
         ON snapshots.snapshot_version = jobs.snapshot_version
       WHERE snapshots.status = 'active'
+        -- Keep this predicate aligned with idx_snapshot_hydration_open_order.
+        -- Without it, SQLite cannot use the partial index and scans completed
+        -- jobs before applying the eligibility branches below.
+        AND jobs.status != 'complete'
         AND (
           (
             jobs.status IN ('pending', 'failed')
