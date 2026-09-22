@@ -6,6 +6,7 @@
   import ScrollArea from "./ScrollArea.svelte";
   import Arrow from "./Arrow.svelte";
   import ColorSwatch from "./ColorSwatch.svelte";
+  import Dropdown from "./Dropdown.svelte";
 
   export let resource: InstrumentResource | null = null;
   export let open = false;
@@ -67,6 +68,15 @@
     return (
       (resource?.sources.findIndex((source) => source.id === id) ?? -1) + 1
     );
+  }
+  function sourceMetaParts(
+    source: InstrumentResource["sources"][number],
+  ): string[] {
+    return [
+      source.contributors.join(", "),
+      source.publisher,
+      source.publication_date,
+    ].filter((part): part is string => Boolean(part));
   }
   type Rgb = [number, number, number];
   function parseHex(value: string): Rgb {
@@ -183,7 +193,10 @@
       {#key resource?.slug}
         <ScrollArea>
           {#if loading}
-            <p class="instrument-message" role="status">Carregando ficha…</p>
+            <p class="instrument-message instrument-loading" role="status">
+              <span class="loading-indicator" aria-hidden="true"></span>
+              <span>Carregando ficha…</span>
+            </p>
           {:else if error}
             <p class="instrument-message" role="alert">{error}</p>
           {:else if resource}
@@ -283,8 +296,8 @@
                       >
                         Revisão do suporte à afirmação pendente.
                       </p>{/if}
-                    <details class="instrument-details">
-                      <summary>Sobre este trecho</summary>
+                    <Dropdown title="Sobre este trecho">
+                      <div class="instrument-details">
                       <dl>
                         <div>
                           <dt>Conteúdo</dt>
@@ -321,8 +334,10 @@
                             <dd>
                               {date(
                                 section.review.reviewed_at,
-                              )}{#if section.review.reviewer}
-                                · {section.review.reviewer}{/if}
+                              )}{#if section.review.reviewer}<span
+                                  class="separator-indicator"
+                                  aria-hidden="true">·</span
+                                >{section.review.reviewer}{/if}
                             </dd>
                           </div>{/if}
                       </dl>
@@ -334,10 +349,13 @@
                               >Referência {sourceNumber(citation.source_id) ||
                                 "indisponível"}:</strong
                             >
-                            {citation.locator ?? ""}{#if citation.note}
-                              · {citation.note}{/if}
+                            {citation.locator ?? ""}{#if citation.note}<span
+                                class="separator-indicator"
+                                aria-hidden="true">·</span
+                              >{citation.note}{/if}
                           </p>{/if}{/each}
-                    </details>
+                      </div>
+                    </Dropdown>
                   </section>
                 {/each}
                 {#if resource.related_slugs.length}<section
@@ -353,10 +371,11 @@
                         >{/each}
                     </div>
                     {#if relationsLoading}<p
-                        class="instrument-review-note"
+                        class="instrument-review-note instrument-loading-note"
                         role="status"
                       >
-                        Carregando fichas relacionadas…
+                        <span class="loading-indicator" aria-hidden="true"></span>
+                        <span>Carregando fichas relacionadas…</span>
                       </p>{/if}{#if relationsError}<p
                         class="instrument-review-note"
                         role="status"
@@ -398,16 +417,13 @@
                                 >{source.title}</span
                               >{/if}
                             <p class="instrument-source-meta">
-                              {[
-                                source.contributors.join(", "),
-                                source.publisher,
-                                source.publication_date,
-                              ]
-                                .filter(Boolean)
-                                .join(" · ")}
+                              {#each sourceMetaParts(source) as part, index}{#if index > 0}<span
+                                  class="separator-indicator"
+                                  aria-hidden="true">·</span
+                                >{/if}{part}{/each}
                             </p>
-                            <details class="instrument-details">
-                              <summary>Ver detalhes da fonte</summary>
+                            <Dropdown title="Ver detalhes da fonte">
+                              <div class="instrument-details">
                               <dl>
                                 <div>
                                   <dt>Tipo</dt>
@@ -443,13 +459,14 @@
                                   </div>{/if}
                               </dl>
                               {#if source.note}<p>{source.note}</p>{/if}
-                            </details>
+                              </div>
+                            </Dropdown>
                           </div>
                         </li>{/each}
                     </ol>
                   </section>{/if}
-                <details class="instrument-details instrument-about">
-                  <summary>Sobre esta ficha</summary>
+                <Dropdown title="Sobre esta ficha">
+                  <div class="instrument-details instrument-about">
                   <dl>
                     <div>
                       <dt>Procedência</dt>
@@ -468,7 +485,8 @@
                       <dd>{resource.image_catalog_version}</dd>
                     </div>
                   </dl>
-                </details>
+                  </div>
+                </Dropdown>
               </div>
             </div>
           {/if}

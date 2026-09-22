@@ -34,6 +34,7 @@
   export let confidenceLabels: Record<Confidence, string>;
   export let shareFeedback = "";
   export let onOpenInstrument: () => void = () => undefined;
+  export let onOpenInstrumentSlug: (slug: string) => void = () => undefined;
   export let onGenerateShare: () => void = () => undefined;
   export let getAvailability: (
     section: SectionId,
@@ -114,8 +115,9 @@
   {#if !embedded}<div class="archive-header">
     <p class="eyebrow">ESCUTA DE @{report.profile.username}</p>
     <div class="archive-period">
-      <span>{periodLabels[report.profile.period]}</span><span
-        >Análise {statusLabels[report.analysis.status]}</span
+      <span>{periodLabels[report.profile.period]}<span
+          class="separator-indicator"
+          aria-hidden="true">·</span>Análise {statusLabels[report.analysis.status]}</span
       >{#if report.analysis.data_source !== "catalog"}<span
           >Dados {report.analysis.data_source === "mock"
             ? "demonstrativos"
@@ -177,7 +179,15 @@
               >{String(index + 1).padStart(2, "0")} / PRESENÇA DOMINANTE</span
             >
             <div class="instrument-name">
-              <h2>{family.name}</h2>
+              <h2>
+                <button
+                  type="button"
+                  class="family-card-link"
+                  aria-label={`Abrir ficha de ${family.name}`}
+                  on:click={() => onOpenInstrumentSlug(family.slug)}
+                  >{family.name}</button
+                >
+              </h2>
               <strong>{percent(family.share)}</strong>
             </div>
           </figcaption>
@@ -221,7 +231,13 @@
       <div class="family-list" aria-label="Famílias instrumentais">
         {#each report.families as family}<div class="family-row">
             <div class="family-label">
-              <span>{family.name}</span><Badge tone="neutral"
+              <button
+                type="button"
+                class="family-link"
+                aria-label={`Abrir ficha de ${family.name}`}
+                on:click={() => onOpenInstrumentSlug(family.slug)}
+                >{family.name}</button
+              ><Badge tone="neutral"
                 >{confidenceLabels[family.confidence]}</Badge
               >
             </div>
@@ -268,7 +284,7 @@
           )} das reproduções).
         </p>
         <p>
-          Catálogo {report.analysis.catalog_version ?? "não publicado"} · Método {report
+          Catálogo {report.analysis.catalog_version ?? "não publicado"} <span class="separator-indicator" aria-hidden="true">·</span> Método {report
             .analysis.methodology_version}
         </p>
       </Dropdown>
@@ -346,7 +362,7 @@
           alt={`Imagem pronta para compartilhar: paleta de ${report.profile.username}`}
         />{:else}<div class="share-card-preview">
           <span class="eyebrow"
-            >TIMBRE PALETTE / @{report.profile.username} · {periodLabels[
+            >TIMBRE PALETTE / @{report.profile.username} <span class="separator-indicator" aria-hidden="true">·</span> {periodLabels[
               report.profile.period
             ]}</span
           ><strong>{portrait.title}</strong>
@@ -373,7 +389,7 @@
               </div>{/each}
           </div>
           <span class="preview-note"
-            >Interpretação musical · TIMBRE PALETTE</span
+            >Interpretação musical <span class="separator-indicator" aria-hidden="true">·</span> TIMBRE PALETTE</span
           >
         </div>{/if}
     </div>
@@ -534,6 +550,27 @@
   .instrument-name h2 {
     font-size: clamp(1.2rem, 1.8vw, 1.75rem);
   }
+  .family-card-link,
+  .family-link {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    text-align: left;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-underline-offset: 5px;
+    transition: color 150ms ease, text-decoration-color 150ms ease;
+  }
+  .family-card-link:hover,
+  .family-card-link:focus-visible,
+  .family-link:hover,
+  .family-link:focus-visible {
+    color: var(--accent-soft);
+    text-decoration-color: currentColor;
+  }
   .instrument-name strong {
     font-family: var(--meta);
     font-size: 18px;
@@ -629,7 +666,7 @@
     justify-items: start;
     gap: 6px;
   }
-  .family-label > span {
+  .family-label .family-link {
     font-size: 17px;
   }
   .share-bar {

@@ -110,7 +110,7 @@
             style={`background:${color}`}
             aria-hidden="true"
           ></span>{/if}
-          <span>{copied ? `Copiado ${hex}` : `${hex} · clique para copiar`}</span>
+          <span>{#if copied}Copiado {hex}{:else}{hex}<span class="separator-indicator" aria-hidden="true">·</span>clique para copiar{/if}</span>
         </div>
       </Tooltip.Content>
     </Tooltip.Portal>

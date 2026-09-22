@@ -397,7 +397,7 @@
     <div class="footer-colophon">
       <div class="footer-identity">
         <span class="footer-wordmark">TIMBRE PALETTE</span>
-        <p class="footer-byline">por <a href="https://rosa-gus.github.io/portfolio" target="_blank" rel="noreferrer noopener">rosa gus</a> <span aria-hidden="true">·</span> Código <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank" rel="noreferrer noopener">GPL-3.0</a></p>
+      <p class="footer-byline">por <a href="https://rosa-gus.github.io/portfolio" target="_blank" rel="noreferrer noopener">rosa gus</a> <span class="separator-indicator" aria-hidden="true">·</span> Código <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank" rel="noreferrer noopener">GPL-3.0</a></p>
       </div>
       <div class="footer-source">
         <span class="footer-label">HISTÓRICO</span>

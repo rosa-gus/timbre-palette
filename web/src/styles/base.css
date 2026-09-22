@@ -225,6 +225,35 @@ main {
   color: var(--accent-soft);
   text-decoration: underline;
 }
+.loading-indicator {
+  display: inline-block;
+  flex: 0 0 4.4em;
+  color: var(--accent);
+  font-family: var(--meta);
+  white-space: pre;
+}
+.loading-indicator::after {
+  content: "* . . .";
+  animation: loading-indicator 1.2s step-end infinite;
+}
+.separator-indicator {
+  display: inline-block;
+  padding-inline: 0.45em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+@keyframes loading-indicator {
+  0%, 24.99% { content: "* . . ."; }
+  25%, 49.99% { content: ". * . ."; }
+  50%, 74.99% { content: ". . * ."; }
+  75%, 100% { content: ". . . *"; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .loading-indicator::after {
+    animation: none;
+    content: "* . . .";
+  }
+}
 .visually-hidden {
   position: absolute;
   width: 1px;

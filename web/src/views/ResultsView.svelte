@@ -149,14 +149,15 @@
     {#if directAvailable}
       <ReportView report={palette} embedded {sectionOptions} {periodLabels}
         {statusLabels} {confidenceLabels} {shareFeedback} {sharePreviewUrl}
-        {shareBusy} {onDownloadShare} {onOpenInstrument} {onGenerateShare}
+        {shareBusy} {onDownloadShare} {onOpenInstrument} {onOpenInstrumentSlug}
+        {onGenerateShare}
         {getAvailability} hydrationPending={result.hydration.status === "pending"} />
     {:else}
       <section class="unavailable-reading" aria-labelledby="direct-title">
-        <p class="eyebrow">01 / PALETA DAS FAIXAS · INSUFICIENTE</p>
+        <p class="eyebrow">01 / PALETA DAS FAIXAS <span class="separator-indicator" aria-hidden="true">·</span> INSUFICIENTE</p>
         <h2 id="direct-title">Ainda não há um retrato das suas faixas.</h2>
         <p>Não encontramos créditos instrumentais diretos aceitos em uma amostra suficiente deste histórico. Isso não significa que esses instrumentos estejam ausentes das músicas.</p>
-        <p class="reading-measure">{percent(palette.analysis.coverage_tracks)} das faixas · {percent(palette.analysis.coverage_plays)} das reproduções cobertas</p>
+        <p class="reading-measure">{percent(palette.analysis.coverage_tracks)} das faixas <span class="separator-indicator" aria-hidden="true">·</span> {percent(palette.analysis.coverage_plays)} das reproduções cobertas</p>
         {#if vocabulary.status === "available"}<button type="button" on:click={() => onSelectView("artist_vocabulary")}>VER VOCABULÁRIO DOS ARTISTAS →</button>{/if}
       </section>
     {/if}
@@ -165,7 +166,7 @@
     <section class="vocabulary-reading" aria-labelledby="vocabulary-title">
       <div class="vocabulary-lead">
         <div>
-          <p class="eyebrow">02 / VOCABULÁRIO DOS ARTISTAS · {vocabularyLabel().toUpperCase()}</p>
+          <p class="eyebrow">02 / VOCABULÁRIO DOS ARTISTAS <span class="separator-indicator" aria-hidden="true">·</span> {vocabularyLabel().toUpperCase()}</p>
           <h2 id="vocabulary-title">Os sons documentados ao redor dos artistas.</h2>
           <p class="lead-copy">Instrumentos que recorrem em gravações documentadas dos artistas presentes na sua escuta.</p>
           <p class="scope-note">{vocabulary.notice}</p>
@@ -188,13 +189,16 @@
         <div class="vocabulary-families">
           {#each vocabulary.families as family, index}
             <article class="vocabulary-family">
-              <div class="family-top"><span class="family-index">{String(index + 1).padStart(2, "0")}</span><h3>{family.name}</h3><strong>{percent(family.share)}</strong></div>
+              <div class="family-top"><span class="family-index">{String(index + 1).padStart(2, "0")}</span><h3><button type="button" class="family-link" aria-label={`Abrir ficha de ${family.name}`} on:click={() => onOpenInstrumentSlug(family.slug)}>{family.name}</button></h3><strong>{percent(family.share)}</strong></div>
               <div class="vocabulary-bar" role="img" aria-label={`${family.name}: ${percent(family.share)} de participação no modelo`}><span style={`width:${family.share * 100}%`}></span></div>
-              <p>{count(family.supporting_artists)} {family.supporting_artists === 1 ? "artista com suporte" : "artistas com suporte"} · {family.instruments.map((instrument) => instrument.name).join(", ")}</p>
+              <p>
+                {count(family.supporting_artists)} {family.supporting_artists === 1 ? "artista com suporte" : "artistas com suporte"}<span class="separator-indicator" aria-hidden="true">·</span>
+                {#each family.instruments as instrument, instrumentIndex}{#if instrumentIndex > 0}, {/if}<button type="button" class="instrument-link instrument-inline" on:click={() => onOpenInstrumentSlug(instrument.slug)}>{instrument.name}</button>{/each}
+              </p>
               <div class="family-evidence">
                 <Dropdown title="Critérios e evidências">
                   <p>Os instrumentos abaixo recorrem em pelo menos três gravações distintas documentadas de um artista. Eles não são créditos atribuídos às faixas deste histórico.</p>
-                  <ul>{#each family.instruments as instrument}<li><button type="button" class="instrument-link" on:click={() => onOpenInstrumentSlug(instrument.slug)}>{instrument.name} ↗</button><span>{count(instrument.distinct_recordings)} gravações distintas · crédito de {instrument.evidence.scope === "track" ? "faixa" : "gravação"}</span></li>{/each}</ul>
+                  <ul>{#each family.instruments as instrument}<li><button type="button" class="instrument-link" on:click={() => onOpenInstrumentSlug(instrument.slug)}>{instrument.name}</button><span>{count(instrument.distinct_recordings)} gravações distintas <span class="separator-indicator" aria-hidden="true">·</span> crédito de {instrument.evidence.scope === "track" ? "faixa" : "gravação"}</span></li>{/each}</ul>
                 </Dropdown>
               </div>
             </article>
@@ -215,7 +219,7 @@
             <p>A participação mostra o peso relativo calculado entre as famílias deste vocabulário. Não mede volume, duração ou presença do instrumento nas faixas ouvidas.</p>
             <p>Maior contribuição de um único artista para a pontuação: {percent(vocabulary.concentration)}.</p>
             <p>{count(vocabulary.reach.unresolved_artists)} artistas e {count(vocabulary.reach.unresolved_tracks)} faixas sem identidade MusicBrainz não entram na consulta pendente.</p>
-            <p>Snapshot MusicBrainz {result.snapshot.snapshot_version} · Método do vocabulário {vocabulary.methodology_version}</p>
+            <p>Snapshot MusicBrainz {result.snapshot.snapshot_version} <span class="separator-indicator" aria-hidden="true">·</span> Método do vocabulário {vocabulary.methodology_version}</p>
           </Dropdown>
         </div>
       {/if}
@@ -276,6 +280,8 @@
   .vocabulary-family { padding:24px 0 26px; border-top:1px solid var(--line); }
   .family-top { display:grid; grid-template-columns:40px 1fr auto; align-items:baseline; gap:18px; }
   .family-top h3 { margin:0; font-size:clamp(1.5rem,2.3vw,2.4rem); }
+  .family-top .family-link { padding:0; border:0; background:transparent; color:inherit; cursor:pointer; font:inherit; text-align:left; text-decoration:underline; text-decoration-color:transparent; text-underline-offset:5px; transition:color 150ms ease, text-decoration-color 150ms ease; }
+  .family-top .family-link:hover, .family-top .family-link:focus-visible { color:var(--accent-soft); text-decoration-color:currentColor; }
   .family-top strong { font:20px var(--meta); color:var(--accent-soft); }
   .vocabulary-bar { height:11px; margin:20px 0 14px 58px; background:var(--panel); }
   .vocabulary-bar span { display:block; height:100%; background:var(--accent); }
@@ -285,8 +291,8 @@
   .vocabulary-family ul { max-width:760px; margin:14px 0 0; padding:0; list-style:none; }
   .vocabulary-family li { display:flex; justify-content:space-between; gap:16px; padding:8px 0; border-top:1px solid var(--line); }
   .vocabulary-family li span:first-child { color:var(--ink); }
-  .instrument-link { padding:0; border:0; background:transparent; color:var(--ink); cursor:pointer; font:inherit; text-align:left; }
-  .instrument-link:hover { color:var(--accent-soft); }
+  .instrument-link { padding:0; border:0; background:transparent; color:var(--ink); cursor:pointer; font:inherit; text-align:left; text-decoration:underline; text-decoration-color:transparent; text-underline-offset:4px; transition:color 150ms ease, text-decoration-color 150ms ease; }
+  .instrument-link:hover, .instrument-link:focus-visible { color:var(--accent-soft); text-decoration-color:currentColor; }
   .vocabulary-state { max-width:700px; padding:45px 0 55px; border-top:1px solid var(--line); }
   .vocabulary-state > span { color:var(--accent-soft); font:13px var(--meta); }
   .vocabulary-state h3 { margin:14px 0; font-size:clamp(1.5rem,2.5vw,2.3rem); }

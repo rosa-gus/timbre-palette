@@ -272,6 +272,12 @@
   color: var(--muted);
   margin: 0;
 }
+.instrument-loading,
+.instrument-loading-note {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
 @media (max-width: 800px) {
   .ui-dialog-content {
     width: calc(100vw - 24px);

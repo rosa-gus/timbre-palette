@@ -61,7 +61,7 @@
         </p>
         <p>Faixas sem essas evidências ficam fora do cálculo.</p>
         {#if hydrationPending}<p class="coverage-pending">
-          <span class="coverage-loading" aria-hidden="true"></span>
+          <span class="loading-indicator" aria-hidden="true"></span>
           <span>Mais dados podem chegar depois.</span>
         </p>{/if}
       </div>
@@ -129,27 +129,5 @@
     color: var(--ink);
     font-family: var(--meta);
     font-size: 12px;
-  }
-  .coverage-loading {
-    display: inline-block;
-    flex: 0 0 4.4em;
-    color: var(--accent);
-    white-space: pre;
-  }
-  .coverage-loading::after {
-    content: "* . . .";
-    animation: coverage-loading 1.2s step-end infinite;
-  }
-  @keyframes coverage-loading {
-    0%, 24.99% { content: "* . . ."; }
-    25%, 49.99% { content: ". * . ."; }
-    50%, 74.99% { content: ". . * ."; }
-    75%, 100% { content: ". . . *"; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .coverage-loading::after {
-      animation: none;
-      content: "* . . .";
-    }
   }
 </style>

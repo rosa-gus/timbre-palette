@@ -8,7 +8,7 @@
   <h1>{title}</h1>
   <p class="loading-description">{description}</p>
   <div class="loading-characters" aria-hidden="true">
-    <span class="loading-sequence"></span>
+    <span class="loading-indicator"></span>
   </div>
   <p class="loading-detail">{detail}</p>
 </section>
@@ -39,12 +39,6 @@
     line-height: 1.5;
     white-space: pre;
   }
-  .loading-sequence::after {
-    color: var(--accent);
-    content: "* . . .";
-    display: inline-block;
-    animation: loading-sequence 1.2s step-end infinite;
-  }
   .loading-detail {
     margin: 0;
     color: var(--muted);
@@ -53,25 +47,12 @@
     line-height: 1.5;
     overflow-wrap: anywhere;
   }
-  @keyframes loading-sequence {
-    0%, 24.99% { content: "* . . ."; }
-    25%, 49.99% { content: ". * . ."; }
-    50%, 74.99% { content: ". . * ."; }
-    75%, 100% { content: ". . . *"; }
-  }
   @keyframes appear {
     from {
       opacity: 0;
     }
     to {
       opacity: 1;
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .loading-view,
-    .loading-sequence::after {
-      animation: none;
-      content: "* . . .";
     }
   }
 </style>
