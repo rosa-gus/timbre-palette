@@ -81,6 +81,16 @@
     light: "CLARO",
     system: "SISTEMA",
   };
+  const headerMarks: Record<ResolvedTheme, { src: string; srcset: string }> = {
+    dark: {
+      src: "./timbre-mark-header-dark-1x.png",
+      srcset: "./timbre-mark-header-dark-1x.png 1x, ./timbre-mark-header-dark-2x.png 2x",
+    },
+    light: {
+      src: "./timbre-mark-header-light-1x.png",
+      srcset: "./timbre-mark-header-light-1x.png 1x, ./timbre-mark-header-light-2x.png 2x",
+    },
+  };
   const homePath = normalizePathname();
 
   let view: "entry" | "loading" | "report" = "entry";
@@ -385,8 +395,14 @@
   <header class="site-header">
     <div class="header-identity">
       <a class="wordmark" href={homePath} aria-label="Timbre Palette, início">
-        <img src="./favicon-32x32.png" alt="" aria-hidden="true" />
-        <span>TIMBRE PALETTE</span>
+        <img
+          src={headerMarks[resolvedTheme].src}
+          srcset={headerMarks[resolvedTheme].srcset}
+          width="111"
+          height="44"
+          alt=""
+          aria-hidden="true"
+        />
       </a>
       <ProductVersion />
     </div>

@@ -1,7 +1,6 @@
 <script lang="ts">
-  import flowerIntroImage from "../../../assets/treated/flower-intro.png";
-  import flowerIntroVideo from "../../../assets/treated/flower-intro.webm";
-  import flowerLoadingVideo from "../../../assets/treated/flower-loading.webm";
+  import chladniHeroImage from "../../../assets/treated/chladni-hero.png";
+  import chladniHeroVideo from "../../../assets/treated/chladni-hero.webm";
   import LoadingView from "./LoadingView.svelte";
   import Button from "../components/Button.svelte";
   import ColorSwatch from "../components/ColorSwatch.svelte";
@@ -26,47 +25,25 @@
     { color: "#FFB8B8", label: "Accent suave" },
   ];
 
-  let video: HTMLVideoElement;
+  let heroVideo: HTMLVideoElement;
   let videoPlaying = false;
   let videoStarted = false;
   let videoFailed = false;
-  let loadingVideo: HTMLVideoElement | undefined;
-  let loadingVideoPlaying = false;
-  let loadingVideoStarted = false;
 
-  $: if (video) {
-    if (loading) {
-      video.pause();
-      videoPlaying = false;
-    } else if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches)
-      playIntro();
-  }
-
-  function startLoadingVideo(node: HTMLVideoElement) {
-    loadingVideo = node;
-    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      void node.play().catch(() => {
-        loadingVideoPlaying = false;
-      });
-    }
-    return {
-      destroy() {
-        node.pause();
-        loadingVideo = undefined;
-        loadingVideoPlaying = false;
-        loadingVideoStarted = false;
-      },
-    };
-  }
+  $: if (
+    heroVideo &&
+    !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  )
+    playHero();
 
   function submitProfile(): void {
     if (loading) return;
     onSubmit();
   }
 
-  function playIntro(): void {
-    if (!video || videoFailed) return;
-    void video
+  function playHero(): void {
+    if (!heroVideo || videoFailed) return;
+    void heroVideo
       .play()
       .then(() => {
         videoStarted = true;
@@ -75,23 +52,14 @@
         videoPlaying = false;
       });
   }
-  function toggleIntro(): void {
-    if (loading) {
-      if (!loadingVideo) return;
-      if (loadingVideoPlaying) loadingVideo.pause();
-      else
-        void loadingVideo.play().catch(() => {
-          loadingVideoPlaying = false;
-        });
-      return;
-    }
-    if (!video || videoFailed) return;
+  function toggleHero(): void {
+    if (!heroVideo || videoFailed) return;
     if (videoPlaying) {
-      video.pause();
+      heroVideo.pause();
       videoPlaying = false;
       return;
     }
-    playIntro();
+    playHero();
   }
   function handlePlaying(): void {
     videoStarted = true;
@@ -115,76 +83,53 @@
   </p>
 
   <div class="entry-stage">
-    <div class="intro-frame">
+    <div class="hero-frame">
       <img
-        src={flowerIntroImage}
-        alt="Flores tratadas em duotone rosa e preto"
+        src={chladniHeroImage}
+        alt="Experimento histórico de Chladni tratado em duotone rosa e preto"
       />
       <video
-        bind:this={video}
+        bind:this={heroVideo}
         class:visible={videoStarted}
         muted
         loop
         playsinline
         preload="metadata"
-        poster={flowerIntroImage}
+        poster={chladniHeroImage}
         aria-hidden="true"
         on:playing={handlePlaying}
         on:error={handleVideoError}
       >
-        <source src={flowerIntroVideo} type="video/webm" />
+        <source src={chladniHeroVideo} type="video/webm" />
       </video>
-      {#if loading}
-        <video
-          use:startLoadingVideo
-          class="loading-video"
-          class:visible={loadingVideoStarted}
-          muted
-          loop
-          playsinline
-          preload="auto"
-          aria-hidden="true"
-          on:playing={() => {
-            loadingVideoPlaying = true;
-            loadingVideoStarted = true;
-          }}
-          on:pause={() => (loadingVideoPlaying = false)}
-          on:error={() => {
-            loadingVideoPlaying = false;
-            loadingVideoStarted = false;
-          }}
-        >
-          <source src={flowerLoadingVideo} type="video/webm" />
-        </video>
-      {/if}
     </div>
-    <div class="intro-controls">
+    <div class="hero-controls">
       <div
-        class="intro-palette"
+        class="hero-palette"
         role="group"
         aria-label="Variações do accent do projeto"
       >
-        {#each accentSwatches as swatch}<ColorSwatch
+        {#each accentSwatches as swatch}
+          <ColorSwatch
             color={swatch.color}
             label={swatch.label}
-            className="intro-swatch"
-          />{/each}
+            className="hero-swatch"
+          />
+        {/each}
       </div>
       <button
-        class:playing={loading ? loadingVideoPlaying : videoPlaying}
-        class="intro-play"
+        class:playing={videoPlaying}
+        class="hero-play"
         type="button"
-        disabled={loading ? !loadingVideo : videoFailed}
-        aria-label={(loading ? loadingVideoPlaying : videoPlaying)
-          ? "Pausar vídeo"
-          : "Reproduzir vídeo"}
-        on:click={toggleIntro}
+        disabled={videoFailed}
+        aria-label={videoPlaying ? "Pausar vídeo" : "Reproduzir vídeo"}
+        on:click={toggleHero}
       >
-        {(loading ? loadingVideoPlaying : videoPlaying)
-          ? "Reproduzindo"
-          : "Reproduzir"}{#if loading ? loadingVideoPlaying : videoPlaying}<span
-            aria-hidden="true">Ⅱ</span
-          >{:else}<span aria-hidden="true">▷</span>{/if}
+        {#if videoPlaying}
+          Reproduzindo <span aria-hidden="true">Ⅱ</span>
+        {:else}
+          Reproduzir <span aria-hidden="true">▷</span>
+        {/if}
       </button>
     </div>
   </div>
@@ -255,7 +200,7 @@
     justify-items: center;
     width: min(100%, 680px);
   }
-  .intro-frame {
+  .hero-frame {
     position: relative;
     width: 100%;
     aspect-ratio: 16/9;
@@ -263,44 +208,44 @@
     border: 1px solid var(--line-strong);
     background: var(--paper);
   }
-  .intro-frame img,
-  .intro-frame video {
+  .hero-frame img,
+  .hero-frame video {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
-  .intro-frame video {
+  .hero-frame video {
     opacity: 0;
     transition: opacity 260ms ease;
   }
-  .intro-frame video.visible {
+  .hero-frame video.visible {
     opacity: 1;
   }
-  .intro-controls {
+  .hero-controls {
     display: flex;
     align-items: center;
     justify-content: space-between;
     width: 100%;
     margin-top: 8px;
   }
-  .intro-palette {
+  .hero-palette {
     display: flex;
     align-items: center;
     gap: 4px;
   }
-  .intro-palette :global(.intro-swatch) {
+  .hero-palette :global(.hero-swatch) {
     width: 12px;
     height: 12px;
     min-height: 12px;
     border: 1px solid var(--line-strong);
   }
-  .intro-palette :global(.intro-swatch:hover),
-  .intro-palette :global(.intro-swatch:focus-visible) {
+  .hero-palette :global(.hero-swatch:hover),
+  .hero-palette :global(.hero-swatch:focus-visible) {
     outline-offset: 2px;
   }
-  .intro-play {
+  .hero-play {
     justify-self: end;
     padding: 2px 0;
     border: 0;
@@ -312,18 +257,18 @@
     letter-spacing: 0.065em;
     text-transform: uppercase;
   }
-  .intro-play span {
+  .hero-play span {
     margin-left: 5px;
     color: var(--accent);
   }
-  .intro-play:hover:not(:disabled),
-  .intro-play:focus-visible {
+  .hero-play:hover:not(:disabled),
+  .hero-play:focus-visible {
     color: var(--accent-soft);
   }
-  .intro-play.playing {
+  .hero-play.playing {
     color: var(--accent);
   }
-  .intro-play:disabled {
+  .hero-play:disabled {
     color: var(--quiet);
     cursor: default;
     opacity: 0.75;
@@ -343,9 +288,6 @@
   }
   .loading .profile-form {
     visibility: hidden;
-  }
-  .loading .intro-frame > video:not(.loading-video) {
-    opacity: 0;
   }
   .field-block {
     display: grid;
@@ -440,7 +382,7 @@
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    .intro-frame video {
+    .hero-frame video {
       transition: none;
     }
   }

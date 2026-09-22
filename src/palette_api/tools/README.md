@@ -49,10 +49,21 @@ deterministic result.
 
 Video output requires FFmpeg with the `libvpx-vp9` encoder:
 
+The single home hero is cropped to the panel's 16:9 frame and scaled to
+760 × 428 before treatment. The same output is used in idle and loading states.
+This avoids encoding pixels that the panel will not display:
+
+The input below is the retained original excerpt for regeneration; the app
+loads only the generated `chladni-hero.webm`.
+
 ```sh
+ffmpeg -i assets/chladni-intro.mp4 \
+  -vf "crop=3840:2160:128:0,scale=760:428:flags=lanczos" \
+  -an -c:v libvpx-vp9 -crf 10 -b:v 0 -deadline realtime -cpu-used 8 \
+  /tmp/chladni-hero-760.webm
 python3 src/palette_api/tools/treat_instrument.py \
-  assets/flower-intro.mp4 assets/treated/flower-intro.webm \
-  --poster assets/treated/flower-intro.png
+  /tmp/chladni-hero-760.webm assets/treated/chladni-hero.webm \
+  --poster assets/treated/chladni-hero.png --width 760 --fps 20 --crf 32
 ```
 
 Video-specific options are `--fps`, `--duration`, `--crf`, and `--poster`.

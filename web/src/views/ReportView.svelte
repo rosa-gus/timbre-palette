@@ -709,6 +709,9 @@
     font-weight: 400;
     color: var(--ink);
   }
+  .compact-list li:last-child {
+    border-bottom: 0;
+  }
   .analysis-details {
     margin-top: 36px;
   }

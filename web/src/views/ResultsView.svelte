@@ -65,106 +65,9 @@
     [3, 11, 1, 9],
     [15, 7, 13, 5],
   ];
-  const artistArtWidth = 96;
-  const artistArtHeight = 60;
-  type ArtistMass = {
-    x: number;
-    y: number;
-    radiusX: number;
-    radiusY: number;
-    power: number;
-    warpX: number;
-    warpY: number;
-  };
-  const artistMassLayouts: ArtistMass[][] = [
-    [
-      {
-        x: 7,
-        y: 3,
-        radiusX: 46,
-        radiusY: 39,
-        power: 2,
-        warpX: 0.08,
-        warpY: -0.05,
-      },
-      {
-        x: 89,
-        y: 13,
-        radiusX: 45,
-        radiusY: 37,
-        power: 2.3,
-        warpX: -0.08,
-        warpY: 0.06,
-      },
-      {
-        x: 47,
-        y: 68,
-        radiusX: 54,
-        radiusY: 35,
-        power: 1.8,
-        warpX: 0.06,
-        warpY: 0.08,
-      },
-    ],
-    [
-      {
-        x: -3,
-        y: 57,
-        radiusX: 64,
-        radiusY: 30,
-        power: 1.65,
-        warpX: 0.13,
-        warpY: -0.09,
-      },
-      {
-        x: 48,
-        y: 30,
-        radiusX: 61,
-        radiusY: 25,
-        power: 1.85,
-        warpX: -0.13,
-        warpY: 0.08,
-      },
-      {
-        x: 99,
-        y: 2,
-        radiusX: 64,
-        radiusY: 30,
-        power: 1.6,
-        warpX: 0.12,
-        warpY: -0.08,
-      },
-    ],
-    [
-      {
-        x: -5,
-        y: 28,
-        radiusX: 45,
-        radiusY: 49,
-        power: 2.6,
-        warpX: -0.1,
-        warpY: 0.06,
-      },
-      {
-        x: 48,
-        y: -9,
-        radiusX: 47,
-        radiusY: 39,
-        power: 1.7,
-        warpX: 0.12,
-        warpY: -0.1,
-      },
-      {
-        x: 101,
-        y: 53,
-        radiusX: 58,
-        radiusY: 45,
-        power: 2.1,
-        warpX: -0.09,
-        warpY: 0.08,
-      },
-    ],
-  ];
+  const artistArtScale = 2;
+  const artistArtWidth = 96 * artistArtScale;
+  const artistArtHeight = 60 * artistArtScale;
   $: palette = result.track_palette;
   $: vocabulary = result.artist_vocabulary;
   $: vocabularyAvailable =
@@ -210,7 +113,7 @@
     return value.toLocaleString("pt-BR");
   }
   function artistArtStyle(artist: VocabularyFeaturedArtist): string {
-    const primary = artist.families[0]?.tone?.highlight ?? "#F29191";
+    const primary = artistArtColors(artist)[0];
     return `--art-primary:${primary}`;
   }
   function artistSeed(artist: VocabularyFeaturedArtist): number {
@@ -226,72 +129,61 @@
     seed ^= seed << 5;
     return seed >>> 0;
   }
-  function artistMassColors(
-    artist: VocabularyFeaturedArtist,
-    familyHighlights: string[],
-  ): string[] {
-    const colors = [...new Set(familyHighlights.filter(Boolean))];
-    if (colors.length === 0) return ["#F29191", "#F29191", "#F29191"];
-
-    // The artist MBID fixes the order; the colors themselves come only from family tones.
-    let seed = artistSeed(artist);
-    const remaining = [...colors];
-    const selected: string[] = [];
-    for (let index = 0; index < 3; index += 1) {
-      if (remaining.length === 0) remaining.push(...colors);
-      seed = nextSeed(seed);
-      selected.push(remaining.splice(seed % remaining.length, 1)[0]);
-    }
-    return selected;
+  function lighterArtistTone(color: string): string {
+    const hex = /^#([0-9a-f]{6})$/i.exec(color)?.[1];
+    if (!hex) return "#FFB8B8";
+    const channels = [0, 2, 4].map((offset) =>
+      Math.round(parseInt(hex.slice(offset, offset + 2), 16) * 0.5 + 127.5)
+        .toString(16)
+        .padStart(2, "0"),
+    );
+    return `#${channels.join("")}`;
   }
-  function artistMassLayout(
-    artist: VocabularyFeaturedArtist,
-    variant: number,
-  ): ArtistMass[] {
-    let seed = artistSeed(artist);
-    return artistMassLayouts[variant % artistMassLayouts.length].map((mass) => {
-      seed = nextSeed(seed);
-      const offsetX = ((seed & 255) / 255 - 0.5) * 6;
-      seed = nextSeed(seed);
-      const offsetY = ((seed & 255) / 255 - 0.5) * 5;
-      seed = nextSeed(seed);
-      const scale = 0.94 + ((seed & 255) / 255) * 0.12;
-      return {
-        ...mass,
-        x: mass.x + offsetX,
-        y: mass.y + offsetY,
-        radiusX: mass.radiusX * scale,
-        radiusY: mass.radiusY * scale,
-      };
-    });
+  function artistArtColors(artist: VocabularyFeaturedArtist): string[] {
+    const highlights = [
+      ...new Set(
+        artist.families
+          .map((family) => family.tone?.highlight)
+          .filter((color): color is string => Boolean(color)),
+      ),
+    ];
+    const primary = highlights[0] ?? "#F29191";
+    const secondary =
+      highlights.find((color) => color !== primary) ??
+      lighterArtistTone(primary);
+    const accent = highlights.find(
+      (color) => color !== primary && color !== secondary,
+    );
+    return accent ? [primary, secondary, accent] : [primary, secondary];
   }
   function artistDitherArt(
     artist: VocabularyFeaturedArtist,
-    familyHighlights: string[],
     variant: number,
   ): { color: string; path: string }[] {
-    const colors = artistMassColors(artist, familyHighlights);
-    const masses = artistMassLayout(artist, variant);
+    const colors = artistArtColors(artist);
+    let seed = artistSeed(artist);
+    seed = nextSeed(seed);
+    const slope = [0.27, -0.24, 0.15][variant % 3] +
+      ((seed & 255) / 255 - 0.5) * 0.1;
+    seed = nextSeed(seed);
+    const centerOffset = ((seed & 255) / 255 - 0.5) * 0.1;
+    seed = nextSeed(seed);
+    const phase = (seed & 255) / 255;
+    const columns = Array.from({ length: artistArtWidth }, (_, x) => {
+      const u = (x + 0.5) / artistArtWidth;
+      const wave = Math.sin((u + phase) * Math.PI * 2);
+      return 0.5 + centerOffset + slope * (u - 0.5) + 0.045 * wave;
+    });
     const pixels: number[][] = [];
     for (let y = 0; y < artistArtHeight; y += 1) {
       const row: number[] = [];
+      const v = (y + 0.5) / artistArtHeight;
       for (let x = 0; x < artistArtWidth; x += 1) {
+        const mix = Math.max(0, Math.min(1, 0.5 + (v - columns[x]) / 0.8));
+        const position = mix * (colors.length - 1);
+        const lower = Math.min(colors.length - 2, Math.floor(position));
         const threshold = (bayer4[y % 4][x % 4] + 0.5) / 16;
-        let visibleMass = -1;
-        for (let index = 0; index < masses.length; index += 1) {
-          const mass = masses[index];
-          const nx = (x + 0.5 - mass.x) / mass.radiusX;
-          const ny = (y + 0.5 - mass.y) / mass.radiusY;
-          const warpedX = nx + mass.warpX * ny * ny;
-          const warpedY = ny + mass.warpY * nx * nx;
-          const distance =
-            (Math.abs(warpedX) ** mass.power +
-              Math.abs(warpedY) ** mass.power) **
-            (1 / mass.power);
-          const coverage = Math.max(0, Math.min(1, (1.12 - distance) / 0.24));
-          if (coverage > threshold) visibleMass = index;
-        }
-        row.push(visibleMass);
+        row.push(position - lower > threshold ? lower + 1 : lower);
       }
       pixels.push(row);
     }
@@ -312,10 +204,26 @@
       return { color, path: path.join("") };
     });
   }
-  function artistInstruments(artist: VocabularyFeaturedArtist): string {
-    return [...new Set(artist.families.flatMap((family) => family.instruments))]
-      .slice(0, 3)
-      .join(" · ");
+  function artistInstruments(
+    artist: VocabularyFeaturedArtist,
+  ): { name: string; slug: string | null }[] {
+    const seen = new Set<string>();
+    return artist.families
+      .flatMap((family) => {
+        const listed = vocabulary.families.find(
+          (item) => item.slug === family.slug,
+        )?.instruments;
+        return family.instruments.map((name) => ({
+          name,
+          slug: listed?.find((item) => item.name === name)?.slug ?? null,
+        }));
+      })
+      .filter((instrument) => {
+        if (seen.has(instrument.name)) return false;
+        seen.add(instrument.name);
+        return true;
+      })
+      .slice(0, 3);
   }
   function formatRegisteredDate(
     value: string | null | undefined,
@@ -573,19 +481,9 @@
                 </div>
                 <div class="artist-cards">
                   {#each vocabulary.featured_artists as artist, index (artist.mbid)}
-                    {@const art = artistDitherArt(
-                      artist,
-                      vocabulary.families
-                        .map((family) => family.tone?.highlight)
-                        .filter((color): color is string => Boolean(color)),
-                      index,
-                    )}
+                    {@const art = artistDitherArt(artist, index)}
                     <article class="artist-card" style={artistArtStyle(artist)}>
-                      <div
-                        class="artist-art"
-                        style={`background:${art[0]?.color ?? "var(--art-primary)"}`}
-                        aria-hidden="true"
-                      >
+                      <div class="artist-art" aria-hidden="true">
                         <svg
                           viewBox={`0 0 ${artistArtWidth} ${artistArtHeight}`}
                           preserveAspectRatio="none"
@@ -607,7 +505,21 @@
                             .join(" · ")}
                         </p>
                         <p class="artist-instruments">
-                          {artistInstruments(artist)}
+                          {#each artistInstruments(artist) as instrument, instrumentIndex (instrument.name)}
+                            {#if instrumentIndex > 0}<span aria-hidden="true"> · </span>{/if}
+                            {#if instrument.slug}
+                              <button
+                                type="button"
+                                class="instrument-link"
+                                on:click={() =>
+                                  instrument.slug &&
+                                  onOpenInstrumentSlug(instrument.slug)}
+                                >{instrument.name}</button
+                              >
+                            {:else}
+                              {instrument.name}
+                            {/if}
+                          {/each}
                         </p>
                         <p class="artist-card-note">
                           Instrumentos recorrentes em gravações documentadas
@@ -1093,6 +1005,7 @@
   .artist-art {
     aspect-ratio: 1.55;
     overflow: hidden;
+    background: var(--art-primary);
   }
   .artist-art svg {
     display: block;

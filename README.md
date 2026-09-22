@@ -1,8 +1,6 @@
-# TIMBRE PALETTE
-
-<p align="center">
-  <img src="./assets/treated/flower-icon.png" width="220" alt="Timbre Palette flower mark">
-</p>
+<h1 align="center">
+  <img src="./public/timbre-mark.png" width="300" alt="Timbre Palette">
+</h1>
 
 Timbre Palette is an experimental web application that transforms a public Last.fm listening history into an instrumental profile. It combines listening data with accepted instrument evidence to describe recurring sound families, acoustic and electronic characteristics, coverage, and an editorial interpretation called the listening temperament.
 
