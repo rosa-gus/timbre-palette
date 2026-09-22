@@ -1,7 +1,5 @@
 # Copy this file to .dev.vars and replace the value below.
 LASTFM_API_KEY=your-lastfm-api-key
 
-# Public image base URL during development (Vite).
+# Public image base URL during development.
 IMAGE_ASSET_BASE_URL=http://127.0.0.1:5173/
-# GitHub Pages, after setting the repository name:
-# IMAGE_ASSET_BASE_URL=https://rosa-gus.github.io/timbre-palette/

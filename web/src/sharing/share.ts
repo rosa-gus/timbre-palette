@@ -96,7 +96,8 @@ export async function createShareImage(
   canvas.height = 1500;
   const context = canvas.getContext("2d");
   if (!context) throw new Error("Canvas indisponível");
-  const accent = report.families[0]?.tone?.highlight ?? "#F29191";
+  const brandPink = "#f29191";
+  const accent = report.families[0]?.tone?.highlight ?? brandPink;
   const periodLabels: Record<string, string> = {
     "7day": "7 dias",
     "1month": "1 mês",
@@ -107,11 +108,12 @@ export async function createShareImage(
   };
   context.fillStyle = "#000000";
   context.fillRect(0, 0, canvas.width, canvas.height);
-  context.fillStyle = accent;
-  context.fillRect(72, 66, 30, 10);
   context.fillStyle = "#b5adaa";
   context.font = "500 20px 'IBM Plex Mono', monospace";
-  context.fillText(`${currentDateLabel()} / PALETA INSTRUMENTAL`, 120, 82);
+  const dateLabel = currentDateLabel();
+  context.fillText(dateLabel, 72, 82);
+  context.fillStyle = brandPink;
+  context.fillText("/ PALETA INSTRUMENTAL", 72 + context.measureText(dateLabel).width + 24, 82);
   context.fillStyle = "#f3efec";
   context.font = "400 24px 'IBM Plex Mono', monospace";
   context.fillText(
@@ -134,7 +136,7 @@ export async function createShareImage(
   );
   context.fillStyle = "#b5adaa";
   const summaryY = titleBottom + 32;
-  drawTextBlock(
+  const summaryBottom = drawTextBlock(
     context,
     portrait.summary,
     72,
@@ -152,6 +154,7 @@ export async function createShareImage(
   const slotWidth =
     (1056 - gap * Math.max(0, artwork.length - 1)) /
     Math.max(1, artwork.length);
+  const artworkCenterY = Math.max(804, Math.min(858, summaryBottom + 205));
   artwork.forEach((item, index) => {
     const x = 72 + index * (slotWidth + gap);
     const center = x + slotWidth / 2;
@@ -163,7 +166,7 @@ export async function createShareImage(
     const lineHeight = fontSize * 0.95;
     context.font = `500 ${fontSize}px 'IBM Plex Mono', monospace`;
     const drawingWidth = context.measureText(item.lines[0]).width;
-    const top = 858 - (item.lines.length * lineHeight) / 2;
+    const top = artworkCenterY - (item.lines.length * lineHeight) / 2;
     context.fillStyle = item.color;
     item.lines.forEach((line, row) => {
       context.fillText(
@@ -223,14 +226,19 @@ export async function createShareImage(
       1402,
     );
   }
-  context.fillStyle = accent;
+  context.fillStyle = brandPink;
+  context.fillRect(72, 1420, 204, 44);
+  context.fillStyle = "#000000";
+  context.font = "500 20px 'IBM Plex Mono', monospace";
+  context.fillText("TIMBRE PALETTE", 88, 1450);
+  context.fillStyle = "#b5adaa";
   context.font = "400 20px 'IBM Plex Mono', monospace";
   const address = new URL(window.location.href);
   context.fillText(
-    `TIMBRE PALETTE / ${address.host}${address.pathname === "/" ? "" : address.pathname}`,
-    72,
+    `${address.host}${address.pathname === "/" ? "" : address.pathname}`,
+    296,
     1450,
-    1056,
+    832,
   );
   return new Promise((resolve, reject) => {
     canvas.toBlob(

@@ -59,19 +59,24 @@ etl/musicbrainz-etl/target/release/musicbrainz-etl serve \
   /data/musicbrainz/aggregate/20260912-002318 \
   /data/musicbrainz/serving/20260912-002318 \
   --snapshot-version 20260912-002318 \
-  --recording-shards 4096 \
-  --auxiliary-shards 256 \
-  --compression-level 6
+  --recording-shards 65536 \
+  --track-shards 65536 \
+  --artist-shards 4096 \
+  --compression-level 9
 ```
 
 The serving stage validates the aggregate manifest, discards unresolved
 `instrument` relations without an `instrument_mbid`, and keeps release-scoped
 credits only as a fallback when a recording has no direct evidence. It writes
-deterministic bzip2-compressed shards under `recordings/`, `tracks/`, and
-`artists/`, plus a serving manifest and license notice. The default 256
-hexadecimal-prefix shards cover aliases and artists; recordings use 4096
-three-character-prefix shards so a Worker can decode an object within its
-memory budget. Release fallback credits are deduplicated semantically while
-retaining their source URLs in the serving record. Placeholder artist
-identities such as `[unknown]` and `Various Artists` are excluded from the
-artist vocabulary; the serving manifest reports how many rows were filtered.
+deterministic gzip-compressed shards under `recordings/`, `tracks/`, and
+`artists/`, plus a serving manifest and license notice. Recordings and track
+aliases use 65,536 four-character hexadecimal-prefix shards by default;
+artist vocabulary uses 4,096 three-character shards. These widths keep the
+hydrator's gzip and JSON work within the Cloudflare Workers Free CPU budget.
+Recording claims are pre-aggregated by instrument identity, scope, relation,
+production method, and attributes; `credit_count`, `performer_count`, and
+source URLs remain attached to each claim. Release fallback credits are
+deduplicated semantically while retaining their source URLs in the serving
+record. Placeholder artist identities such as
+`[unknown]` and `Various Artists` are excluded from the artist vocabulary; the
+serving manifest reports how many rows were filtered.

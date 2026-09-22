@@ -1,70 +1,73 @@
-# Public API Contract
+# Public API contract
 
-FastAPI generates the canonical OpenAPI document at `GET /openapi.json`. This document records semantic guarantees that clients must not infer from free-form messages.
+FastAPI publishes the active contract at `GET /openapi.json`.
 
-## Catalog statistics
+## API v2
 
-`GET /v1/catalog/stats` returns `recordings_with_evidence`: the number of unique recordings with an accepted claim, a valid family, and recording- or track-level evidence. Release credits, unresolved candidates, and pending jobs are excluded.
+`GET /v2/profiles/{username}/analysis?period=...` returns one envelope with
+two independent products:
 
-The response is publicly cacheable for five minutes. Without a D1 binding it returns `0` with `Cache-Control: no-store`; it never fabricates statistics.
+- `track_palette`: direct instrumental evidence attached to the listener's
+  tracks;
+- `artist_vocabulary`: recurring instruments documented in recordings
+  associated with artists in the history.
 
-## Palette report
+The response also contains `snapshot`, `hydration`, `available_views`, and
+`default_view`. The two products never share coverage metrics: track and play
+coverage belong only to `track_palette`; vocabulary reach belongs only to
+`artist_vocabulary`.
 
-`GET /v1/profiles/{username}/palette` always returns the `PaletteReport` envelope. The public analysis states are all returned with HTTP `200`:
+The Last.fm history read requests up to 200 ranked candidates for the selected
+period. The direct palette's denominators include every valid candidate
+returned by that read, including candidates that are not yet documented. The
+snapshot provider checks those identities in batched local D1 projections, so a
+documented recording can contribute even when it is below the first 50 ranks.
+Missing recording/track identities are capped at 50 new hydration targets per
+request and are kept in Last.fm rank order. Artist targets remain deduplicated
+separately because one artist hydration can serve many candidate tracks.
 
-| `analysis.status` | Meaning                                                                                                                                    |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `insufficient`    | No published instrumental evidence is available to build a palette. Enrichment may continue asynchronously.                                |
-| `partial`         | A usable result exists, but a coverage gate, interpretation gate, or pending/transient enrichment prevents a final result.                 |
-| `ready`           | The interpretation gate is satisfied and no pending/transient enrichment can change the report. This does not require 100% track coverage. |
+The top-level `profile` object (and the nested `track_palette.profile` copy)
+also includes optional Last.fm metadata populated by a `user.getInfo` request:
+`profile_url`, `avatar_url`, and `realname` are strings, while
+`total_scrobbles` is a non-negative integer. Each field may be `null` when
+Last.fm omits it or the optional metadata request is unavailable; this does not
+invalidate the listening history or the analysis.
 
-In `insufficient`, `families` is empty and `sound_balance`, `discovery`, and `temperament` are `null`.
+The vocabulary is available only when its configured recurrence, track reach,
+play reach, artist diversity, and concentration gates are satisfied. If pending
+artists could still change an insufficient result, its status is `pending`; if
+the materialized rows already pass, it can be `available` with pending counts.
+A pending snapshot hydration is represented explicitly and is not treated as an
+empty catalog. Instrument and family rows are accepted only when they resolve
+to the editorial D1 taxonomy.
 
-### Coverage and recording state
+`artist_vocabulary.reach.unresolved_artists` and `unresolved_tracks` count
+history entries without an artist MBID. They are identity gaps, not pending
+hydration work.
 
-`analysis.coverage_tracks` is the fraction of history tracks with at least one accepted instrumental layer. `analysis.coverage_plays` is the fraction of total plays represented by those tracks. There is no third generic `coverage` field.
+The direct palette uses `ready`, `partial`, and `insufficient` to describe the
+amount of accepted recording evidence. `ready` is the useful five-track,
+5%-play, two-artist sample gate. `partial` means direct evidence exists below
+that gate. Hydration progress does not change these states. A track without a
+MusicBrainz identity is reported as `unresolved_identity`; it does not create a
+hydration job.
 
-`analysis.recording_status_counts` always contains these six fields, including zero values:
+`discovery`, `sound_balance`, and `temperament` belong exclusively to the direct
+track palette and retain their own evidence gates. Discovery uses recurring
+instrument evidence from the period, while temperament uses recurring family
+contrast. They are never unlocked by artist vocabulary.
 
-- `resolved`: accepted identity and instrumental evidence are available;
-- `pending_enrichment`: enrichment is queued or not yet completed;
-- `ambiguous`: multiple plausible identities require review;
-- `resolved_without_evidence`: identity is resolved but no accepted instrumental claim exists;
-- `transient_failure`: a retryable enrichment failure occurred;
-- `terminal_failure`: no automatic retry is scheduled.
+The endpoint returns HTTP `200` for a valid history, including insufficient or
+pending analysis states. A missing Last.fm profile, invalid period, empty
+history, unavailable active snapshot, or upstream failure uses the structured
+`ApiError` response.
 
-Each item in `recordings` repeats its authoritative `status` with title, artist, play count, MBID, and Last.fm URL. `status_detail` is explanatory only.
+`GET /v2/instruments/{slug}` returns the reviewed editorial resource. `GET
+/v2/catalog/stats` returns counts from the active snapshot projection.
 
-`analysis.vocal_presence` is derived from documented `voice` claims and counts each recording once, even when it has multiple vocal roles. It exposes documented tracks, distinct artists, plays, and the corresponding track and play ratios. Programming, samples, and release context are excluded.
+## API v1 — deprecated
 
-`analysis.section_availability` reports availability for `families`, `sound_balance`, `discovery`, and `temperament` using `available`, `insufficient_coverage`, `insufficient_diversity`, `insufficient_nature_evidence`, or `no_candidate`.
-
-## Catalog and methodology semantics
-
-Family-level claims can contribute to a family but do not create an instrument layer or infer a sound nature. Release-level evidence is retained for provenance and review but does not count as accepted coverage.
-
-`analysis.catalog_version` identifies the active `catalog_publications` revision, or the fallback `catalog_versions` revision before the prepared catalog is published. `analysis.methodology_version` identifies the calculation rules; see [Analysis Methodology](methodology.md).
-
-## Instrument resources and editorial content
-
-`GET /v1/instruments/{slug}` returns an instrument or sound-family resource with `catalog_version`. It includes a brief description, sound production, optional curiosity sections, sources, citations, images, and optional further-reading links.
-
-The current public editorial scope does not include historical-origin sections. `sections` and `sources` may be empty. Empty text, `draft`, and `deprecated` blocks are not returned. Blocks with `sourced`, `reviewed`, or `published` status are projected only when `claim_support_verified` is true and every cited source has `metadata_verified` set to true. A `sourced` block may therefore be public while awaiting formal editorial review; its review state remains visible in the response.
-
-`further_reading` is optional and contains HTTP(S) links with a title and optional publisher. Only `reviewed` or `published` links are exposed. Further reading never replaces citations attached to editorial text.
-
-Citations are optional for the base `description` and `sound_production` fields. Curiosity sections require citations before leaving `draft` status.
-
-The editorial panel stores working revisions in the browser and exports JSON. The committed snapshot is validated and published to D1 by GitHub Actions; the panel itself never receives database credentials or writes to the API.
-
-## Images and cache identity
-
-Reports and instrument resources may include `InstrumentImage` objects for families, instrument layers, discoveries, and editorial resources. Images are editorial assets, not instrumental evidence. `resolution` identifies `exact`, `related`, or `family`; `caption` must clarify when the depicted subject differs from the requested instrument.
-
-Image URLs are absolute. The default local base is `http://127.0.0.1:5173/`; `IMAGE_ASSET_BASE_URL` selects another base. Run `yarn prepare:images` to prepare public assets and regenerate the image catalog. `analysis.image_catalog_version` and the resource-level `image_catalog_version` must participate in cache keys.
-
-Family tones are stable catalog data exposed as `shadow` and `highlight`. They are independent of the profile and are not evidence.
-
-## Errors
-
-An empty listening history is not an analysis state: it returns `ApiError` with HTTP `422` and code `empty_listening_history`. A nonexistent Last.fm profile returns HTTP `404` with code `lastfm_profile_not_found`. Other integration failures are returned as structured `ApiError` responses without exposing credentials or upstream response bodies.
+The former `/v1/profiles/{username}/palette` contract produced only a direct
+track palette and is retained here solely as historical context. Its endpoints
+are no longer registered or available in the runtime and are not included in
+the OpenAPI document.

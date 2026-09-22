@@ -4,6 +4,7 @@
   import Button from "../components/Button.svelte";
   import CoverageTooltip from "../components/CoverageTooltip.svelte";
   import ColorSwatch from "../components/ColorSwatch.svelte";
+  import Dropdown from "../components/Dropdown.svelte";
   import { normalizePathname } from "../navigation";
   import { getPortraitCopy } from "../portrait";
   import { createAsciiArtwork } from "../sharing/ascii";
@@ -23,6 +24,8 @@
     note?: string;
   };
   export let report: PaletteReport;
+  export let embedded = false;
+  export let hydrationPending = false;
   $: portrait = getPortraitCopy(report);
   $: asciiArtwork = createAsciiArtwork(report.families);
   export let sectionOptions: SectionOption[] = [];
@@ -101,13 +104,14 @@
 
 <section
   class="report-view"
+  class:embedded
   aria-labelledby="report-title"
   style={`--report-tone:${report.families[0]?.tone?.highlight ?? fallbackTone};--report-tone-text:${toneText(report.families[0]?.tone?.highlight ?? fallbackTone)}`}
 >
-  <div class="report-back">
+  {#if !embedded}<div class="report-back">
     <a class="back-link" href={homePath}><Arrow direction="left" />Voltar</a>
-  </div>
-  <div class="archive-header">
+  </div>{/if}
+  {#if !embedded}<div class="archive-header">
     <p class="eyebrow">ESCUTA DE @{report.profile.username}</p>
     <div class="archive-period">
       <span>{periodLabels[report.profile.period]}</span><span
@@ -121,7 +125,7 @@
     <a class="image-link" href="#share"
       >Visualizar minha imagem <Arrow direction="up-right" /></a
     >
-  </div>
+  </div>{/if}
   <nav class="report-index" aria-label="Índice do retrato">
     {#each sectionOptions as option, index}
       <a
@@ -135,9 +139,8 @@
   <section id="portrait" class="portrait" aria-labelledby="report-title">
     <div class="portrait-copy">
       <p class="eyebrow">01 / SEU RETRATO INSTRUMENTAL</p>
-      <h1 id="report-title">
-        {portrait.title}
-      </h1>
+      {#if embedded}<h2 class="portrait-title" id="report-title">{portrait.title}</h2>
+      {:else}<h1 id="report-title">{portrait.title}</h1>{/if}
       <p class="large-copy">
         {portrait.summary}
       </p>
@@ -150,6 +153,7 @@
         >{report.profile.total_plays} reproduções</span
       ><span
         >{percent(report.analysis.coverage_tracks)} das faixas cobertas <CoverageTooltip
+          {hydrationPending}
         /></span
       >
     </div>
@@ -248,30 +252,27 @@
           </ul>{:else}<p>A natureza sonora ainda está sendo apurada.</p>{/if}
       </aside>
     </div>
-    <details class="analysis-details">
-      <summary
-        >Sobre os dados desta leitura · {percent(
-          report.analysis.coverage_tracks,
-        )} das faixas cobertas</summary
-      >
-      <p>{report.analysis.notice}</p>
-      <p>
-        Cobertura: {percent(report.analysis.coverage_tracks)} das faixas / {percent(
-          report.analysis.coverage_plays,
-        )} das reproduções.
-      </p>
-      <p>
-        Voz documentada: {report.analysis.vocal_presence.documented_tracks} faixas,
-        {report.analysis.vocal_presence.documented_artists} artistas e
-        {report.analysis.vocal_presence.documented_plays} reproduções ({percent(
-          report.analysis.vocal_presence.play_ratio,
-        )} das reproduções).
-      </p>
-      <p>
-        Catálogo {report.analysis.catalog_version ?? "não publicado"} · Método {report
-          .analysis.methodology_version}
-      </p>
-    </details>
+    <div class="analysis-details">
+      <Dropdown title="Sobre os dados desta leitura">
+        <p>{report.analysis.notice}</p>
+        <p>
+          Cobertura: {percent(report.analysis.coverage_tracks)} das faixas / {percent(
+            report.analysis.coverage_plays,
+          )} das reproduções.
+        </p>
+        <p>
+          Voz documentada: {report.analysis.vocal_presence.documented_tracks} faixas,
+          {report.analysis.vocal_presence.documented_artists} artistas e
+          {report.analysis.vocal_presence.documented_plays} reproduções ({percent(
+            report.analysis.vocal_presence.play_ratio,
+          )} das reproduções).
+        </p>
+        <p>
+          Catálogo {report.analysis.catalog_version ?? "não publicado"} · Método {report
+            .analysis.methodology_version}
+        </p>
+      </Dropdown>
+    </div>
   </section>
   <section
     id="discovery"
@@ -386,6 +387,7 @@
     margin: 0 auto;
     padding: 54px 0 32px;
   }
+  .report-view.embedded { padding-top: 0; }
   .report-back {
     margin-bottom: 20px;
   }
@@ -457,7 +459,7 @@
     grid-template-columns: minmax(0, 1fr) 220px;
     gap: 32px;
   }
-  h1 {
+  h1, .portrait-title {
     max-width: 950px;
     margin: 12px 0 24px;
     font-size: clamp(2.5rem, 4vw, 4rem);
@@ -659,12 +661,6 @@
   }
   .analysis-details {
     margin-top: 36px;
-    padding: 18px 0;
-    color: var(--muted);
-    font-size: 14px;
-  }
-  summary {
-    cursor: pointer;
   }
   .discovery-layout {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);

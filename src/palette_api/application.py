@@ -6,9 +6,7 @@ from palette_api.domain import (
     ClaimLevel,
     Confidence,
     DataSource,
-    EnrichmentScheduler,
     InstrumentLayer,
-    InstrumentationProvider,
     ListeningHistory,
     ListeningHistoryProvider,
     ListeningPeriod,
@@ -82,14 +80,10 @@ class PaletteService:
     def __init__(
         self,
         history_provider: ListeningHistoryProvider,
-        instrumentation_provider: InstrumentationProvider | None = None,
-        enrichment_scheduler: EnrichmentScheduler | None = None,
         methodology: MethodologyPolicy = DEFAULT_METHODOLOGY,
         image_catalog: InstrumentImageCatalog = DEFAULT_IMAGE_CATALOG,
     ) -> None:
         self._history_provider = history_provider
-        self._instrumentation_provider = instrumentation_provider
-        self._enrichment_scheduler = enrichment_scheduler
         self._methodology = methodology
         self._image_catalog = image_catalog
 
@@ -99,13 +93,20 @@ class PaletteService:
         period: ListeningPeriod,
     ) -> PaletteReport:
         history = await self._history_provider.get_history(username, period)
-        if self._instrumentation_provider is not None:
-            history = await self._instrumentation_provider.enrich(history)
         if not history.tracks:
             raise EmptyListeningHistoryError(username)
-        if self._enrichment_scheduler is not None and history.pending_enrichment:
-            await self._enrichment_scheduler.schedule(history.pending_enrichment)
+        return self._build_report(history)
 
+    def build_report(self, history: ListeningHistory) -> PaletteReport:
+        """Build the direct-evidence report from an already prepared history.
+
+        API v2 performs one Last.fm read and prepares both direct evidence and
+        artist vocabulary from the same history.  Keeping this entry point
+        public avoids fetching the profile twice while preserving the existing
+        direct-palette calculation in one place.
+        """
+        if not history.tracks:
+            raise EmptyListeningHistoryError(history.username)
         return self._build_report(history)
 
     def _build_report(self, history: ListeningHistory) -> PaletteReport:
@@ -161,14 +162,8 @@ class PaletteService:
             play_ratio=self._methodology.interpretation_play_ratio,
             track_floor=self._methodology.interpretation_track_floor,
         )
-        progress_capable = any(
-            recording_status in self._methodology.progress_capable_statuses()
-            for recording_status in recording_statuses
-        )
         status = self._methodology.status(
             palette_ready=palette_ready,
-            interpretation_ready=interpretation_ready,
-            progress_capable=progress_capable,
             has_published_evidence=covered_tracks > 0,
         )
 
@@ -177,6 +172,12 @@ class PaletteService:
             period=history.period,
             tracks_analyzed=total_tracks,
             total_plays=total_plays,
+            profile_url=history.profile.profile_url if history.profile else None,
+            avatar_url=history.profile.avatar_url if history.profile else None,
+            realname=history.profile.realname if history.profile else None,
+            total_scrobbles=(
+                history.profile.total_scrobbles if history.profile else None
+            ),
         )
         recording_items = sorted(
             zip(history.tracks, recording_statuses, strict=True),
@@ -430,7 +431,7 @@ class PaletteService:
         candidates: dict[str, _DiscoveryCandidate] = {}
         for track in covered_history:
             for layer in track.layers:
-                if layer.claim_level is not ClaimLevel.INSTRUMENT or not layer.unexpected:
+                if layer.claim_level is not ClaimLevel.INSTRUMENT:
                     continue
                 candidate = candidates.setdefault(
                     layer.slug,
@@ -448,19 +449,28 @@ class PaletteService:
                 candidate.tracks.add(self._track_key(track))
                 candidate.artists.add(self._artist_key(track.artist))
                 candidate.plays += track.play_count
+        total_covered_plays = sum(track.play_count for track in covered_history)
         eligible = [
             candidate
             for candidate in candidates.values()
             if len(candidate.tracks) >= self._methodology.discovery_recording_floor
             and len(candidate.artists) >= self._methodology.discovery_artist_floor
+            and (
+                candidate.plays / total_covered_plays
+                if total_covered_plays
+                else 0
+            )
+            <= self._methodology.discovery_max_play_share
         ]
         if not eligible:
             return None
         eligible.sort(
             key=lambda candidate: (
+                candidate.plays / total_covered_plays
+                if total_covered_plays
+                else 0,
                 -len(candidate.tracks),
                 -len(candidate.artists),
-                -candidate.plays,
                 candidate.layer.slug,
             )
         )
@@ -599,6 +609,8 @@ class PaletteService:
         }
         if PaletteService._track_key(track) in pending_keys:
             return RecordingStatus.PENDING_ENRICHMENT
+        if not track.mbid:
+            return RecordingStatus.UNRESOLVED_IDENTITY
         return RecordingStatus.RESOLVED_WITHOUT_EVIDENCE
 
     @staticmethod
@@ -626,14 +638,16 @@ class PaletteService:
             return track.recording_status_detail
         if recording_status is RecordingStatus.RESOLVED_WITHOUT_EVIDENCE:
             return "The recording was resolved, but has no accepted instrumental evidence."
+        if recording_status is RecordingStatus.UNRESOLVED_IDENTITY:
+            return "Last.fm did not provide a MusicBrainz identity for this recording."
         if recording_status is RecordingStatus.PENDING_ENRICHMENT:
-            return "The recording is awaiting automatic enrichment."
+            return "The recording is awaiting snapshot hydration."
         if recording_status is RecordingStatus.AMBIGUOUS:
             return "The match is ambiguous and awaiting review."
         if recording_status is RecordingStatus.TRANSIENT_FAILURE:
-            return "Enrichment failed transiently and can be retried."
+            return "Snapshot hydration failed transiently and can be retried."
         if recording_status is RecordingStatus.TERMINAL_FAILURE:
-            return "Enrichment ended without another automatic retry."
+            return "Snapshot hydration ended without another automatic retry."
         return None
 
     @staticmethod

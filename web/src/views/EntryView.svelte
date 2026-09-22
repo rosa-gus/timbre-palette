@@ -9,7 +9,7 @@
   import type { ListeningPeriod } from "../api/types";
 
   export let username = "";
-  export let period: ListeningPeriod = "7day";
+  export let period: ListeningPeriod = "1month";
   export let periods: { value: ListeningPeriod; label: string }[] = [];
   export let formError = "";
   export let loading = false;
@@ -111,7 +111,7 @@
   aria-busy={loading}
 >
   <p id="entry-title" class="entry-tagline">
-    Uma paleta instrumental da sua escuta.
+    Duas leituras instrumentais da sua escuta.
   </p>
 
   <div class="entry-stage">

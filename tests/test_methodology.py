@@ -12,6 +12,7 @@ from palette_api.domain import (
     InstrumentLayer,
     ListeningHistory,
     ListeningPeriod,
+    RecordingStatus,
     Track,
 )
 from palette_api.methodology import DEFAULT_METHODOLOGY
@@ -30,16 +31,18 @@ def test_research_profile_snapshots_do_not_get_promoted_to_full_reports() -> Non
             covered_artists=profile["covered_artists"],
             total_artists=profile["total_artists"],
         )
-        interpretation = DEFAULT_METHODOLOGY.meets_interpretation_gate(
-            coverage_tracks=profile["coverage_tracks"],
-            coverage_plays=profile["coverage_plays"],
-            covered_tracks=profile["covered_tracks"],
-            total_tracks=profile["total_tracks"],
-            covered_artists=profile["covered_artists"],
-            total_artists=profile["total_artists"],
-        )
         assert palette is (profile["expected_gate"] == "palette")
-        assert not interpretation
+
+
+def test_interpretation_uses_the_documented_palette_sample_gate() -> None:
+    assert DEFAULT_METHODOLOGY.meets_interpretation_gate(
+        coverage_tracks=0.055,
+        coverage_plays=0.1506,
+        covered_tracks=11,
+        total_tracks=200,
+        covered_artists=4,
+        total_artists=20,
+    )
 
 
 def test_methodology_requires_both_coverage_dimensions_and_diversity() -> None:
@@ -55,7 +58,7 @@ def test_methodology_requires_both_coverage_dimensions_and_diversity() -> None:
     )
     assert not policy.meets_palette_gate(
         coverage_tracks=0.5,
-        coverage_plays=0.19,
+        coverage_plays=0.04,
         covered_tracks=5,
         total_tracks=10,
         covered_artists=3,
@@ -66,7 +69,7 @@ def test_methodology_requires_both_coverage_dimensions_and_diversity() -> None:
         coverage_plays=0.5,
         covered_tracks=5,
         total_tracks=10,
-        covered_artists=2,
+        covered_artists=1,
         total_artists=5,
     )
 
@@ -78,7 +81,6 @@ def _layer(
     nature: str | None = "acoustic",
     prominence: float = 1.0,
     claim_level: ClaimLevel = ClaimLevel.INSTRUMENT,
-    unexpected: bool = False,
 ) -> InstrumentLayer:
     from palette_api.domain import SoundNature
 
@@ -92,7 +94,6 @@ def _layer(
         confidence=Confidence.DOCUMENTED,
         prominence=prominence,
         claim_level=claim_level,
-        unexpected=unexpected,
     )
 
 
@@ -184,29 +185,49 @@ async def test_vocal_presence_counts_documented_recordings_artists_and_plays_onc
 
 
 @pytest.mark.anyio
-async def test_discovery_requires_recurrence_and_interpretation_coverage() -> None:
+async def test_discovery_uses_recurrence_without_an_unexpected_flag() -> None:
     tracks = tuple(
         Track(
             f"track-{index}",
             f"artist-{index % 4}",
             2,
             layers=(
-                _layer(
-                    "cuica",
-                    "percussion",
-                    unexpected=index in {0, 1, 2},
-                ),
-            )
-            if index < 5
-            else (),
+                (_layer("piano", "acoustic-keys"),)
+                + ((_layer("cuica", "percussion"),) if index < 3 else ())
+            ),
         )
         for index in range(10)
     )
     report = await _report(tracks)
 
-    assert report.analysis.status.value == "partial"
-    assert report.discovery is None
-    assert report.analysis.section_availability.discovery == "insufficient_coverage"
+    assert report.analysis.status.value == "ready"
+    assert report.discovery is not None
+    assert report.discovery.instrument_slug == "cuica"
+    assert report.analysis.section_availability.discovery == "available"
+
+
+@pytest.mark.anyio
+async def test_pending_recordings_do_not_downgrade_a_ready_palette() -> None:
+    tracks = tuple(
+        Track(
+            f"track-{index}",
+            f"artist-{index % 2}",
+            10,
+            mbid=f"recording-{index}",
+            layers=(_layer("piano", "acoustic-keys"),)
+            if index < 5
+            else (),
+            recording_status=(
+                RecordingStatus.PENDING_ENRICHMENT if index == 5 else None
+            ),
+        )
+        for index in range(6)
+    )
+
+    report = await _report(tracks)
+
+    assert report.analysis.status.value == "ready"
+    assert report.analysis.recording_status_counts.pending_enrichment == 1
 
 
 @pytest.mark.anyio

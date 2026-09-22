@@ -18,29 +18,29 @@ The project is currently a prototype. Its results are designed to be transparent
 - Produces deterministic editorial observations and an instrument discovery when the available evidence supports them.
 - Exposes sourced instrument and sound-family profiles with citations, image credits, and review metadata.
 - Generates a downloadable, shareable portrait in the browser.
-- Enriches unknown recordings asynchronously so later analyses can reuse newly accepted evidence.
+- Records missing snapshot targets so they can be hydrated asynchronously from the published offline index.
 
 ## Services
 
 ### Last.fm
 
-Last.fm provides the public listening history used as the input for an analysis. The API reads a profile's top tracks for the requested period; visitors do not authenticate with their Last.fm accounts. A project API key is required when running the real integration.
+Last.fm provides the public listening history used as the input for an analysis. The API reads up to 200 ranked tracks for the requested period, then checks the local snapshot in batches so documented tracks below the first 50 ranks can contribute. Visitors do not authenticate with their Last.fm accounts. A project API key is required when running the real integration.
 
 Last.fm is a listening-history source, not an authoritative source of instrumentation.
 
 ### MusicBrainz
 
-MusicBrainz is used by the asynchronous enrichment worker to resolve recording identities and collect instrument-credit candidates. It is not queried during the public report request. External relationships are promoted into the published dataset only when their identity, scope, and mapping meet the project's acceptance policy.
+MusicBrainz data is consumed exclusively through versioned offline snapshots built by the Rust ETL and published to R2. The application does not call the MusicBrainz API at runtime. Only credits with a resolved identity, supported scope, and explicit instrument mapping enter the serving snapshot.
 
 ## API
 
 The backend is a Python application built with FastAPI and designed to run on Cloudflare Workers. It exposes three primary resources:
 
-- `GET /v1/profiles/{username}/palette` — generates the best currently supported palette report for a public profile.
-- `GET /v1/instruments/{slug}` — returns a reviewed instrument or sound-family profile.
-- `GET /v1/catalog/stats` — returns a lightweight count of recordings with accepted evidence.
+- `GET /v2/profiles/{username}/analysis` — returns direct track evidence and, when supported, the artist vocabulary.
+- `GET /v2/instruments/{slug}` — returns a reviewed instrument or sound-family profile.
+- `GET /v2/catalog/stats` — returns a lightweight count from the active snapshot projection.
 
-FastAPI publishes the canonical OpenAPI schema at `GET /openapi.json` and interactive documentation at `GET /docs`. Palette requests return immediately with the available result and never wait for background enrichment.
+FastAPI publishes the canonical OpenAPI schema at `GET /openapi.json` and interactive documentation at `GET /docs`. Palette requests return immediately with the available result and never wait for snapshot hydration.
 
 Detailed catalog behavior, persistence, and business rules are maintained in the API documentation:
 
@@ -48,7 +48,6 @@ Detailed catalog behavior, persistence, and business rules are maintained in the
 - [Catalog architecture](docs/catalog-architecture.md)
 - [Editorial publication](docs/editorial-publishing.md)
 - [Versioned analysis methodology](docs/methodology.md)
-- [Enrichment reliability](docs/enrichment-reliability.md)
 
 ### Architecture
 
@@ -57,22 +56,13 @@ flowchart LR
     Browser[Public Svelte application] -->|HTTPS| API[FastAPI HTTP Worker]
     API -->|public listening history| LastFM[Last.fm API]
     API -->|read accepted evidence| D1[(Cloudflare D1)]
-    API -->|demand and jobs| D1[(Cloudflare D1)]
-    D1 -->|scheduled outbox sweep| Queue[Cloudflare Queue]
-    Queue --> QueueWorker[TypeScript Queue Worker]
-    QueueWorker -->|private RPC| Enricher[Python enrichment service]
-    Enricher -->|recent normalized credits| D1
-    Enricher -->|offline credit snapshot| R2[(R2 credit index)]
-    Enricher -->|only misses and updates| MusicBrainz[MusicBrainz API]
-    Enricher -->|candidates and accepted claims| D1
+    API -->|record missing targets| D1
+    Hydrator[Snapshot hydrator] -->|claim jobs| D1
+    Hydrator -->|read versioned shards| R2[(R2 credit index)]
+    Hydrator -->|materialize projections| D1
 ```
 
-The HTTP Worker and enrichment service share the same application and domain modules. Slow or rate-limited enrichment work remains outside the request path. D1 owns demand, jobs, and grouped work units; the Python service is the scheduled Queue producer, while the TypeScript Worker owns Queue delivery, acknowledgements, retries, and the DLQ. Each message can process up to ten jobs sequentially.
-
-The MusicBrainz path first checks recent normalized D1 evidence and then a
-versioned offline credit index in R2. Only a miss in both local layers reaches
-the rate-limited API. The ETL, R2 object layout, snapshot publication,
-and license handling are documented in [MusicBrainz credit index](docs/musicbrainz-credit-index.md).
+The HTTP Worker reads compact, versioned projections from D1. Missing targets are recorded without blocking the response. The snapshot hydrator groups them by R2 shard and materializes the requested direct-evidence and artist-vocabulary projections asynchronously. The ETL, object layout, publication, and license handling are documented in [MusicBrainz credit index](docs/musicbrainz-credit-index.md).
 
 ## Front-end
 
@@ -143,7 +133,7 @@ Set `LASTFM_API_KEY` in `.dev.vars` to a valid Last.fm application key. This key
 
 ### 5. Start the API
 
-For the complete local stack, including D1 migrations and the asynchronous enrichment Worker:
+To run the API with local D1 migrations:
 
 ```sh
 yarn dev:api
@@ -207,7 +197,7 @@ The full editorial policy is documented in [docs/editorial-policy.md](docs/edito
 - Instrument credits are incomplete and unevenly distributed across artists, genres, regions, and release formats. A missing instrument in a report does not imply that it is absent from the music.
 - Contemporary music can be especially difficult to document because detailed personnel and instrument credits are often sparse, fragmented across platforms, or omitted from public structured metadata.
 - A recording present in MusicBrainz may have no usable instrument relationships, and a release-level credit cannot automatically be treated as evidence for every track.
-- Catalog coverage is still limited. Background enrichment may improve a later report, but it cannot guarantee complete attribution.
+- Catalog coverage is still limited. Snapshot hydration may improve a later report, but it cannot guarantee complete attribution.
 - The offline MusicBrainz index is a versioned derivative snapshot. It can lag behind live edits; its snapshot version, source URL, attribution, and license remain attached to normalized evidence.
 - Results depend on the public top-track history returned by Last.fm and therefore do not represent a complete listening archive.
 

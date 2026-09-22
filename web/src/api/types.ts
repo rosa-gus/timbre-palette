@@ -10,6 +10,7 @@ export type AnalysisStatus = "partial" | "ready" | "insufficient";
 export type Confidence = "documented" | "strongly_associated" | "estimated";
 export type RecordingStatus =
   | "resolved"
+  | "unresolved_identity"
   | "pending_enrichment"
   | "ambiguous"
   | "resolved_without_evidence"
@@ -28,10 +29,15 @@ export interface ProfileSummary {
   period: ListeningPeriod;
   tracks_analyzed: number;
   total_plays: number;
+  profile_url?: string | null;
+  avatar_url?: string | null;
+  realname?: string | null;
+  total_scrobbles?: number | null;
 }
 
 export interface RecordingStatusCounts {
   resolved: number;
+  unresolved_identity: number;
   pending_enrichment: number;
   ambiguous: number;
   resolved_without_evidence: number;
@@ -147,6 +153,85 @@ export interface PaletteReport {
   sound_balance: SoundBalance | null;
   discovery: Discovery | null;
   temperament: Temperament | null;
+}
+
+export type AnalysisV2Status = "available" | "pending" | "insufficient";
+export type AnalysisView = "track_palette" | "artist_vocabulary";
+
+export interface SnapshotInfo {
+  snapshot_version: string;
+  schema_version: string;
+  manifest_hash: string;
+  object_prefix: string;
+  methodology_version: string;
+}
+
+export interface HydrationSummary {
+  status: "complete" | "pending";
+  pending_recordings: number;
+  pending_artists: number;
+  pending_aliases: number;
+}
+
+export interface ArtistVocabulary {
+  status: AnalysisV2Status;
+  methodology_version: string;
+  availability: {
+    status: AnalysisV2Status;
+    reason: string;
+    pending_artists: number;
+    pending_tracks: number;
+  };
+  reach: {
+    track_reach: number;
+    play_reach: number;
+    qualified_artists: number;
+    total_artists: number;
+    qualified_tracks: number;
+    total_tracks: number;
+    qualified_plays: number;
+    total_plays: number;
+    unresolved_artists: number;
+    unresolved_tracks: number;
+  };
+  concentration: number;
+  families: VocabularyFamily[];
+  notice: string;
+}
+
+export interface VocabularyInstrument {
+  slug: string;
+  name: string;
+  distinct_recordings: number;
+  documented_recordings: number;
+  prevalence: number;
+  evidence: {
+    source: "musicbrainz_snapshot";
+    scope: "recording" | "track";
+    snapshot_version: string;
+    quality: number;
+    documented_recordings: number;
+  };
+}
+
+export interface VocabularyFamily {
+  slug: string;
+  name: string;
+  score: number;
+  share: number;
+  prevalence: number;
+  supporting_artists: number;
+  instruments: VocabularyInstrument[];
+}
+
+export interface ProfileAnalysisV2 {
+  profile: ProfileSummary;
+  snapshot: SnapshotInfo;
+  track_palette: PaletteReport;
+  artist_vocabulary: ArtistVocabulary;
+  available_views: AnalysisView[];
+  default_view: AnalysisView | null;
+  hydration: HydrationSummary;
 }
 
 export interface EditorialReview {

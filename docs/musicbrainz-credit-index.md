@@ -1,20 +1,22 @@
 # MusicBrainz credit index
 
-The enrichment runtime reads published R2 credit objects. New snapshots are
-built through the Rust pipeline.
+MusicBrainz data reaches the application through a versioned offline pipeline. Runtime services do not call the MusicBrainz API.
 
 ```text
 MusicBrainz dump/replication snapshot
-        ↓ Rust offline ETL
-staging projections → direct evidence + Artist Vocabulary aggregation
-        ↓ Rust serving snapshot
-compressed R2 shards → Python Worker runtime → D1 evidence cache
+        ↓ Rust ETL
+staging projections
+        ↓ aggregate
+direct evidence + Artist Vocabulary partitions
+        ↓ serve
+compressed R2 shards
+        ↓ snapshot hydrator
+versioned D1 projections
 ```
 
-## Rust ETL status
+## Staging
 
-The active command accepts an extracted `mbdump` directory or a `tar`/`tar.bz2`
-archive and scans it once:
+The ETL accepts an extracted `mbdump` directory or a `tar`/`tar.bz2` archive and scans it once:
 
 ```sh
 cargo run --release --manifest-path etl/musicbrainz-etl/Cargo.toml -- \
@@ -23,23 +25,13 @@ cargo run --release --manifest-path etl/musicbrainz-etl/Cargo.toml -- \
   --snapshot-version 20260912-002318
 ```
 
-It writes projected JSONL tables, a schema-versioned `manifest.json`, and a
-`LICENSE-MUSICBRAINZ.txt` notice. The staging directory is an intermediate
-local artifact. It is not an R2 serving snapshot and must not be uploaded
-directly. The `aggregate` command joins the projections into recording-level
-evidence and Artist Vocabulary partitions; `serve` then emits the local R2
-artifact described below.
+It writes projected JSONL tables, a schema-versioned `manifest.json`, and `LICENSE-MUSICBRAINZ.txt`. Staging is a local intermediate artifact and must not be uploaded to R2.
 
-The staging schema preserves recording-scoped and release-scoped relationships
-separately. The serving stage keeps release context only as a fallback when a
-recording has no direct evidence; it never lets release context replace direct
-evidence for a recording that already has one. The aggregate directory is an
-intermediate local input to the serving command below and is not uploaded
-directly.
+Recording-scoped and release-scoped relationships remain separate. Release context can be used only when a recording has no direct evidence; it never replaces direct evidence already attached to that recording.
 
-## Serving snapshot
+## Aggregation and serving
 
-Build the R2-ready local artifact from an aggregate directory:
+The `aggregate` command joins staging projections into recording evidence, track aliases, and Artist Vocabulary partitions. The `serve` command then creates the R2-ready artifact:
 
 ```sh
 cargo run --release --manifest-path etl/musicbrainz-etl/Cargo.toml -- \
@@ -49,63 +41,37 @@ cargo run --release --manifest-path etl/musicbrainz-etl/Cargo.toml -- \
   --snapshot-version 20260912-002318
 ```
 
-The output uses the `musicbrainz-instrument-credits-serving-v1` schema. It
-contains deterministic bzip2 shards under `recordings/`, `tracks/`, and
-`artists/`. Recordings use three hexadecimal characters; aliases and artist
-vocabulary use two. Release duplicates retain their distinct source URLs, and
-placeholder artist identities are excluded from the vocabulary. The Worker
-reads this sharded layout directly.
+The output uses the `musicbrainz-instrument-credits-serving-v2` schema and deterministic gzip shards under `recordings/`, `tracks/`, and `artists/`. Recording claims are pre-aggregated by instrument identity, scope, relation, production method, and attributes; performer and source counts remain attached to each claim. Gzip is emitted at maximum compression by default so the serving Worker can use the Workers runtime's native decompressor. Recordings and track aliases use four hexadecimal partition characters; artist vocabulary uses three. Release duplicates retain distinct source URLs, and placeholder artist identities are excluded from vocabulary.
 
-## Runtime guard
+Credits that cannot be resolved to an instrument or family in the project taxonomy are discarded before serving publication.
 
-The Python Worker starts with the R2 index disabled:
+## Hydration contract
 
-```jsonc
-"MUSICBRAINZ_CREDIT_INDEX_ENABLED": "false"
+The API records missing snapshot targets in `snapshot_hydration_jobs`. The TypeScript snapshot hydrator runs on a two-minute Cron, claims one target at a time, reads one calculated R2 shard, validates the v2 envelope, resolves the controlled taxonomy, and materializes D1 projections idempotently. It does not parse the large manifest at runtime; publication stores the complete immutable R2 prefix in the active D1 snapshot row.
+
+Recording projections preserve both instrument-level and family-level claims. Artist Vocabulary only accepts mappings to specific instruments. Missing targets become `complete_empty`; malformed or missing shards are terminal failures for that snapshot, while transient R2/D1 errors use bounded retries.
+
+An object miss is terminal for the targeted snapshot version. The hydrator does not fall back to a network API. A later MusicBrainz dump can supply new evidence through a new immutable snapshot.
+
+The HTTP Worker has no R2 binding. The hydrator owns the R2 binding and D1 write access; the API owns only D1 reads and hydration-job scheduling. The hydrator binding uses the existing Standard R2 bucket in the `eu` jurisdiction and keeps a daily D1-write guard plus the monthly R2-read guard.
+
+### Publishing a serving snapshot
+
+R2 upload and D1 publication are separate steps. After validating the serving
+directory, render the idempotent D1 publication SQL from its manifest:
+
+```sh
+yarn musicbrainz:publish \
+  /data/musicbrainz/serving/20260912-002318/manifest.json \
+  > /tmp/publish-20260912-002318.sql
 ```
 
-When a Rust-generated serving snapshot is available and validated, enable the
-index and, when required, offline-only mode:
-
-```jsonc
-"MUSICBRAINZ_CREDIT_INDEX_ENABLED": "true",
-"MUSICBRAINZ_CREDIT_INDEX_OFFLINE_ONLY": "true"
-```
-
-Offline-only mode routes release-bearing tracks through concrete recording
-jobs and treats index misses as terminal. With the flag disabled, the normal
-MusicBrainz API fallback remains available.
-
-Each permitted R2 lookup is reserved in `musicbrainz_credit_index_usage`
-before the object is read. The configured read budget fails closed when
-exhausted. Budget alerts remain useful as a second line of defense, but they
-are not hard Cloudflare usage caps.
+Review the generated SQL, then apply it to the intended D1 database with
+Wrangler. The publication marks the previous active snapshot as superseded
+and activates the manifest's immutable prefix, schema, counts, and hash.
 
 ## License and refresh policy
 
-The [MusicBrainz download documentation](https://musicbrainz.org/doc/MusicBrainz_Database/Download)
-identifies the core dump as CC0 and supplementary dumps as CC BY-NC-SA 3.0.
-The [data license](https://musicbrainz.org/doc/About/Data_License) requires
-attribution and preservation of applicable conditions for derivative works.
-The Rust staging command therefore requires an explicit snapshot version and
-carries license and attribution into the intermediate artifact. The serving
-manifest and license notice preserve that provenance for the eventual R2
-publication and D1 metadata.
+The [MusicBrainz download documentation](https://musicbrainz.org/doc/MusicBrainz_Database/Download) identifies the core dump as CC0 and supplementary dumps as CC BY-NC-SA 3.0. The [data license](https://musicbrainz.org/doc/About/Data_License) requires attribution and preservation of applicable conditions for derivative works.
 
-The R2 binding is configured on the private Python enrichment Worker as
-`MUSICBRAINZ_CREDIT_INDEX`. The recent D1 cache defaults to 30 days and the
-runtime guard uses `MUSICBRAINZ_CREDIT_INDEX_MAX_READS` and
-`MUSICBRAINZ_CREDIT_INDEX_USAGE_PERIOD`.
-
-## Release-first runtime behavior
-
-When API fallback is enabled and Last.fm supplies an album/release MBID, the
-scheduler creates one release job instead of one recording job. In offline-only
-mode, the release MBID is only an expansion target: concrete tracks are
-resolved through their recording identity and serving index objects.
-
-The API include behavior follows the official
-[MusicBrainz API relationship documentation](https://musicbrainz.org/doc/MusicBrainz_API):
-`recording-level-rels` is the switch for relationships on recordings linked to
-a release, and the linked-entity limit makes concrete release lookup the
-appropriate unit for that workflow.
+The ETL requires an explicit snapshot version and carries license and attribution into intermediate and serving artifacts. The R2 manifest and D1 snapshot metadata preserve the source URL, schema version, manifest hash, license, attribution, publication state, and publication time.

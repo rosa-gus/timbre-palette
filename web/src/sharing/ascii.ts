@@ -241,6 +241,10 @@ export function getAsciiLines(slug: string): string[] {
   );
 }
 
+export function hasAsciiDrawing(slug: string): boolean {
+  return Object.hasOwn(figures, slug);
+}
+
 /** Independent specimens, ordered to match their family labels. */
 export function createAsciiArtwork(
   families: FamilyPresence[],

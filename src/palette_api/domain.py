@@ -69,6 +69,7 @@ class RecordingStatus(str, Enum):
     """
 
     RESOLVED = "resolved"
+    UNRESOLVED_IDENTITY = "unresolved_identity"
     PENDING_ENRICHMENT = "pending_enrichment"
     AMBIGUOUS = "ambiguous"
     RESOLVED_WITHOUT_EVIDENCE = "resolved_without_evidence"
@@ -86,7 +87,6 @@ class InstrumentLayer:
     role: str
     confidence: Confidence
     prominence: float = 1.0
-    unexpected: bool = False
     claim_level: ClaimLevel = ClaimLevel.INSTRUMENT
 
 
@@ -101,6 +101,17 @@ class Track:
     recording_status: RecordingStatus | None = None
     recording_status_detail: str | None = None
     release_mbid: str | None = None
+    artist_mbid: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ProfileDetails:
+    """Optional profile metadata returned by Last.fm's user.getInfo."""
+
+    profile_url: str | None = None
+    avatar_url: str | None = None
+    realname: str | None = None
+    total_scrobbles: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -112,6 +123,7 @@ class ListeningHistory:
     instrumentation_source: DataSource = DataSource.MOCK
     pending_enrichment: tuple[Track, ...] = ()
     catalog_version: str | None = None
+    profile: ProfileDetails | None = None
 
 
 class ListeningHistoryProvider(Protocol):
@@ -120,11 +132,3 @@ class ListeningHistoryProvider(Protocol):
         username: str,
         period: ListeningPeriod,
     ) -> ListeningHistory: ...
-
-
-class InstrumentationProvider(Protocol):
-    async def enrich(self, history: ListeningHistory) -> ListeningHistory: ...
-
-
-class EnrichmentScheduler(Protocol):
-    async def schedule(self, tracks: tuple[Track, ...]) -> None: ...

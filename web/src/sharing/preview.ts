@@ -36,7 +36,7 @@ const base: PaletteReport = {
     catalog_version: null, image_catalog_version: "preview",
     coverage_tracks: 0.5, coverage_plays: 0.6,
     recording_status_counts: {
-      resolved: 20, pending_enrichment: 0, ambiguous: 0,
+      resolved: 20, unresolved_identity: 0, pending_enrichment: 0, ambiguous: 0,
       resolved_without_evidence: 20, transient_failure: 0, terminal_failure: 0,
     },
     notice: "Dados demonstrativos para visualizar o retrato.",
