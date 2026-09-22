@@ -193,6 +193,21 @@ async def test_vocabulary_can_become_the_default_view() -> None:
     assert response.status_code == 200
     body = response.json()
     assert body["artist_vocabulary"]["status"] == "available"
+    featured = body["artist_vocabulary"]["featured_artists"]
+    assert len(featured) == 3
+    assert [artist["mbid"] for artist in featured] == list(artist_mbids[:3])
+    assert [artist["name"] for artist in featured] == [
+        "Artist 0", "Artist 1", "Artist 2"
+    ]
+    assert featured[0]["families"] == [{
+        "slug": "acoustic-keys",
+        "name": "Teclas acústicas",
+        "instruments": ["Piano"],
+        "tone": {"shadow": "#000000", "highlight": "#F29191"},
+    }]
+    assert body["artist_vocabulary"]["families"][0]["tone"] == {
+        "shadow": "#000000", "highlight": "#F29191"
+    }
     assert body["default_view"] == "artist_vocabulary"
     assert body["available_views"] == ["track_palette", "artist_vocabulary"]
     assert body["track_palette"]["analysis"]["status"] == "partial"

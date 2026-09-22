@@ -63,11 +63,7 @@ function isProfileSummary(value: unknown): value is ProfileSummary {
     isOptionalText(value.profile_url) &&
     isOptionalText(value.avatar_url) &&
     isOptionalText(value.realname) &&
-    (value.total_scrobbles === undefined ||
-      value.total_scrobbles === null ||
-      (typeof value.total_scrobbles === "number" &&
-        Number.isSafeInteger(value.total_scrobbles) &&
-        value.total_scrobbles >= 0))
+    isOptionalText(value.registered)
   );
 }
 
@@ -176,11 +172,25 @@ function isProfileAnalysisV2(value: unknown): value is ProfileAnalysisV2 {
     vocabulary.families.every((family) => isRecord(family) &&
       typeof family.name === "string" && isFiniteNumber(family.share) &&
       isFiniteNumber(family.supporting_artists) && Array.isArray(family.instruments) &&
+      (family.tone === null || (isRecord(family.tone) &&
+        typeof family.tone.shadow === "string" &&
+        typeof family.tone.highlight === "string")) &&
       family.instruments.every((instrument) => isRecord(instrument) &&
         typeof instrument.name === "string" &&
         isFiniteNumber(instrument.distinct_recordings) &&
         isRecord(instrument.evidence) &&
         (instrument.evidence.scope === "recording" || instrument.evidence.scope === "track"))) &&
+    Array.isArray(vocabulary.featured_artists) &&
+    vocabulary.featured_artists.length <= 3 &&
+    vocabulary.featured_artists.every((artist) => isRecord(artist) &&
+      typeof artist.mbid === "string" && typeof artist.name === "string" &&
+      Array.isArray(artist.families) && artist.families.every((family) =>
+        isRecord(family) && typeof family.slug === "string" &&
+        typeof family.name === "string" && Array.isArray(family.instruments) &&
+        family.instruments.every((name) => typeof name === "string") &&
+        (family.tone === null || (isRecord(family.tone) &&
+          typeof family.tone.shadow === "string" &&
+          typeof family.tone.highlight === "string")))) &&
     Array.isArray(availableViews) &&
     availableViews.every((view) =>
       view === "track_palette" || view === "artist_vocabulary",

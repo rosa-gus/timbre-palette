@@ -110,24 +110,26 @@
   style={`--report-tone:${report.families[0]?.tone?.highlight ?? fallbackTone};--report-tone-text:${toneText(report.families[0]?.tone?.highlight ?? fallbackTone)}`}
 >
   {#if !embedded}<div class="report-back">
-    <a class="back-link" href={homePath}><Arrow direction="left" />Voltar</a>
-  </div>{/if}
+      <a class="back-link" href={homePath}><Arrow direction="left" />Voltar</a>
+    </div>{/if}
   {#if !embedded}<div class="archive-header">
-    <p class="eyebrow">ESCUTA DE @{report.profile.username}</p>
-    <div class="archive-period">
-      <span>{periodLabels[report.profile.period]}<span
-          class="separator-indicator"
-          aria-hidden="true">·</span>Análise {statusLabels[report.analysis.status]}</span
-      >{#if report.analysis.data_source !== "catalog"}<span
-          >Dados {report.analysis.data_source === "mock"
-            ? "demonstrativos"
-            : "híbridos"}</span
-        >{/if}
-    </div>
-    <a class="image-link" href="#share"
-      >Visualizar minha imagem <Arrow direction="up-right" /></a
-    >
-  </div>{/if}
+      <p class="eyebrow">ESCUTA DE @{report.profile.username}</p>
+      <div class="archive-period">
+        <span
+          >{periodLabels[report.profile.period]}<span
+            class="separator-indicator"
+            aria-hidden="true">·</span
+          >Análise {statusLabels[report.analysis.status]}</span
+        >{#if report.analysis.data_source !== "catalog"}<span
+            >Dados {report.analysis.data_source === "mock"
+              ? "demonstrativos"
+              : "híbridos"}</span
+          >{/if}
+      </div>
+      <a class="image-link" href="#share"
+        >Visualizar minha imagem <Arrow direction="up-right" /></a
+      >
+    </div>{/if}
   <nav class="report-index" aria-label="Índice do retrato">
     {#each sectionOptions as option, index}
       <a
@@ -141,14 +143,16 @@
   <section id="portrait" class="portrait" aria-labelledby="report-title">
     <div class="portrait-copy">
       <p class="eyebrow">01 / SEU RETRATO INSTRUMENTAL</p>
-      {#if embedded}<h2 class="portrait-title" id="report-title">{portrait.title}</h2>
+      {#if embedded}<h2 class="portrait-title" id="report-title">
+          {portrait.title}
+        </h2>
       {:else}<h1 id="report-title">{portrait.title}</h1>{/if}
       <p class="large-copy">
         {portrait.summary}
       </p>
-      <p class="disclaimer">
-        {portrait.disclaimer}
-      </p>
+      {#if portrait.disclaimer}<p class="disclaimer">
+          {portrait.disclaimer}
+        </p>{/if}
     </div>
     <div class="portrait-caption">
       <span>{report.profile.tracks_analyzed} faixas</span><span
@@ -284,8 +288,9 @@
           )} das reproduções).
         </p>
         <p>
-          Catálogo {report.analysis.catalog_version ?? "não publicado"} <span class="separator-indicator" aria-hidden="true">·</span> Método {report
-            .analysis.methodology_version}
+          Catálogo {report.analysis.catalog_version ?? "não publicado"}
+          <span class="separator-indicator" aria-hidden="true">·</span>
+          Método {report.analysis.methodology_version}
         </p>
       </Dropdown>
     </div>
@@ -362,9 +367,9 @@
           alt={`Imagem pronta para compartilhar: paleta de ${report.profile.username}`}
         />{:else}<div class="share-card-preview">
           <span class="eyebrow"
-            >TIMBRE PALETTE / @{report.profile.username} <span class="separator-indicator" aria-hidden="true">·</span> {periodLabels[
-              report.profile.period
-            ]}</span
+            >TIMBRE PALETTE / @{report.profile.username}
+            <span class="separator-indicator" aria-hidden="true">·</span>
+            {periodLabels[report.profile.period]}</span
           ><strong>{portrait.title}</strong>
           <p class="preview-summary">{portrait.summary}</p>
           <div
@@ -389,7 +394,10 @@
               </div>{/each}
           </div>
           <span class="preview-note"
-            >Interpretação musical <span class="separator-indicator" aria-hidden="true">·</span> TIMBRE PALETTE</span
+            >Interpretação musical <span
+              class="separator-indicator"
+              aria-hidden="true">·</span
+            > TIMBRE PALETTE</span
           >
         </div>{/if}
     </div>
@@ -403,7 +411,9 @@
     margin: 0 auto;
     padding: 54px 0 32px;
   }
-  .report-view.embedded { padding-top: 0; }
+  .report-view.embedded {
+    padding-top: 0;
+  }
   .report-back {
     margin-bottom: 20px;
   }
@@ -475,7 +485,8 @@
     grid-template-columns: minmax(0, 1fr) 220px;
     gap: 32px;
   }
-  h1, .portrait-title {
+  h1,
+  .portrait-title {
     max-width: 950px;
     margin: 12px 0 24px;
     font-size: clamp(2.5rem, 4vw, 4rem);
@@ -562,7 +573,9 @@
     text-decoration: underline;
     text-decoration-color: transparent;
     text-underline-offset: 5px;
-    transition: color 150ms ease, text-decoration-color 150ms ease;
+    transition:
+      color 150ms ease,
+      text-decoration-color 150ms ease;
   }
   .family-card-link:hover,
   .family-card-link:focus-visible,

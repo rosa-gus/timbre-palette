@@ -111,7 +111,7 @@ class ProfileDetails:
     profile_url: str | None = None
     avatar_url: str | None = None
     realname: str | None = None
-    total_scrobbles: int | None = None
+    registered: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

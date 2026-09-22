@@ -90,14 +90,24 @@
     try {
       const current = await getCatalogSize(signal);
       const saved = getStorageItem<unknown>(catalogStorageKey);
-      if (saved && typeof saved === "object" && "schemaVersion" in saved &&
-          "apiBaseUrl" in saved && saved.apiBaseUrl === apiBaseUrl() &&
-          saved.schemaVersion === 1 && "recordingsWithEvidence" in saved &&
-          typeof saved.recordingsWithEvidence === "number" &&
-          Number.isSafeInteger(saved.recordingsWithEvidence) && saved.recordingsWithEvidence > 0 &&
-          current > saved.recordingsWithEvidence) {
+      if (
+        saved &&
+        typeof saved === "object" &&
+        "schemaVersion" in saved &&
+        "apiBaseUrl" in saved &&
+        saved.apiBaseUrl === apiBaseUrl() &&
+        saved.schemaVersion === 1 &&
+        "recordingsWithEvidence" in saved &&
+        typeof saved.recordingsWithEvidence === "number" &&
+        Number.isSafeInteger(saved.recordingsWithEvidence) &&
+        saved.recordingsWithEvidence > 0 &&
+        current > saved.recordingsWithEvidence
+      ) {
         const added = current - saved.recordingsWithEvidence;
-        catalogGrowth = { percent: added / saved.recordingsWithEvidence * 100, added };
+        catalogGrowth = {
+          percent: (added / saved.recordingsWithEvidence) * 100,
+          added,
+        };
       }
       setStorageItem(catalogStorageKey, {
         schemaVersion: 1,
@@ -109,7 +119,7 @@
       // Optional statistics and browser storage never block the home.
     }
   }
-  let theme: Theme = "light";
+  let theme: Theme = "system";
   let resolvedTheme: ResolvedTheme = "light";
   let systemThemeQuery: MediaQueryList | null = null;
   let username = "";
@@ -120,6 +130,8 @@
   let loadingTitle = "Lendo seu histórico.";
   let loadingDescription = "As primeiras relações estão sendo reunidas.";
   let loadingDetail = "Consultando o Last.fm";
+  let periodLoading = false;
+  let periodError = "";
   let shareFeedback = "";
   let sharePreviewUrl = "";
   let shareBlob: Blob | null = null;
@@ -138,12 +150,15 @@
       disabled:
         value !== "share" &&
         !!result &&
-        result.track_palette.analysis.section_availability[availabilityKeys[value]] !==
-          "available",
+        result.track_palette.analysis.section_availability[
+          availabilityKeys[value]
+        ] !== "available",
       note:
         value !== "share" && result
           ? availabilityLabels[
-              result.track_palette.analysis.section_availability[availabilityKeys[value]]
+              result.track_palette.analysis.section_availability[
+                availabilityKeys[value]
+              ]
             ]
           : undefined,
     }),
@@ -151,8 +166,9 @@
 
   function availability(section: SectionId): SectionAvailability {
     return (
-      result?.track_palette.analysis.section_availability[availabilityKeys[section]] ??
-      "insufficient_coverage"
+      result?.track_palette.analysis.section_availability[
+        availabilityKeys[section]
+      ] ?? "insufficient_coverage"
     );
   }
 
@@ -169,32 +185,78 @@
     updateUrl();
   }
 
-  async function loadReport(): Promise<void> {
+  function resolveAnalysisView(
+    next: ProfileAnalysisV2,
+    requested: AnalysisView | null,
+  ): AnalysisView {
+    if (requested === "artist_vocabulary") {
+      return next.artist_vocabulary.status === "insufficient"
+        ? "track_palette"
+        : "artist_vocabulary";
+    }
+    if (requested === "track_palette") return "track_palette";
+    if (next.default_view && next.available_views.includes(next.default_view)) {
+      return next.default_view;
+    }
+    if (
+      next.available_views.includes("artist_vocabulary") ||
+      next.artist_vocabulary.status === "pending"
+    ) {
+      return "artist_vocabulary";
+    }
+    return "track_palette";
+  }
+
+  async function loadReport(preserveReport = false): Promise<void> {
     controller?.abort();
-    controller = new AbortController();
-    const signal = controller.signal;
+    const request = new AbortController();
+    controller = request;
+    const signal = request.signal;
     if (sharePreviewUrl) URL.revokeObjectURL(sharePreviewUrl);
     sharePreviewUrl = "";
     shareBlob = null;
     shareFeedback = "";
-    view = "loading";
-    formError = "";
+    if (preserveReport) {
+      periodLoading = true;
+      periodError = "";
+    } else {
+      view = "loading";
+      formError = "";
+    }
     try {
       const next = await getAnalysis(username, period, signal);
       result = next;
-      const requestedView = new URL(window.location.href).searchParams.get("view");
-      activeAnalysisView = requestedView === "artist_vocabulary" || requestedView === "track_palette"
-        ? requestedView
-        : next.default_view ??
-          (next.artist_vocabulary.status === "pending" ? "artist_vocabulary" : "track_palette");
+      const requestedView = new URL(window.location.href).searchParams.get(
+        "view",
+      );
+      const requestedAnalysisView =
+        requestedView === "artist_vocabulary" ||
+        requestedView === "track_palette"
+          ? requestedView
+          : null;
+      activeAnalysisView = resolveAnalysisView(next, requestedAnalysisView);
       view = "report";
+      periodLoading = false;
+      periodError = "";
       updateUrl();
       return;
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;
-      view = "entry";
-      formError = getApiErrorMessage(error);
+      if (preserveReport) {
+        periodLoading = false;
+        periodError = getApiErrorMessage(error);
+        if (result) period = result.profile.period;
+        updateUrl();
+      } else {
+        view = "entry";
+        formError = getApiErrorMessage(error);
+      }
     }
+  }
+  function changePeriod(next: ListeningPeriod): void {
+    if (next === period || periodLoading || !result) return;
+    period = next;
+    void loadReport(true);
   }
   function submit(): void {
     username = normalizeUsername(username);
@@ -266,9 +328,12 @@
     return value === "dark" || value === "light" || value === "system";
   }
   function applyTheme(): void {
-    resolvedTheme = theme === "system"
-      ? systemThemeQuery?.matches ? "light" : "dark"
-      : theme;
+    resolvedTheme =
+      theme === "system"
+        ? systemThemeQuery?.matches
+          ? "light"
+          : "dark"
+        : theme;
     document.documentElement.dataset.theme = resolvedTheme;
   }
   function watchSystemTheme(): void {
@@ -299,7 +364,7 @@
     const catalogController = new AbortController();
     void checkCatalog(catalogController.signal);
     const savedTheme = getStorageItem<unknown>(themeStorageKey);
-    setTheme(isTheme(savedTheme) ? savedTheme : "light");
+    setTheme(isTheme(savedTheme) ? savedTheme : "system");
     const params = new URL(window.location.href).searchParams;
     const profile = params.get("profile");
     const requested = params.get("period") as ListeningPeriod | null;
@@ -333,7 +398,9 @@
         class="theme-toggle"
         type="button"
         aria-label={`Tema ${themeLabels[theme].toLowerCase()}. Clique para alternar.`}
-        title={theme === "system" ? `Sistema (${themeLabels[resolvedTheme].toLowerCase()})` : themeLabels[theme]}
+        title={theme === "system"
+          ? `Sistema (${themeLabels[resolvedTheme].toLowerCase()})`
+          : themeLabels[theme]}
         on:click={toggleTheme}>{themeLabels[theme]}</button
       >
     </div>
@@ -356,6 +423,7 @@
     {:else if view === "report" && result}
       <ResultsView
         {result}
+        {period}
         activeView={activeAnalysisView}
         onSelectView={selectAnalysisView}
         {sectionOptions}
@@ -365,6 +433,10 @@
         {shareFeedback}
         {sharePreviewUrl}
         {shareBusy}
+        {periodLoading}
+        {periodError}
+        {periods}
+        onPeriodChange={changePeriod}
         onDownloadShare={downloadShare}
         onOpenInstrument={openInstrument}
         onOpenInstrumentSlug={(slug) => void loadInstrument(slug)}
@@ -379,17 +451,47 @@
       <div class="footer-explainer">
         <Dropdown title="Limites técnicos">
           <p class="limits-intro">Uma leitura aproximada da sua escuta.</p>
-          <p>A paleta combina seu histórico público do Last.fm com créditos instrumentais publicados. Não analisa o áudio das músicas nem mede o volume dos instrumentos.</p>
-          <p>Um instrumento pode estar presente na música sem estar documentado nos créditos da gravação no MusicBrainz. Encontrar a gravação nessa base não garante encontrar seus instrumentos. Essa documentação varia entre repertórios, por isso uma ausência na paleta não significa ausência na música.</p>
-          <p>O catálogo ainda está em construção: faixas sem evidência instrumental aceita não entram no cálculo da paleta. A consulta usa um snapshot offline do MusicBrainz; sua hidratação pode melhorar uma visita futura, sem garantir novos créditos. O vocabulário dos artistas descreve gravações documentadas desses artistas e não comprova instrumentos em cada faixa ouvida.</p>
-          <p>O temperamento da escuta é uma interpretação editorial e lúdica. Não é uma avaliação psicológica ou científica da sua personalidade.</p>
+          <p>
+            A paleta combina seu histórico público do Last.fm com créditos
+            instrumentais publicados. Não analisa o áudio das músicas nem mede o
+            volume dos instrumentos.
+          </p>
+          <p>
+            Um instrumento pode estar presente na música sem estar documentado
+            nos créditos da gravação no MusicBrainz. Encontrar a gravação nessa
+            base não garante encontrar seus instrumentos. Essa documentação
+            varia entre repertórios, por isso uma ausência na paleta não
+            significa ausência na música.
+          </p>
+          <p>
+            O catálogo ainda está em construção: faixas sem evidência
+            instrumental aceita não entram no cálculo da paleta. A consulta usa
+            um snapshot offline do MusicBrainz; sua hidratação pode melhorar uma
+            visita futura, sem garantir novos créditos. O vocabulário dos
+            artistas descreve gravações documentadas desses artistas e não
+            comprova instrumentos em cada faixa ouvida.
+          </p>
+          <p>
+            O temperamento da escuta é uma interpretação editorial e lúdica. Não
+            é uma avaliação psicológica ou científica da sua personalidade.
+          </p>
         </Dropdown>
       </div>
       {#if view === "report" && result}
         <div class="footer-explainer footer-explainer--source">
           <Dropdown title="Fonte dos créditos e versões" align="end">
-            <p>Os instrumentos vêm de créditos publicados no MusicBrainz. Usamos o snapshot {result.snapshot.snapshot_version}, uma cópia desses dados. O projeto ainda pode consultar mais gravações dessa cópia; por isso, uma próxima visita pode trazer novos créditos.</p>
-            <p>Esta leitura usa as regras da versão {result.track_palette.analysis.methodology_version} para a paleta das faixas e {result.artist_vocabulary.methodology_version} para o vocabulário dos artistas. Se o snapshot ou essas regras mudarem, o resultado também pode mudar.</p>
+            <p>
+              Os instrumentos vêm de créditos publicados no MusicBrainz. Usamos
+              o snapshot {result.snapshot.snapshot_version}, uma cópia desses
+              dados. O projeto ainda pode consultar mais gravações dessa cópia;
+              por isso, uma próxima visita pode trazer novos créditos.
+            </p>
+            <p>
+              Esta leitura usa as regras da versão {result.track_palette
+                .analysis.methodology_version} para a paleta das faixas e {result
+                .artist_vocabulary.methodology_version} para o vocabulário dos artistas.
+              Se o snapshot ou essas regras mudarem, o resultado também pode mudar.
+            </p>
           </Dropdown>
         </div>
       {/if}
@@ -397,15 +499,32 @@
     <div class="footer-colophon">
       <div class="footer-identity">
         <span class="footer-wordmark">TIMBRE PALETTE</span>
-      <p class="footer-byline">por <a href="https://rosa-gus.github.io/portfolio" target="_blank" rel="noreferrer noopener">rosa gus</a> <span class="separator-indicator" aria-hidden="true">·</span> Código <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank" rel="noreferrer noopener">GPL-3.0</a></p>
+        <p class="footer-byline">
+          por <a
+            href="https://rosa-gus.github.io/portfolio"
+            target="_blank"
+            rel="noreferrer noopener">rosa gus</a
+          > <span class="separator-indicator" aria-hidden="true">·</span> Código
+          <a
+            href="https://www.gnu.org/licenses/gpl-3.0.html"
+            target="_blank"
+            rel="noreferrer noopener">GPL-3.0</a
+          >
+        </p>
       </div>
       <div class="footer-source">
         <span class="footer-label">HISTÓRICO</span>
-        <a href="https://www.last.fm/" target="_blank" rel="noreferrer noopener">Last.fm</a>
+        <a href="https://www.last.fm/" target="_blank" rel="noreferrer noopener"
+          >Last.fm</a
+        >
       </div>
       <div class="footer-source">
         <span class="footer-label">CRÉDITOS</span>
-        <a href="https://musicbrainz.org/" target="_blank" rel="noreferrer noopener">MusicBrainz</a>
+        <a
+          href="https://musicbrainz.org/"
+          target="_blank"
+          rel="noreferrer noopener">MusicBrainz</a
+        >
       </div>
     </div>
   </footer>
@@ -421,5 +540,7 @@
 />
 
 <style>
-  .limits-intro { color: var(--ink); }
+  .limits-intro {
+    color: var(--ink);
+  }
 </style>

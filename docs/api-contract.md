@@ -28,10 +28,10 @@ separately because one artist hydration can serve many candidate tracks.
 
 The top-level `profile` object (and the nested `track_palette.profile` copy)
 also includes optional Last.fm metadata populated by a `user.getInfo` request:
-`profile_url`, `avatar_url`, and `realname` are strings, while
-`total_scrobbles` is a non-negative integer. Each field may be `null` when
-Last.fm omits it or the optional metadata request is unavailable; this does not
-invalidate the listening history or the analysis.
+`profile_url`, `avatar_url`, and `realname` are strings, while `registered` is
+an ISO 8601 timestamp in UTC. Each field may be `null` when Last.fm omits it or
+the optional metadata request is unavailable; this does not invalidate the
+listening history or the analysis.
 
 The vocabulary is available only when its configured recurrence, track reach,
 play reach, artist diversity, and concentration gates are satisfied. If pending
@@ -40,6 +40,16 @@ the materialized rows already pass, it can be `available` with pending counts.
 A pending snapshot hydration is represented explicitly and is not treated as an
 empty catalog. Instrument and family rows are accepted only when they resolve
 to the editorial D1 taxonomy.
+
+When the vocabulary is available, `artist_vocabulary.featured_artists` contains
+at most three qualified artists, ordered by their contribution to the vocabulary
+model (then listening plays and artist MBID for stable ties). Each item contains
+the artist MBID and name plus the recurring instrument families and instrument
+names that qualified that artist. Vocabulary families and featured artist
+families include tones from the same image catalog as the track palette. The
+cards do not assert that those instruments occur in
+the specific tracks heard by the listener. Pending and insufficient vocabulary
+results return an empty `featured_artists` list.
 
 `artist_vocabulary.reach.unresolved_artists` and `unresolved_tracks` count
 history entries without an artist MBID. They are identity gaps, not pending

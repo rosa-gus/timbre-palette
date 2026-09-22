@@ -22,7 +22,7 @@ class ProfileSummary(ApiModel):
     profile_url: str | None = None
     avatar_url: str | None = None
     realname: str | None = None
-    total_scrobbles: int | None = Field(default=None, ge=0)
+    registered: str | None = None
 
 
 class RecordingStatusCounts(ApiModel):
@@ -306,6 +306,20 @@ class VocabularyFamily(ApiModel):
     prevalence: float = Field(ge=0, le=1)
     supporting_artists: int = Field(ge=0)
     instruments: list[VocabularyInstrument] = Field(default_factory=list)
+    tone: ImageTone | None = None
+
+
+class VocabularyArtistFamily(ApiModel):
+    slug: str
+    name: str
+    instruments: list[str] = Field(default_factory=list)
+    tone: ImageTone | None = None
+
+
+class VocabularyFeaturedArtist(ApiModel):
+    mbid: str
+    name: str
+    families: list[VocabularyArtistFamily] = Field(default_factory=list)
 
 
 class VocabularyAvailability(ApiModel):
@@ -322,6 +336,7 @@ class ArtistVocabulary(ApiModel):
     reach: VocabularyReach
     concentration: float = Field(ge=0, le=1)
     families: list[VocabularyFamily] = Field(default_factory=list)
+    featured_artists: list[VocabularyFeaturedArtist] = Field(default_factory=list, max_length=3)
     notice: str
 
 

@@ -1,5 +1,6 @@
 from collections.abc import Mapping
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Protocol
 from urllib.parse import urlencode
 
@@ -184,13 +185,40 @@ class LastFmListeningHistoryProvider:
 
     @classmethod
     def _parse_profile(cls, raw_user: Mapping[object, object]) -> ProfileDetails:
-        total_scrobbles = cls._optional_nonnegative_int(raw_user.get("playcount"))
         return ProfileDetails(
             profile_url=cls._optional_text(raw_user.get("url")),
             avatar_url=cls._parse_avatar_url(raw_user.get("image")),
             realname=cls._optional_text(raw_user.get("realname")),
-            total_scrobbles=total_scrobbles,
+            registered=cls._parse_registered(raw_user.get("registered")),
         )
+
+    @classmethod
+    def _parse_registered(cls, value: object) -> str | None:
+        """Return Last.fm's registration time as an ISO 8601 UTC string."""
+        timestamp: object = None
+        text: object = value
+        if isinstance(value, Mapping):
+            timestamp = value.get("unixtime")
+            text = value.get("#text") or value.get("text")
+
+        if timestamp is not None:
+            try:
+                unix_time = int(str(timestamp).strip())
+                if unix_time >= 0:
+                    return datetime.fromtimestamp(unix_time, tz=timezone.utc).isoformat()
+            except (OverflowError, OSError, ValueError):
+                pass
+
+        raw_text = cls._optional_text(text)
+        if not raw_text:
+            return None
+        try:
+            parsed = datetime.fromisoformat(raw_text.strip().replace("Z", "+00:00"))
+        except ValueError:
+            return None
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone.utc).isoformat()
 
     @classmethod
     def _parse_avatar_url(cls, value: object) -> str | None:

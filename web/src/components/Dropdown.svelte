@@ -9,7 +9,9 @@
 </details>
 
 <style>
-  .ui-dropdown { color: var(--muted); }
+  .ui-dropdown {
+    color: var(--muted);
+  }
   summary {
     display: flex;
     align-items: center;
@@ -23,11 +25,24 @@
     list-style: none;
     cursor: pointer;
   }
-  summary::-webkit-details-marker { display: none; }
-  summary::before { content: "▸"; }
-  .ui-dropdown[open] > summary::before { content: "▾"; }
-  .ui-dropdown--end > summary { margin-left: auto; text-align: end; }
-  summary:hover { color: var(--ink); }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+  summary::before {
+    content: "▸";
+    font-size: 18px;
+  }
+  .ui-dropdown[open] > summary::before {
+    content: "▾";
+    font-size: 18px;
+  }
+  .ui-dropdown--end > summary {
+    margin-left: auto;
+    text-align: end;
+  }
+  summary:hover {
+    color: var(--ink);
+  }
   summary:focus-visible {
     outline: 2px solid var(--accent-soft);
     outline-offset: 4px;
@@ -46,6 +61,10 @@
     border-right: 1px solid var(--line-strong);
     text-align: end;
   }
-  .dropdown-content :global(p) { margin: 0 0 12px; }
-  .dropdown-content :global(p:last-child) { margin-bottom: 0; }
+  .dropdown-content :global(p) {
+    margin: 0 0 12px;
+  }
+  .dropdown-content :global(p:last-child) {
+    margin-bottom: 0;
+  }
 </style>

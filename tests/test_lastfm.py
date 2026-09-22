@@ -60,6 +60,10 @@ PROFILE_RESPONSE = {
             {"size": "large", "#text": "https://last.fm/large.jpg"},
         ],
         "playcount": "1234",
+        "registered": {
+            "unixtime": "1037793040",
+            "#text": "2002-11-20 11:50",
+        },
     }
 }
 
@@ -138,7 +142,7 @@ async def test_lastfm_provider_parses_optional_profile_metadata() -> None:
     assert history.profile.profile_url == "https://www.last.fm/user/CanonicalUser"
     assert history.profile.avatar_url == "https://last.fm/large.jpg"
     assert history.profile.realname == "Pessoa Canônica"
-    assert history.profile.total_scrobbles == 1234
+    assert history.profile.registered == "2002-11-20T11:50:40+00:00"
     assert len(transport.requested_urls) == 2
     assert parse_qs(urlparse(transport.requested_urls[1]).query)["method"] == [
         "user.getinfo"
@@ -308,7 +312,7 @@ async def test_v2_endpoint_combines_lastfm_history_with_snapshot_projection() ->
     assert body["profile"]["profile_url"] == "https://www.last.fm/user/CanonicalUser"
     assert body["profile"]["avatar_url"] == "https://last.fm/large.jpg"
     assert body["profile"]["realname"] == "Pessoa Canônica"
-    assert body["profile"]["total_scrobbles"] == 1234
+    assert body["profile"]["registered"] == "2002-11-20T11:50:40+00:00"
     assert body["track_palette"]["analysis"]["history_source"] == "lastfm"
     assert body["track_palette"]["analysis"]["instrumentation_source"] == "mock"
     assert any(track["artist"] == "Radiohead" for track in body["track_palette"]["recordings"])

@@ -32,7 +32,7 @@ export interface ProfileSummary {
   profile_url?: string | null;
   avatar_url?: string | null;
   realname?: string | null;
-  total_scrobbles?: number | null;
+  registered?: string | null;
 }
 
 export interface RecordingStatusCounts {
@@ -196,7 +196,19 @@ export interface ArtistVocabulary {
   };
   concentration: number;
   families: VocabularyFamily[];
+  featured_artists: VocabularyFeaturedArtist[];
   notice: string;
+}
+
+export interface VocabularyFeaturedArtist {
+  mbid: string;
+  name: string;
+  families: {
+    slug: string;
+    name: string;
+    instruments: string[];
+    tone: { shadow: string; highlight: string } | null;
+  }[];
 }
 
 export interface VocabularyInstrument {
@@ -222,6 +234,7 @@ export interface VocabularyFamily {
   prevalence: number;
   supporting_artists: number;
   instruments: VocabularyInstrument[];
+  tone: { shadow: string; highlight: string } | null;
 }
 
 export interface ProfileAnalysisV2 {

@@ -30,12 +30,15 @@ from palette_api.image_catalog import DEFAULT_IMAGE_CATALOG, InstrumentImageCata
 from palette_api.schemas import (
     ArtistVocabulary,
     HydrationSummary,
+    ImageTone,
     PaletteReport,
     ProfileAnalysisV2,
     SnapshotInfo,
     VocabularyAvailability,
+    VocabularyArtistFamily,
     VocabularyEvidence,
     VocabularyFamily,
+    VocabularyFeaturedArtist,
     VocabularyInstrument,
     VocabularyReach,
 )
@@ -610,6 +613,7 @@ class VocabularyAnalyzer:
         family_scores: dict[str, float] = defaultdict(float)
         family_rows: dict[str, list[SnapshotVocabularyRow]] = defaultdict(list)
         artist_scores: dict[str, float] = defaultdict(float)
+        artist_family_scores: dict[tuple[str, str], float] = {}
         for (artist_mbid, family_slug), family_instruments in rows_by_artist_family.items():
             best = max(family_instruments, key=lambda row: row.prevalence)
             raw_weight = (
@@ -622,6 +626,7 @@ class VocabularyAnalyzer:
             )
             family_scores[family_slug] += contribution
             artist_scores[artist_mbid] += contribution
+            artist_family_scores[(artist_mbid, family_slug)] = contribution
             family_rows[family_slug].extend(family_instruments)
 
         total_score = sum(family_scores.values())
@@ -701,6 +706,49 @@ class VocabularyAnalyzer:
         else:
             status, reason = "insufficient", current_gate
 
+        featured_artists: list[VocabularyFeaturedArtist] = []
+        if status == "available":
+            names_by_mbid = {
+                track.artist_mbid.strip().lower(): track.artist
+                for track in reversed(history.tracks)
+                if track.artist_mbid
+            }
+            ranked_artists = sorted(
+                qualified_artists,
+                key=lambda mbid: (-artist_scores[mbid], -artist_plays[mbid], mbid),
+            )[:3]
+            for artist_mbid in ranked_artists:
+                artist_families = sorted(
+                    (
+                        (family_slug, family_instruments)
+                        for (mbid, family_slug), family_instruments in rows_by_artist_family.items()
+                        if mbid == artist_mbid
+                    ),
+                    key=lambda item: (
+                        -artist_family_scores[(artist_mbid, item[0])], item[0]
+                    ),
+                )
+                featured_artists.append(
+                    VocabularyFeaturedArtist(
+                        mbid=artist_mbid,
+                        name=names_by_mbid[artist_mbid],
+                        families=[
+                            VocabularyArtistFamily(
+                                slug=family_slug,
+                                name=family_instruments[0].family_name,
+                                instruments=[
+                                    row.instrument_name
+                                    for row in sorted(
+                                        _unique_instruments(family_instruments),
+                                        key=lambda row: (-row.prevalence, row.instrument_name),
+                                    )
+                                ],
+                            )
+                            for family_slug, family_instruments in artist_families
+                        ],
+                    )
+                )
+
         return ArtistVocabulary(
             status=status,
             methodology_version=VOCABULARY_METHODOLOGY_VERSION,
@@ -713,6 +761,7 @@ class VocabularyAnalyzer:
             reach=reach,
             concentration=round(concentration, 4),
             families=families,
+            featured_artists=featured_artists,
             notice=(
                 "Recorre em gravações documentadas destes artistas; não descreve "
                 "necessariamente cada faixa ou a presença de um instrumento no áudio."
@@ -826,6 +875,29 @@ class V2AnalysisService:
             preparation.vocabulary_rows,
             preparation.pending_artist_mbids,
         )
+        vocabulary = vocabulary.model_copy(update={
+            "families": [
+                family.model_copy(update={
+                    "tone": ImageTone(**tone) if (
+                        tone := self._image_catalog.family_tone(family.slug)
+                    ) else None
+                })
+                for family in vocabulary.families
+            ],
+            "featured_artists": [
+                artist.model_copy(update={
+                    "families": [
+                        family.model_copy(update={
+                            "tone": ImageTone(**tone) if (
+                                tone := self._image_catalog.family_tone(family.slug)
+                            ) else None
+                        })
+                        for family in artist.families
+                    ]
+                })
+                for artist in vocabulary.featured_artists
+            ]
+        })
         palette_available = palette.analysis.status in {
             "ready",
             "partial",

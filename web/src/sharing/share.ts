@@ -113,7 +113,11 @@ export async function createShareImage(
   const dateLabel = currentDateLabel();
   context.fillText(dateLabel, 72, 82);
   context.fillStyle = brandPink;
-  context.fillText("/ PALETA INSTRUMENTAL", 72 + context.measureText(dateLabel).width + 24, 82);
+  context.fillText(
+    "/ PALETA INSTRUMENTAL",
+    72 + context.measureText(dateLabel).width + 24,
+    82,
+  );
   context.fillStyle = "#f3efec";
   context.font = "400 24px 'IBM Plex Mono', monospace";
   context.fillText(
