@@ -9,7 +9,7 @@
   "rules": [
     {
       "type": "Text",
-      "globs": ["**/_generated_image_catalog.json"],
+      "globs": ["**/_generated_image_catalog.json", "**/_curated_example_history.json"],
       "fallthrough": true
     }
   ],
@@ -30,7 +30,7 @@
     {
       "binding": "DB",
       "database_name": "timbre-palette",
-      "database_id": "de217b93-15a0-45be-802d-c9966582d66a",
+      "database_id": "32fa319e-eeb6-4b3b-b981-ddcc92d75605",
       "migrations_dir": "migrations"
     }
   ]

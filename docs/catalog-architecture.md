@@ -1,78 +1,43 @@
 # Catalog Architecture
 
-The catalog has three inputs: the versioned editorial snapshot, the prepared album manifest, and aggregated demand observed during profile analyses. Public requests read only the published catalog. Collection and promotion run asynchronously in the enrichment Worker.
+The backend combines two independently published inputs: the reviewed editorial catalog and a versioned MusicBrainz serving snapshot. Public requests read only D1 projections and never fetch MusicBrainz data directly.
 
 ```mermaid
 flowchart TD
     E[Editorial JSON snapshot] --> EP[Editorial publisher]
-    EP --> ER[(Editorial D1 projection)]
-    ER --> API[Palette API]
-    M[Versioned album manifest] --> T[(prepared_album_targets)]
-    V[Uncovered recording from a visit] --> D[(catalog_demand)]
-    T --> P[Scheduled planner]
-    D --> P
-    P --> O[(D1 enrichment outbox)]
-    O --> W[Enrichment Worker]
-    W --> MB[MusicBrainz release and recording data]
-    W --> S[(source_documents and credit_observations)]
-    S --> C[(Prepared album catalog)]
-    W --> U[(Instrument claims and evidence)]
-    U --> R[(catalog_publications)]
-    R --> API
+    EP --> ED[(Editorial D1 projection)]
+    MB[MusicBrainz dump] --> ETL[Rust ETL]
+    ETL --> R2[(Versioned R2 shards)]
+    API[Palette API] -->|read projections| D1[(Cloudflare D1)]
+    API -->|record missing targets| J[(snapshot_hydration_jobs)]
+    H[Snapshot hydrator] -->|claim jobs| J
+    H -->|read grouped shards| R2
+    H -->|materialize projections| D1
+    ED --> API
 ```
 
-## Catalog units and provenance
+## Public read model
 
-- `artists` stores canonical artist identity.
-- `album_groups` represents an album as a work.
-- `album_releases` represents a concrete edition identified by a MusicBrainz release MBID.
-- `album_tracks` maps an edition's track position to a canonical recording.
-- Instrumentation belongs to the recording. A release-level credit is not copied to every track automatically.
+The API v2 reads the active snapshot metadata and its compact projections for recording evidence, track aliases, and artist vocabulary. A request can read up to 200 Last.fm candidates and sends their identities to the compact D1 projections in bounded batch queries. A request with absent data records deduplicated hydration targets in D1 and returns the available state immediately; missing recording/track targets are capped at 50 per request, so the larger read pool does not fan out into one job per candidate.
 
-`source_documents` stores the raw response, request parameters, content hash, and parser version. `credit_observations` stores the raw relationships, including relationships that are not yet eligible for the public palette. This allows taxonomy changes to be reprocessed without fetching MusicBrainz again.
+Direct track evidence and Artist Vocabulary are separate products. Vocabulary never enters `Track.layers`, never raises direct-evidence coverage, and cannot unlock discovery, sound balance, or temperament. Discovery and temperament are derived only from the documented layers already attached to the listening history.
 
-The collector preserves the source, performer, scope, original credit, and production metadata for each relationship. `instrument`, `vocal`, and `vocals` relationships may be promoted to claims when their MBID or name has an explicit catalog mapping. `programming`, `samples`, and `sampled` remain observations.
+## Snapshot hydration
 
-External names are resolved only through explicit aliases or external identifiers. The system does not create slugs through fuzzy text matching. Family mappings are valid for a family claim and do not imply a specific instrument or sound nature.
+The snapshot hydrator is the only runtime component that reads the R2 credit index. A two-minute Cron claims one pending D1 job, calculates its immutable object key, reads one shard, and writes an idempotent projection transaction. Track aliases enqueue a follow-up recording job; this keeps each invocation within the Workers Free CPU budget.
 
-Mapping migrations apply to new promotions. Existing candidates and historical evidence are preserved; publishing a new alias does not silently rewrite prior observations or claims.
+Hydration is offline-only: an R2 miss remains a miss for that published snapshot. There is no live MusicBrainz request path. Snapshot version and evidence provenance remain attached to every materialized result.
 
-## Editorial snapshot
+Only instruments and families resolved by the ETL against the project taxonomy are published. Unresolved credits are excluded from the serving output.
 
-The editorial snapshot is published independently from instrumentation evidence.
-Its review and D1 synchronization process is documented in
-[Editorial publication](editorial-publishing.md).
+## Editorial catalog
 
-## Prepared album manifest
+The editorial snapshot is published independently from listening evidence. Its review and D1 synchronization process is documented in [Editorial publication](editorial-publishing.md).
 
-`catalog/prepared-albums.json` is versioned with the source code and targets concrete releases rather than ambiguous album names. Its entries contain a release MBID, artist, title, editorial genre, and priority.
+External names are resolved only through explicit aliases or identifiers. Family mappings support family-level claims and do not imply a specific instrument or sound nature.
 
-Validate the manifest with:
+## Provenance and refreshes
 
-```sh
-yarn catalog:validate
-```
+Each serving publication has an immutable snapshot version, schema version, manifest hash, source URL, license, and attribution. A refresh builds and validates new Rust ETL artifacts, uploads them under a new R2 prefix, and activates the new snapshot metadata only after publication succeeds.
 
-Generate D1 import SQL with:
-
-```sh
-yarn catalog:sql > /tmp/timbre-palette-albums.sql
-```
-
-Changes to the published album manifest must be accompanied by a migration or another controlled publication step. Editorial changes use the separate [editorial publication flow](editorial-publishing.md) and do not create one migration per review. The scheduled planner processes at most 20 release targets per cycle and tracks target state independently of Queue delivery.
-
-## Demand aggregation
-
-When a visited track has no accepted evidence, the scheduler records only its artist, title, MBID, play weight, and occurrence count in `catalog_demand`. Usernames and complete listening histories are not persisted.
-
-Repeated demand is deduplicated. A cached source document prevents redundant external requests. A `503` response is treated as a transient failure, not as evidence that a recording has no credits.
-
-## Enrichment and publication
-
-Track and release jobs use the same Queue contract. Release jobs use `job_type: "release"`, `target_mbid`, and `stage: "source"`. The D1 outbox is the source of truth; Queue delivery is at-least-once, so processing and writes must be idempotent.
-
-The Worker shares one rate-limited MusicBrainz transport across track and release collection. A release job stores all recoverable stages before completing and can resume after a failure without restarting external collection unnecessarily.
-
-New claims enter the public projection only when they have an explicit catalog mapping and direct recording- or track-level evidence. `catalog_publications` identifies the active revision. The analysis never treats raw observations, unresolved candidates, release context, or pending work as published claims.
-
-Consult the [MusicBrainz API documentation](https://musicbrainz.org/doc/MusicBrainz_API) before changing request frequency, client identification, or the set of collected relationships.
+Existing D1 projections remain associated with their source snapshot. Hydration jobs target one explicit version, which prevents data from different dumps from being combined silently.

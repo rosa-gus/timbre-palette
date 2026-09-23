@@ -1,4 +1,5 @@
 import type { FamilyPresence } from "../api/types";
+import { HERCULES_BEETLE_LINES, HERCULES_BEETLE_SLUG } from "./beetle";
 
 export const ASCII_COLUMNS = 20;
 export const ASCII_ROWS = 17;
@@ -11,6 +12,7 @@ export type AsciiDrawings = Record<string, readonly string[]>;
 
 // Family emblems, rather than claims about a specific recorded instrument.
 const figures: Record<string, AsciiFigure> = {
+  [HERCULES_BEETLE_SLUG]: { lines: HERCULES_BEETLE_LINES },
   "plucked-strings": {
     lines: [
       "         ++++",
@@ -224,6 +226,7 @@ const figures: Record<string, AsciiFigure> = {
 };
 
 export function getAsciiLines(slug: string): string[] {
+  if (slug === HERCULES_BEETLE_SLUG) return [...HERCULES_BEETLE_LINES];
   const figure = figures[slug] ?? {
     lines: Array.from({ length: ASCII_ROWS }, () => ": + : + : + : + : + "),
   };
@@ -239,6 +242,10 @@ export function getAsciiLines(slug: string): string[] {
       " ".repeat(Math.max(0, Math.floor((ASCII_COLUMNS - columns) / 2))) + line
     ).padEnd(ASCII_COLUMNS, " "),
   );
+}
+
+export function hasAsciiDrawing(slug: string): boolean {
+  return Object.hasOwn(figures, slug);
 }
 
 /** Independent specimens, ordered to match their family labels. */

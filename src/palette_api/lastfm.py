@@ -1,13 +1,23 @@
 from collections.abc import Mapping
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Protocol
 from urllib.parse import urlencode
 
-from palette_api.domain import DataSource, ListeningHistory, ListeningPeriod, Track
+from palette_api.domain import (
+    DataSource,
+    ListeningHistory,
+    ListeningPeriod,
+    ProfileDetails,
+    Track,
+)
 
 
 LASTFM_API_URL = "https://ws.audioscrobbler.com/2.0/"
-TOP_TRACK_LIMIT = 50
+# Last.fm returns a ranked page for each period.  The API v2 uses a larger
+# candidate page so the local snapshot can find documented recordings beyond
+# the first 50 ranks without turning every candidate into hydration work.
+TOP_TRACK_LIMIT = 200
 
 
 class LastFmError(Exception):
@@ -115,12 +125,14 @@ class LastFmListeningHistoryProvider:
 
         canonical_username = self._canonical_username(top_tracks, username)
         tracks = self._parse_tracks(top_tracks.get("track", []))
+        profile = await self._get_profile(canonical_username)
         return ListeningHistory(
             username=canonical_username,
             period=period,
             tracks=tracks,
             history_source=DataSource.LASTFM,
             instrumentation_source=DataSource.MOCK,
+            profile=profile,
         )
 
     def _build_top_tracks_url(
@@ -140,6 +152,85 @@ class LastFmListeningHistoryProvider:
             }
         )
         return f"{LASTFM_API_URL}?{query}"
+
+    def _build_user_info_url(self, username: str) -> str:
+        query = urlencode(
+            {
+                "method": "user.getinfo",
+                "user": username,
+                "api_key": self._api_key,
+                "format": "json",
+            }
+        )
+        return f"{LASTFM_API_URL}?{query}"
+
+    async def _get_profile(self, username: str) -> ProfileDetails | None:
+        """Read optional profile metadata without compromising the history read."""
+        try:
+            response = await self._transport.get_json(
+                self._build_user_info_url(username)
+            )
+        except LastFmError:
+            return None
+
+        if response.status_code >= 400 or not isinstance(response.body, Mapping):
+            return None
+        if "error" in response.body:
+            return None
+
+        raw_user = response.body.get("user")
+        if not isinstance(raw_user, Mapping):
+            return None
+        return self._parse_profile(raw_user)
+
+    @classmethod
+    def _parse_profile(cls, raw_user: Mapping[object, object]) -> ProfileDetails:
+        return ProfileDetails(
+            profile_url=cls._optional_text(raw_user.get("url")),
+            avatar_url=cls._parse_avatar_url(raw_user.get("image")),
+            realname=cls._optional_text(raw_user.get("realname")),
+            registered=cls._parse_registered(raw_user.get("registered")),
+        )
+
+    @classmethod
+    def _parse_registered(cls, value: object) -> str | None:
+        """Return Last.fm's registration time as an ISO 8601 UTC string."""
+        timestamp: object = None
+        text: object = value
+        if isinstance(value, Mapping):
+            timestamp = value.get("unixtime")
+            text = value.get("#text") or value.get("text")
+
+        if timestamp is not None:
+            try:
+                unix_time = int(str(timestamp).strip())
+                if unix_time >= 0:
+                    return datetime.fromtimestamp(unix_time, tz=timezone.utc).isoformat()
+            except (OverflowError, OSError, ValueError):
+                pass
+
+        raw_text = cls._optional_text(text)
+        if not raw_text:
+            return None
+        try:
+            parsed = datetime.fromisoformat(raw_text.strip().replace("Z", "+00:00"))
+        except ValueError:
+            return None
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone.utc).isoformat()
+
+    @classmethod
+    def _parse_avatar_url(cls, value: object) -> str | None:
+        candidates: list[str] = []
+        raw_values = value if isinstance(value, list) else [value]
+        for raw_value in raw_values:
+            if isinstance(raw_value, Mapping):
+                raw_value = raw_value.get("#text") or raw_value.get("url")
+            candidate = cls._optional_text(raw_value)
+            if candidate and candidate.startswith(("http://", "https://")):
+                candidates.append(candidate)
+        return candidates[-1] if candidates else None
 
     def _parse_tracks(self, raw_tracks: object) -> tuple[Track, ...]:
         if isinstance(raw_tracks, Mapping):
@@ -173,8 +264,12 @@ class LastFmListeningHistoryProvider:
             artist = LastFmListeningHistoryProvider._optional_text(
                 artist_data.get("name")
             )
+            artist_mbid = LastFmListeningHistoryProvider._optional_text(
+                artist_data.get("mbid")
+            )
         else:
             artist = LastFmListeningHistoryProvider._optional_text(artist_data)
+            artist_mbid = None
 
         try:
             play_count = int(str(raw_track.get("playcount", "0")))
@@ -184,6 +279,13 @@ class LastFmListeningHistoryProvider:
         if not title or not artist or play_count < 0:
             return None
 
+        album = raw_track.get("album")
+        release_mbid = (
+            LastFmListeningHistoryProvider._optional_text(album.get("mbid"))
+            if isinstance(album, Mapping)
+            else None
+        )
+
         return Track(
             title=title,
             artist=artist,
@@ -192,6 +294,8 @@ class LastFmListeningHistoryProvider:
             lastfm_url=LastFmListeningHistoryProvider._optional_text(
                 raw_track.get("url")
             ),
+            release_mbid=release_mbid,
+            artist_mbid=artist_mbid,
         )
 
     @staticmethod
@@ -229,3 +333,11 @@ class LastFmListeningHistoryProvider:
             return None
         normalized = value.strip()
         return normalized or None
+
+    @staticmethod
+    def _optional_nonnegative_int(value: object) -> int | None:
+        try:
+            normalized = int(str(value))
+        except (TypeError, ValueError):
+            return None
+        return normalized if normalized >= 0 else None

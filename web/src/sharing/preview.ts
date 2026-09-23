@@ -3,6 +3,7 @@ import type { FamilyPresence, PaletteReport } from "../api/types";
 import { createShareImage } from "./share";
 import { mountAsciiEditor } from "./editor";
 import type { AsciiDrawings } from "./ascii";
+import { HERCULES_BEETLE_ASCII, HERCULES_BEETLE_SLUG } from "./beetle";
 
 function family(slug: string, name: string, share: number, color: string): FamilyPresence {
   return {
@@ -36,7 +37,7 @@ const base: PaletteReport = {
     catalog_version: null, image_catalog_version: "preview",
     coverage_tracks: 0.5, coverage_plays: 0.6,
     recording_status_counts: {
-      resolved: 20, pending_enrichment: 0, ambiguous: 0,
+      resolved: 20, unresolved_identity: 0, pending_enrichment: 0, ambiguous: 0,
       resolved_without_evidence: 20, transient_failure: 0, terminal_failure: 0,
     },
     notice: "Dados demonstrativos para visualizar o retrato.",
@@ -112,7 +113,19 @@ async function renderPreview(): Promise<void> {
     section.append(heading, image, download);
     return { section, image, download };
   });
-  container.replaceChildren(...cards.map((card) => card.section));
+  const beetleSection = document.createElement("section");
+  const beetleHeading = document.createElement("h2");
+  beetleHeading.textContent = "Avatar do exemplo · Besouro";
+  const beetleFrame = document.createElement("div");
+  beetleFrame.className = "beetle-avatar-frame";
+  const beetleArt = document.createElement("pre");
+  beetleArt.className = "beetle-avatar";
+  beetleArt.setAttribute("role", "img");
+  beetleArt.setAttribute("aria-label", "ascii de um besouro");
+  beetleArt.textContent = HERCULES_BEETLE_ASCII;
+  beetleFrame.append(beetleArt);
+  beetleSection.append(beetleHeading, beetleFrame);
+  container.replaceChildren(beetleSection, ...cards.map((card) => card.section));
   const gallery = container;
   async function refresh(): Promise<void> {
     const current = ++revision;
@@ -134,12 +147,16 @@ async function renderPreview(): Promise<void> {
   const editor = document.querySelector<HTMLElement>("#ascii-editor");
   if (editor) {
     const allFamilies = [...new Map([...families, ...otherFamilies].map((item) => [item.slug, item])).values()];
+    allFamilies.push(family(HERCULES_BEETLE_SLUG, "Besouro Hércules · avatar", 1, "#F29191"));
     drawings = mountAsciiEditor(editor, allFamilies, (updated) => {
       drawings = updated;
+      beetleArt.textContent = (updated[HERCULES_BEETLE_SLUG] ?? HERCULES_BEETLE_ASCII.split("\n")).join("\n");
+      if (editor.querySelector<HTMLSelectElement>("#editor-family")?.value === HERCULES_BEETLE_SLUG) return;
       revision++;
       clearTimeout(timer);
       timer = setTimeout(() => { void refresh(); }, 150);
     });
+    beetleArt.textContent = (drawings[HERCULES_BEETLE_SLUG] ?? HERCULES_BEETLE_ASCII.split("\n")).join("\n");
   }
   window.addEventListener("pagehide", () => {
     revision++;

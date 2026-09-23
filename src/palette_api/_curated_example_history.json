@@ -1,0 +1,675 @@
+{
+  "version": "curated-example-v2",
+  "target_recordings": 15,
+  "max_recordings_per_artist": 3,
+  "period_multipliers": {
+    "7day": 1,
+    "1month": 2,
+    "3month": 5,
+    "6month": 8,
+    "12month": 14,
+    "overall": 24
+  },
+  "vocabulary_snapshot": {
+    "snapshot_version": "20260912-002318",
+    "schema_version": "musicbrainz-instrument-credits-serving-v2",
+    "manifest_hash": "81cfe35626279bacc172fe1ea64c29f9a4a26db200b13d1beb6d39ca9c279e3c",
+    "object_prefix": "musicbrainz/instrument-credits/v2",
+    "methodology_version": "artist-vocabulary-candidate-2"
+  },
+  "artist_vocabulary": [
+    {
+      "artist_mbid": "1ba1d493-7114-45e2-b163-a36d49a0c065",
+      "instrument_slug": "piano",
+      "instrument_name": "Piano",
+      "family_slug": "acoustic-keys",
+      "family_name": "Teclas acústicas",
+      "distinct_recordings": 3,
+      "documented_recordings": 1915,
+      "prevalence": 0.001566579634464752,
+      "evidence_quality": 1.0,
+      "source_scope": "recording"
+    },
+    {
+      "artist_mbid": "e520459c-dff4-491d-a6e4-c97be35e0044",
+      "instrument_slug": "sampler",
+      "instrument_name": "Sampler",
+      "family_slug": "sampled-sounds",
+      "family_name": "Sons sampleados",
+      "distinct_recordings": 1,
+      "documented_recordings": 30,
+      "prevalence": 0.03333333333333333,
+      "evidence_quality": 1.0,
+      "source_scope": "recording"
+    },
+    {
+      "artist_mbid": "fac55e3c-d459-45ed-9f9f-f5078d3b3423",
+      "instrument_slug": "piano",
+      "instrument_name": "Piano",
+      "family_slug": "acoustic-keys",
+      "family_name": "Teclas acústicas",
+      "distinct_recordings": 15,
+      "documented_recordings": 60,
+      "prevalence": 0.25,
+      "evidence_quality": 1.0,
+      "source_scope": "recording"
+    },
+    {
+      "artist_mbid": "49b6e333-f56f-4da9-944c-15a6deee8ada",
+      "instrument_slug": "acoustic-guitar",
+      "instrument_name": "Violão",
+      "family_slug": "plucked-strings",
+      "family_name": "Cordas dedilhadas",
+      "distinct_recordings": 4,
+      "documented_recordings": 8,
+      "prevalence": 0.5,
+      "evidence_quality": 1.0,
+      "source_scope": "recording"
+    }
+  ],
+  "recordings": [
+    {
+      "mbid": "0d8fb9af-f181-4643-93cd-0676a5d974ee",
+      "title": "Buggin’ Out",
+      "artist": "A Tribe Called Quest",
+      "artist_mbid": "9689aa5a-4471-4fb4-9721-07cecda0fa9f",
+      "layers": []
+    },
+    {
+      "mbid": "4bd3726c-c926-4637-b3b2-b5a5bf5417bf",
+      "title": "Check the Rhime",
+      "artist": "A Tribe Called Quest",
+      "artist_mbid": "9689aa5a-4471-4fb4-9721-07cecda0fa9f",
+      "layers": []
+    },
+    {
+      "mbid": "57c74bef-8c6b-4316-aaa4-8e8e46d759f1",
+      "title": "Excursions",
+      "artist": "A Tribe Called Quest",
+      "artist_mbid": "9689aa5a-4471-4fb4-9721-07cecda0fa9f",
+      "layers": []
+    },
+    {
+      "mbid": "c6ec7923-fae4-4d68-b906-37e484115c0a",
+      "title": "Rap Promoter",
+      "artist": "A Tribe Called Quest",
+      "artist_mbid": "9689aa5a-4471-4fb4-9721-07cecda0fa9f",
+      "layers": []
+    },
+    {
+      "mbid": "e1217d4b-e353-4d0b-b499-34232dc9f29f",
+      "title": "What?",
+      "artist": "A Tribe Called Quest",
+      "artist_mbid": "9689aa5a-4471-4fb4-9721-07cecda0fa9f",
+      "layers": []
+    },
+    {
+      "mbid": "77b674e0-dc25-4098-a111-e581c78df4ee",
+      "title": "BETTER THINGS",
+      "artist": "BROCKHAMPTON",
+      "artist_mbid": "3ac96b4c-4f42-48c8-b793-84dbf54d7ac6",
+      "layers": []
+    },
+    {
+      "mbid": "91c3a976-cce3-4da4-bd61-a1e7c5779413",
+      "title": "GINGER",
+      "artist": "BROCKHAMPTON",
+      "artist_mbid": "3ac96b4c-4f42-48c8-b793-84dbf54d7ac6",
+      "layers": [
+        {
+          "slug": "voice",
+          "name": "Voz",
+          "family_slug": "voice",
+          "family_name": "Voz",
+          "nature": "acoustic",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "family"
+        }
+      ]
+    },
+    {
+      "mbid": "ed0535f9-6c9a-41e0-b56c-d1ce7b99fc6a",
+      "title": "SUGAR",
+      "artist": "BROCKHAMPTON",
+      "artist_mbid": "3ac96b4c-4f42-48c8-b793-84dbf54d7ac6",
+      "layers": [
+        {
+          "slug": "plucked-strings",
+          "name": "Cordas dedilhadas",
+          "family_slug": "plucked-strings",
+          "family_name": "Cordas dedilhadas",
+          "nature": "acoustic",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "family"
+        }
+      ]
+    },
+    {
+      "mbid": "de78a3dc-cc46-41e4-8d3f-6061a35933de",
+      "title": "SUMMER",
+      "artist": "BROCKHAMPTON",
+      "artist_mbid": "3ac96b4c-4f42-48c8-b793-84dbf54d7ac6",
+      "layers": []
+    },
+    {
+      "mbid": "7f4ec7b3-ce0d-4f41-836e-9ae46e7833c1",
+      "title": "What Are You Doing the Rest of Your Life?",
+      "artist": "Bill Evans",
+      "artist_mbid": "8247a3f2-3a8e-4256-b322-6c57b03a4e36",
+      "layers": [
+        {
+          "slug": "piano",
+          "name": "Piano",
+          "family_slug": "acoustic-keys",
+          "family_name": "Teclas acústicas",
+          "nature": "acoustic",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "instrument"
+        },
+        {
+          "slug": "bowed-strings",
+          "name": "Cordas friccionadas",
+          "family_slug": "bowed-strings",
+          "family_name": "Cordas friccionadas",
+          "nature": "acoustic",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "family"
+        },
+        {
+          "slug": "drums",
+          "name": "Bateria",
+          "family_slug": "percussion",
+          "family_name": "Percussão",
+          "nature": "acoustic",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "instrument"
+        }
+      ]
+    },
+    {
+      "mbid": "8933e969-442c-4b44-9ab1-34cf62912243",
+      "title": "Wet Hands",
+      "artist": "C418",
+      "artist_mbid": "fac55e3c-d459-45ed-9f9f-f5078d3b3423",
+      "layers": [
+        {
+          "slug": "piano",
+          "name": "Piano",
+          "family_slug": "acoustic-keys",
+          "family_name": "Teclas acústicas",
+          "nature": "acoustic",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "instrument"
+        }
+      ]
+    },
+    {
+      "mbid": "4a602021-f564-43b0-998e-c8cce2e64420",
+      "title": "Alvorada",
+      "artist": "Cartola",
+      "artist_mbid": "7c743881-aed4-47d4-93d5-9fdd6e2904bb",
+      "layers": []
+    },
+    {
+      "mbid": "3a64d7ea-c9e6-463f-87ea-2155097adc6e",
+      "title": "Disfarça e chora",
+      "artist": "Cartola",
+      "artist_mbid": "7c743881-aed4-47d4-93d5-9fdd6e2904bb",
+      "layers": []
+    },
+    {
+      "mbid": "51099820-16d7-43bb-a909-0a069a828352",
+      "title": "Ordenes e farei",
+      "artist": "Cartola",
+      "artist_mbid": "7c743881-aed4-47d4-93d5-9fdd6e2904bb",
+      "layers": [
+        {
+          "slug": "voice",
+          "name": "Voz",
+          "family_slug": "voice",
+          "family_name": "Voz",
+          "nature": "acoustic",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "family"
+        }
+      ]
+    },
+    {
+      "mbid": "d138b8e2-b789-429d-9d8a-939b8e669ba6",
+      "title": "Preciso me Encontrar",
+      "artist": "Cartola",
+      "artist_mbid": "7c743881-aed4-47d4-93d5-9fdd6e2904bb",
+      "layers": []
+    },
+    {
+      "mbid": "b7973aed-6463-427a-a364-d50677f93bca",
+      "title": "Silêncio de um Cipreste",
+      "artist": "Cartola",
+      "artist_mbid": "7c743881-aed4-47d4-93d5-9fdd6e2904bb",
+      "layers": []
+    },
+    {
+      "mbid": "550c472a-1f41-461e-8d33-b6b29dc7f917",
+      "title": "It’s Always You",
+      "artist": "Chet Baker",
+      "artist_mbid": "1ba1d493-7114-45e2-b163-a36d49a0c065",
+      "layers": [
+        {
+          "slug": "brass",
+          "name": "Metais",
+          "family_slug": "brass",
+          "family_name": "Metais",
+          "nature": "acoustic",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "family"
+        },
+        {
+          "slug": "piano",
+          "name": "Piano",
+          "family_slug": "acoustic-keys",
+          "family_name": "Teclas acústicas",
+          "nature": "acoustic",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "instrument"
+        },
+        {
+          "slug": "drums",
+          "name": "Bateria",
+          "family_slug": "percussion",
+          "family_name": "Percussão",
+          "nature": "acoustic",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "instrument"
+        },
+        {
+          "slug": "voice",
+          "name": "Voz",
+          "family_slug": "voice",
+          "family_name": "Voz",
+          "nature": "acoustic",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "family"
+        }
+      ]
+    },
+    {
+      "mbid": "c954a317-0690-4749-abcb-39f74423509e",
+      "title": "Solo",
+      "artist": "Frank Ocean",
+      "artist_mbid": "e520459c-dff4-491d-a6e4-c97be35e0044",
+      "layers": [
+        {
+          "slug": "electric-keys",
+          "name": "Teclas elétricas e eletrônicas",
+          "family_slug": "electric-keys",
+          "family_name": "Teclas elétricas e eletrônicas",
+          "nature": "hybrid",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "family"
+        },
+        {
+          "slug": "voice",
+          "name": "Voz",
+          "family_slug": "voice",
+          "family_name": "Voz",
+          "nature": "acoustic",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "family"
+        }
+      ]
+    },
+    {
+      "mbid": "89039afe-bc2c-460e-b22c-f117d77c70f7",
+      "title": "Rain in My Heart",
+      "artist": "Frank Sinatra",
+      "artist_mbid": "197450cd-0124-4164-b723-3c22dd16494d",
+      "layers": [
+        {
+          "slug": "bowed-strings",
+          "name": "Cordas friccionadas",
+          "family_slug": "bowed-strings",
+          "family_name": "Cordas friccionadas",
+          "nature": "acoustic",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "family"
+        },
+        {
+          "slug": "brass",
+          "name": "Metais",
+          "family_slug": "brass",
+          "family_name": "Metais",
+          "nature": "acoustic",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "family"
+        },
+        {
+          "slug": "percussion",
+          "name": "Percussão",
+          "family_slug": "percussion",
+          "family_name": "Percussão",
+          "nature": "acoustic",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "family"
+        },
+        {
+          "slug": "drums",
+          "name": "Bateria",
+          "family_slug": "percussion",
+          "family_name": "Percussão",
+          "nature": "acoustic",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "instrument"
+        },
+        {
+          "slug": "cello",
+          "name": "Violoncelo",
+          "family_slug": "bowed-strings",
+          "family_name": "Cordas friccionadas",
+          "nature": "acoustic",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "instrument"
+        },
+        {
+          "slug": "plucked-strings",
+          "name": "Cordas dedilhadas",
+          "family_slug": "plucked-strings",
+          "family_name": "Cordas dedilhadas",
+          "nature": "acoustic",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "family"
+        },
+        {
+          "slug": "piano",
+          "name": "Piano",
+          "family_slug": "acoustic-keys",
+          "family_name": "Teclas acústicas",
+          "nature": "acoustic",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "instrument"
+        },
+        {
+          "slug": "voice",
+          "name": "Voz",
+          "family_slug": "voice",
+          "family_name": "Voz",
+          "nature": "acoustic",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "family"
+        }
+      ]
+    },
+    {
+      "mbid": "3d78c4b7-7952-4068-9589-d9e537a72178",
+      "title": "YUKON (INTERLUDE)",
+      "artist": "Joji",
+      "artist_mbid": "8264722b-df00-467a-858e-5c97cda169c9",
+      "layers": [
+        {
+          "slug": "voice",
+          "name": "Voz",
+          "family_slug": "voice",
+          "family_name": "Voz",
+          "nature": "acoustic",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "family"
+        }
+      ]
+    },
+    {
+      "mbid": "9839b527-a36d-4efb-8682-526601be5131",
+      "title": "Sometimes",
+      "artist": "My Bloody Valentine",
+      "artist_mbid": "8ca01f46-53ac-4af2-8516-55a909c0905e",
+      "layers": [
+        {
+          "slug": "plucked-strings",
+          "name": "Cordas dedilhadas",
+          "family_slug": "plucked-strings",
+          "family_name": "Cordas dedilhadas",
+          "nature": "acoustic",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "family"
+        },
+        {
+          "slug": "electric-bass",
+          "name": "Baixo elétrico",
+          "family_slug": "plucked-strings",
+          "family_name": "Cordas dedilhadas",
+          "nature": "electric",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "instrument"
+        },
+        {
+          "slug": "drums",
+          "name": "Bateria",
+          "family_slug": "percussion",
+          "family_name": "Percussão",
+          "nature": "acoustic",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "instrument"
+        },
+        {
+          "slug": "sampler",
+          "name": "Sampler",
+          "family_slug": "sampled-sounds",
+          "family_name": "Sons sampleados",
+          "nature": "sampled",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "instrument"
+        },
+        {
+          "slug": "voice",
+          "name": "Voz",
+          "family_slug": "voice",
+          "family_name": "Voz",
+          "nature": "acoustic",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "family"
+        }
+      ]
+    },
+    {
+      "mbid": "9969a91b-c015-420c-bbd6-87d30854df43",
+      "title": "I’ll Never Smile Again",
+      "artist": "Tommy Dorsey and His Orchestra",
+      "artist_mbid": "1e8f0ed0-a67f-4203-97a6-add12b4b1ab3",
+      "layers": [
+        {
+          "slug": "brass",
+          "name": "Metais",
+          "family_slug": "brass",
+          "family_name": "Metais",
+          "nature": "acoustic",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "family"
+        },
+        {
+          "slug": "piano",
+          "name": "Piano",
+          "family_slug": "acoustic-keys",
+          "family_name": "Teclas acústicas",
+          "nature": "acoustic",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "instrument"
+        },
+        {
+          "slug": "woodwinds",
+          "name": "Madeiras",
+          "family_slug": "woodwinds",
+          "family_name": "Madeiras",
+          "nature": "acoustic",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "family"
+        },
+        {
+          "slug": "drums",
+          "name": "Bateria",
+          "family_slug": "percussion",
+          "family_name": "Percussão",
+          "nature": "acoustic",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "instrument"
+        },
+        {
+          "slug": "bowed-strings",
+          "name": "Cordas friccionadas",
+          "family_slug": "bowed-strings",
+          "family_name": "Cordas friccionadas",
+          "nature": "acoustic",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "family"
+        },
+        {
+          "slug": "plucked-strings",
+          "name": "Cordas dedilhadas",
+          "family_slug": "plucked-strings",
+          "family_name": "Cordas dedilhadas",
+          "nature": "acoustic",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "family"
+        },
+        {
+          "slug": "voice",
+          "name": "Voz",
+          "family_slug": "voice",
+          "family_name": "Voz",
+          "nature": "acoustic",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "family"
+        }
+      ]
+    },
+    {
+      "mbid": "fb010874-ff33-45c9-b2f6-4afe146096b0",
+      "title": "GONE, GONE / THANK YOU",
+      "artist": "Tyler, The Creator",
+      "artist_mbid": "f6beac20-5dfe-4d1f-ae02-0b0a740aafd6",
+      "layers": [
+        {
+          "slug": "voice",
+          "name": "Voz",
+          "family_slug": "voice",
+          "family_name": "Voz",
+          "nature": "acoustic",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "family"
+        }
+      ]
+    },
+    {
+      "mbid": "a637d02c-d53c-4db7-b834-3dff0e33eb82",
+      "title": "See you soon",
+      "artist": "Wisp",
+      "artist_mbid": "ca02d886-40fc-4bc9-9785-5c97eb37acaa",
+      "layers": [
+        {
+          "slug": "voice",
+          "name": "Voz",
+          "family_slug": "voice",
+          "family_name": "Voz",
+          "nature": "acoustic",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "family"
+        }
+      ]
+    },
+    {
+      "mbid": "28d11aed-bd08-486c-bd5e-f0188d9475ad",
+      "title": "Music",
+      "artist": "underscores",
+      "artist_mbid": "ab1a3f85-e0ea-470a-af5c-175447ae774c",
+      "layers": [
+        {
+          "slug": "voice",
+          "name": "Voz",
+          "family_slug": "voice",
+          "family_name": "Voz",
+          "nature": "acoustic",
+          "role": "",
+          "confidence": "documented",
+          "prominence": 1.0,
+          "claim_level": "family"
+        }
+      ]
+    },
+    {
+      "mbid": "c49173b2-3901-4c45-b37a-2a716cdbefb2",
+      "title": "Béradêro",
+      "artist": "Chico César",
+      "artist_mbid": "49b6e333-f56f-4da9-944c-15a6deee8ada",
+      "layers": []
+    }
+  ]
+}

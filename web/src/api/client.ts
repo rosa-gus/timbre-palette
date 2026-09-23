@@ -2,6 +2,8 @@ import type {
   InstrumentResource,
   ListeningPeriod,
   PaletteReport,
+  ProfileSummary,
+  ProfileAnalysisV2,
 } from "./types";
 import { storageKey } from "../storage";
 
@@ -9,10 +11,12 @@ const API_BASE_URL = (
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8787"
 ).replace(/\/$/, "");
 
-export const catalogStorageKey = storageKey("catalog", "last-seen");
+// v2 stats count the active snapshot projection; do not compare them with
+// values cached under the former catalog semantics.
+export const catalogStorageKey = storageKey("catalog", "last-seen", "v2");
 
 export async function getCatalogSize(signal: AbortSignal): Promise<number> {
-  const response = await fetch(`${API_BASE_URL}/v1/catalog/stats`, { signal });
+  const response = await fetch(`${API_BASE_URL}/v2/catalog/stats`, { signal });
   if (!response.ok) throw new Error("Catalog statistics unavailable");
   const value: unknown = await response.json();
   if (!isRecord(value) || !Number.isSafeInteger(value.recordings_with_evidence) ||
@@ -43,6 +47,24 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
+}
+
+function isOptionalText(value: unknown): value is string | null | undefined {
+  return value === undefined || value === null || typeof value === "string";
+}
+
+function isProfileSummary(value: unknown): value is ProfileSummary {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.username === "string" &&
+    typeof value.period === "string" &&
+    isFiniteNumber(value.tracks_analyzed) &&
+    isFiniteNumber(value.total_plays) &&
+    isOptionalText(value.profile_url) &&
+    isOptionalText(value.avatar_url) &&
+    isOptionalText(value.realname) &&
+    isOptionalText(value.registered)
+  );
 }
 
 function isAvailability(value: unknown): boolean {
@@ -81,11 +103,7 @@ function isPaletteReport(value: unknown): value is PaletteReport {
   const families = value.families;
   const recordings = value.recordings;
   return (
-    isRecord(profile) &&
-    typeof profile.username === "string" &&
-    typeof profile.period === "string" &&
-    isFiniteNumber(profile.tracks_analyzed) &&
-    isFiniteNumber(profile.total_plays) &&
+    isProfileSummary(profile) &&
     isRecord(analysis) &&
     (analysis.status === "partial" ||
       analysis.status === "ready" ||
@@ -119,6 +137,76 @@ function isPaletteReport(value: unknown): value is PaletteReport {
         typeof recording.title === "string" &&
         typeof recording.artist === "string",
     )
+  );
+}
+
+function isProfileAnalysisV2(value: unknown): value is ProfileAnalysisV2 {
+  if (!isRecord(value)) return false;
+  const snapshot = value.snapshot;
+  const hydration = value.hydration;
+  const vocabulary = value.artist_vocabulary;
+  const reach = isRecord(vocabulary) ? vocabulary.reach : null;
+  const vocabularyAvailability = isRecord(vocabulary) ? vocabulary.availability : null;
+  const availableViews = value.available_views;
+  const defaultView = value.default_view;
+  return (
+    typeof value.is_example === "boolean" &&
+    isOptionalText(value.example_id) &&
+    isProfileSummary(value.profile) &&
+    isRecord(snapshot) &&
+    typeof snapshot.snapshot_version === "string" &&
+    typeof snapshot.schema_version === "string" &&
+    typeof snapshot.manifest_hash === "string" &&
+    typeof snapshot.object_prefix === "string" &&
+    typeof snapshot.methodology_version === "string" &&
+    isPaletteReport(value.track_palette) &&
+    isRecord(vocabulary) &&
+    ["available", "pending", "insufficient"].includes(vocabulary.status as string) &&
+    typeof vocabulary.notice === "string" &&
+    typeof vocabulary.methodology_version === "string" &&
+    isRecord(vocabularyAvailability) &&
+    typeof vocabularyAvailability.reason === "string" &&
+    isRecord(reach) &&
+    ["track_reach", "play_reach", "qualified_artists", "total_artists",
+      "qualified_tracks", "total_tracks", "qualified_plays", "total_plays",
+      "unresolved_artists", "unresolved_tracks"].every((key) => isFiniteNumber(reach[key])) &&
+    Array.isArray(vocabulary.families) &&
+    vocabulary.families.every((family) => isRecord(family) &&
+      typeof family.name === "string" && isFiniteNumber(family.share) &&
+      isFiniteNumber(family.supporting_artists) && Array.isArray(family.instruments) &&
+      (family.tone === null || (isRecord(family.tone) &&
+        typeof family.tone.shadow === "string" &&
+        typeof family.tone.highlight === "string")) &&
+      family.instruments.every((instrument) => isRecord(instrument) &&
+        typeof instrument.name === "string" &&
+        isFiniteNumber(instrument.distinct_recordings) &&
+        isRecord(instrument.evidence) &&
+        (instrument.evidence.scope === "recording" || instrument.evidence.scope === "track"))) &&
+    Array.isArray(vocabulary.featured_artists) &&
+    vocabulary.featured_artists.length <= 3 &&
+    vocabulary.featured_artists.every((artist) => isRecord(artist) &&
+      typeof artist.mbid === "string" && typeof artist.name === "string" &&
+      Array.isArray(artist.families) && artist.families.every((family) =>
+        isRecord(family) && typeof family.slug === "string" &&
+        typeof family.name === "string" && Array.isArray(family.instruments) &&
+        family.instruments.every((name) => typeof name === "string") &&
+        (family.tone === null || (isRecord(family.tone) &&
+          typeof family.tone.shadow === "string" &&
+          typeof family.tone.highlight === "string")))) &&
+    Array.isArray(availableViews) &&
+    availableViews.every((view) =>
+      view === "track_palette" || view === "artist_vocabulary",
+    ) &&
+    (defaultView === null ||
+      defaultView === "track_palette" ||
+      defaultView === "artist_vocabulary") &&
+    isRecord(hydration) &&
+    (hydration.status === "complete" || hydration.status === "pending") &&
+    [
+      "pending_recordings",
+      "pending_artists",
+      "pending_aliases",
+    ].every((key) => isFiniteNumber(hydration[key]))
   );
 }
 
@@ -193,21 +281,42 @@ export function normalizeUsername(value: string): string {
   return input.replace(/^@+/, "").replace(/\s+/g, "");
 }
 
-export async function getPalette(
+export async function getAnalysis(
   username: string,
   period: ListeningPeriod,
   signal: AbortSignal,
-): Promise<PaletteReport> {
+): Promise<ProfileAnalysisV2> {
   const encodedUsername = encodeURIComponent(username);
   const result = await getJson<unknown>(
-    `/v1/profiles/${encodedUsername}/palette?period=${encodeURIComponent(period)}`,
+    `/v2/profiles/${encodedUsername}/analysis?period=${encodeURIComponent(period)}`,
     signal,
   );
-  if (!isPaletteReport(result.data)) {
+  if (!isProfileAnalysisV2(result.data)) {
     throw new PaletteApiError(
-      "A API devolveu uma paleta incompatível com o contrato.",
+      "A API devolveu uma análise incompatível com o contrato.",
       result.response.status,
       "invalid_report",
+    );
+  }
+  return result.data;
+}
+
+export async function getExampleAnalysis(
+  period: ListeningPeriod,
+  signal: AbortSignal,
+  sampleId?: string,
+): Promise<ProfileAnalysisV2> {
+  const params = new URLSearchParams({ period });
+  if (sampleId) params.set("sample_id", sampleId);
+  const result = await getJson<unknown>(
+    `/v2/examples/analysis?${params.toString()}`,
+    signal,
+  );
+  if (!isProfileAnalysisV2(result.data) || !result.data.is_example) {
+    throw new PaletteApiError(
+      "A API devolveu uma análise de exemplo incompatível com o contrato.",
+      result.response.status,
+      "invalid_example_report",
     );
   }
   return result.data;
@@ -218,7 +327,7 @@ export async function getInstrument(
   signal: AbortSignal,
 ): Promise<InstrumentResource> {
   const result = await getJson<InstrumentResource>(
-    `/v1/instruments/${encodeURIComponent(slug)}`,
+    `/v2/instruments/${encodeURIComponent(slug)}`,
     signal,
   );
   if (!isInstrumentResource(result.data)) {

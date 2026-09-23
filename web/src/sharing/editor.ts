@@ -33,7 +33,7 @@ export function mountAsciiEditor(
     <h2>Editor de desenhos · 20 × 17</h2>
     <p>Clique ou arraste para desenhar. O eixo central ajuda a alinhar as duas metades. As edições ficam salvas neste navegador; copie as linhas para incorporá-las ao código.</p>
     <div class="editor-toolbar">
-      <label>Família<select id="editor-family"></select></label>
+      <label>Desenho<select id="editor-family"></select></label>
       <label>Caractere<input id="editor-character" class="editor-character" value="#" maxlength="1" aria-label="Caractere para desenhar" /></label>
       <label class="editor-toggle"><input id="editor-erase" type="checkbox" /> Borracha</label>
       <label class="editor-toggle"><input id="editor-mirror" type="checkbox" /> Espelhar horizontalmente</label>

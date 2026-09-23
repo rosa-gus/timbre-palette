@@ -1,7 +1,7 @@
 # Backend Tooling
 
-Offline utilities for editorial image processing, static asset publication, and
-album-manifest preparation. No tool runs during an API request.
+Offline utilities for editorial image processing and static asset publication.
+No tool runs during an API request.
 
 ## Image processing
 
@@ -49,10 +49,21 @@ deterministic result.
 
 Video output requires FFmpeg with the `libvpx-vp9` encoder:
 
+The single home hero is cropped to the panel's 16:9 frame and scaled to
+760 × 428 before treatment. The same output is used in idle and loading states.
+This avoids encoding pixels that the panel will not display:
+
+The input below is the retained original excerpt for regeneration; the app
+loads only the generated `chladni-hero.webm`.
+
 ```sh
+ffmpeg -i assets/chladni-intro.mp4 \
+  -vf "crop=3840:2160:128:0,scale=760:428:flags=lanczos" \
+  -an -c:v libvpx-vp9 -crf 10 -b:v 0 -deadline realtime -cpu-used 8 \
+  /tmp/chladni-hero-760.webm
 python3 src/palette_api/tools/treat_instrument.py \
-  assets/flower-intro.mp4 assets/treated/flower-intro.webm \
-  --poster assets/treated/flower-intro.png
+  /tmp/chladni-hero-760.webm assets/treated/chladni-hero.webm \
+  --poster assets/treated/chladni-hero.png --width 760 --fps 20 --crf 32
 ```
 
 Video-specific options are `--fps`, `--duration`, `--crf`, and `--poster`.
@@ -86,19 +97,24 @@ The API returns absolute image URLs. Set the non-secret
 uses `http://127.0.0.1:5173/` and production uses the configured GitHub Pages
 base.
 
-## Album manifest
+## MusicBrainz offline credit index
 
-`prepare_albums.py` validates `catalog/prepared-albums.json` and can emit SQL
-for D1:
+The offline ETL is a standalone Rust materializer. It scans the dump once,
+aggregates evidence and Artist Vocabulary, and emits serving shards for R2:
 
 ```sh
-yarn catalog:validate
-yarn catalog:sql > /tmp/timbre-palette-albums.sql
+cargo run --release --manifest-path etl/musicbrainz-etl/Cargo.toml -- \
+  /data/musicbrainz/mbdump.tar.bz2 \
+  /data/musicbrainz/staging/20260912-002318 \
+  --snapshot-version 20260912-002318
 ```
 
-Each entry must contain a unique release MBID, artist, title, and integer
-priority. Optional genre values are normalized during validation. SQL output
-uses an idempotent upsert for `prepared_album_targets`.
+The staging materializer writes projected JSONL tables, a schema-versioned
+manifest, and a `LICENSE-MUSICBRAINZ.txt` notice. Use its `aggregate` and
+`serve` subcommands to produce the uploadable artifact.
+
+See [MusicBrainz credit index](../../../docs/musicbrainz-credit-index.md) for
+the hydration contract and provenance.
 
 ## Editorial publication
 
@@ -124,42 +140,3 @@ network requests or run during an API request.
 
 Home-page media credits are maintained in
 [assets/CREDITS.md](../../../assets/CREDITS.md).
-
-## Enrichment recovery
-
-After deploying the work-unit consumer, generate a reviewed replay for jobs
-that ended only because Queue delivery retries were exhausted:
-
-```sh
-.venv/bin/python -m palette_api.tools.requeue_enrichment \
-  --reason retry_exhausted --limit 20 > /tmp/timbre-palette-requeue.sql
-wrangler d1 execute DB --remote \
-  --file=/tmp/timbre-palette-requeue.sql --yes -c wrangler.jsonc
-```
-
-Omit `--limit` only after validating the canary. The command increments each
-job generation, invalidates old deliveries, and leaves the new work for the
-scheduled outbox sweep to group into units of up to ten jobs.
-
-The generated SQL intentionally does not include `BEGIN`/`COMMIT`: the D1
-Wrangler execution path rejects explicit transaction delimiters. Statements
-are applied independently, so inspect the generated file and run a small
-canary before replaying the full set.
-
-For a v3 unit quarantined by the DLQ, add `--include-recovery-units`; this
-reopens only `recovery_required` units and keeps already completed items final.
-
-If a replay was performed with the first work-unit implementation and jobs
-remain `pending` while their work units are `completed`, deploy the corrected
-enricher first, then generate a repair file:
-
-```sh
-.venv/bin/python -m palette_api.tools.repair_enrichment_work_units \
-  > /tmp/timbre-palette-repair.sql
-wrangler d1 execute DB --remote \
-  --file=/tmp/timbre-palette-repair.sql --yes -c wrangler.jsonc
-```
-
-The repair detaches only pending jobs whose work-unit generation does not
-match the job generation. The next scheduled sweep groups them into fresh
-work units and dispatches them with the correct generation.

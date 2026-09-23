@@ -16,6 +16,7 @@
   height: min(840px, calc(100dvh - 48px));
   padding: 32px;
   border: 1px solid var(--line-strong);
+  border-radius: 2px;
   background: var(--panel);
   transform: translate(-50%, -50%);
 }
@@ -271,6 +272,12 @@
 .instrument-message {
   color: var(--muted);
   margin: 0;
+}
+.instrument-loading,
+.instrument-loading-note {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
 }
 @media (max-width: 800px) {
   .ui-dialog-content {

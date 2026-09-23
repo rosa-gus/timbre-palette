@@ -1,0 +1,36 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "timbre-palette-hydrator",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-20",
+  "triggers": {
+    "crons": ["*/2 * * * *"]
+  },
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "head_sampling_rate": 1
+    }
+  },
+  "vars": {
+    "R2_USAGE_PERIOD": "2026-09",
+    "R2_READ_LIMIT": "9000000",
+    "R2_DAILY_READ_LIMIT": "720",
+    "D1_DAILY_WRITE_LIMIT": "50000"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "timbre-palette",
+      "database_id": "32fa319e-eeb6-4b3b-b981-ddcc92d75605",
+      "migrations_dir": "../../migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "CREDIT_INDEX",
+      "bucket_name": "timbre-palette-musicbrainz-credit-index",
+      "jurisdiction": "eu"
+    }
+  ]
+}

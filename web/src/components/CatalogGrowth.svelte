@@ -36,7 +36,7 @@
       <div use:alignStem>
         <p class="catalog-title">Nosso catálogo cresceu {percentage}%.</p>
         <p>Mais {added.toLocaleString("pt-BR")} gravações com instrumentos documentados desde sua última visita neste navegador.</p>
-        <p>Ao consultar um perfil, você ajuda a enriquecer o catálogo: gravações ainda sem evidências podem ser pesquisadas em segundo plano. As novas informações ficam disponíveis para todos nas próximas visitas.</p>
+        <p>Ao consultar um perfil, faixas e artistas ainda não materializados podem ser consultados em segundo plano no snapshot MusicBrainz publicado. Novas evidências podem aparecer em uma visita futura.</p>
       </div>
     </Tooltip.Content>
   </Tooltip.Root>

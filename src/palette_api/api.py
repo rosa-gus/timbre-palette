@@ -1,16 +1,15 @@
 import json
 from typing import Annotated
+from uuid import uuid4
 
 from collections.abc import Mapping
 
 from fastapi import Depends, FastAPI, Path, Query, Request, Response
 from fastapi.exceptions import RequestValidationError
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from palette_api.application import (
     EmptyListeningHistoryError,
-    PaletteService,
 )
 from palette_api.domain import ListeningPeriod
 from palette_api.lastfm import (
@@ -24,25 +23,32 @@ from palette_api.lastfm import (
 )
 from palette_api.catalog import (
     D1InstrumentCatalog,
-    D1InstrumentationProvider,
     InstrumentCatalogProvider,
     _get_val,
 )
-from palette_api.enrichment import D1QueueEnrichmentScheduler
 from palette_api.image_catalog import DEFAULT_IMAGE_CATALOG, InstrumentImageCatalog
 from palette_api.mocks import (
     MockInstrumentCatalog,
-    MockInstrumentationProvider,
     MockListeningHistoryProvider,
 )
 from palette_api.schemas import (
     ApiError,
     ImageCredit,
-    ImageVariant,
     ImageTone,
     InstrumentImage,
     InstrumentResource,
-    PaletteReport,
+    ImageVariant,
+    ProfileAnalysisV2,
+)
+from palette_api.v2 import (
+    CuratedExampleListeningHistoryProvider,
+    CuratedExampleSnapshotProjectionProvider,
+    D1SnapshotHydrationScheduler,
+    D1SnapshotProjectionProvider,
+    ExampleHistoryUnavailableError,
+    MockSnapshotProjectionProvider,
+    SnapshotUnavailableError,
+    V2AnalysisService,
 )
 
 
@@ -56,19 +62,10 @@ PALETTE_CACHE_CONTROL = "public, max-age=300, s-maxage=300"
 app = FastAPI(
     title="Timbre Palette API",
     summary="Retratos instrumentais de históricos públicos do Last.fm.",
-    version="0.3.2",
+    version="2.0.0",
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
-    allow_methods=["GET"],
-    allow_headers=["Accept"],
-)
-
-
-@app.get("/v1/catalog/stats", operation_id="getCatalogStats")
+@app.get("/v2/catalog/stats", operation_id="getCatalogStatsV2")
 async def get_catalog_stats(request: Request) -> JSONResponse:
     environment = request.scope.get("env")
     db = (environment.get("DB") if isinstance(environment, Mapping)
@@ -77,15 +74,15 @@ async def get_catalog_stats(request: Request) -> JSONResponse:
         return JSONResponse({"recordings_with_evidence": 0},
                             headers=NO_STORE_HEADERS)
     row = await db.prepare("""
-        SELECT COUNT(DISTINCT ic.recording_id) AS recordings_with_evidence
-        FROM instrument_claims AS ic
-        LEFT JOIN instruments AS i ON i.slug = ic.instrument_slug
-        JOIN instrument_families AS f
-          ON f.slug = COALESCE(i.family_slug, ic.family_slug)
-        WHERE ic.confidence_level IN ('documented', 'editorially_verified')
-          AND EXISTS (
-              SELECT 1 FROM evidence_items AS ei
-              WHERE ei.claim_id = ic.id AND ei.scope IN ('recording', 'track')
+        SELECT COUNT(DISTINCT recording_mbid) AS recordings_with_evidence
+        FROM snapshot_recordings
+        WHERE status = 'complete' AND mapped_credit_count > 0
+          AND snapshot_version = (
+              SELECT snapshot_version
+              FROM musicbrainz_credit_index_snapshots
+              WHERE status = 'active'
+              ORDER BY published_at DESC, created_at DESC
+              LIMIT 1
           )
     """).first()
     return JSONResponse(
@@ -117,19 +114,17 @@ async def get_image_catalog(request: Request) -> InstrumentImageCatalog:
         raise ApiProblem(503, "image_assets_not_configured", str(error)) from error
 
 
-async def get_palette_service(
+async def get_v2_analysis_service(
     request: Request,
     image_catalog: Annotated[InstrumentImageCatalog, Depends(get_image_catalog)],
-) -> PaletteService:
+) -> V2AnalysisService:
     environment = request.scope.get("env")
     if isinstance(environment, Mapping):
         api_key = environment.get("LASTFM_API_KEY")
         db = environment.get("DB")
-        queue = environment.get("ENRICHMENT_QUEUE")
     else:
         api_key = getattr(environment, "LASTFM_API_KEY", None)
         db = getattr(environment, "DB", None)
-        queue = getattr(environment, "ENRICHMENT_QUEUE", None)
 
     mode = (
         environment.get("PALETTE_API_MODE")
@@ -137,32 +132,25 @@ async def get_palette_service(
         else getattr(environment, "PALETTE_API_MODE", None)
     )
     if mode == "mock":
-        return PaletteService(
+        return V2AnalysisService(
             history_provider=MockListeningHistoryProvider(),
-            instrumentation_provider=MockInstrumentationProvider(),
+            snapshot_provider=MockSnapshotProjectionProvider(),
             image_catalog=image_catalog,
         )
 
     if not isinstance(api_key, str) or not api_key.strip():
         raise LastFmConfigurationError("LASTFM_API_KEY was not configured.")
 
-    instrumentation_provider = (
-        D1InstrumentationProvider(db)
-        if db is not None
-        else MockInstrumentationProvider()
-    )
-    enrichment_scheduler = (
-        D1QueueEnrichmentScheduler(db, queue, dispatch_on_schedule=False)
-        if db is not None
-        else None
-    )
-    return PaletteService(
+    if db is None:
+        raise SnapshotUnavailableError("The D1 snapshot projection is not configured.")
+
+    return V2AnalysisService(
         history_provider=LastFmListeningHistoryProvider(
             api_key=api_key,
             transport=WorkersFetchJsonTransport(),
         ),
-        instrumentation_provider=instrumentation_provider,
-        enrichment_scheduler=enrichment_scheduler,
+        snapshot_provider=D1SnapshotProjectionProvider(db),
+        hydration_scheduler=D1SnapshotHydrationScheduler(db),
         image_catalog=image_catalog,
     )
 
@@ -287,6 +275,30 @@ async def handle_empty_history(
     return JSONResponse(status_code=422, content=response.model_dump(), headers=NO_STORE_HEADERS)
 
 
+@app.exception_handler(SnapshotUnavailableError)
+async def handle_snapshot_unavailable(
+    _request: Request,
+    error: SnapshotUnavailableError,
+) -> JSONResponse:
+    response = ApiError(
+        code="snapshot_unavailable",
+        message=str(error) or "The active MusicBrainz snapshot is unavailable.",
+    )
+    return JSONResponse(status_code=503, content=response.model_dump(), headers=NO_STORE_HEADERS)
+
+
+@app.exception_handler(ExampleHistoryUnavailableError)
+async def handle_example_history_unavailable(
+    _request: Request,
+    error: ExampleHistoryUnavailableError,
+) -> JSONResponse:
+    response = ApiError(
+        code="example_data_unavailable",
+        message=str(error) or "The curated example data is unavailable.",
+    )
+    return JSONResponse(status_code=503, content=response.model_dump(), headers=NO_STORE_HEADERS)
+
+
 @app.exception_handler(Exception)
 async def handle_unexpected_error(request: Request, error: Exception) -> JSONResponse:
     print(
@@ -307,9 +319,9 @@ async def handle_unexpected_error(request: Request, error: Exception) -> JSONRes
 
 
 @app.get(
-    "/v1/profiles/{username}/palette",
-    operation_id="getProfilePalette",
-    response_model=PaletteReport,
+    "/v2/profiles/{username}/analysis",
+    operation_id="getProfileAnalysisV2",
+    response_model=ProfileAnalysisV2,
     responses={
         404: {"model": ApiError},
         422: {"model": ApiError},
@@ -317,15 +329,15 @@ async def handle_unexpected_error(request: Request, error: Exception) -> JSONRes
         503: {"model": ApiError},
     },
 )
-async def get_profile_palette(
+async def get_profile_analysis_v2(
     username: Annotated[str, Path(min_length=1, max_length=64)],
-    palette_service: Annotated[PaletteService, Depends(get_palette_service)],
+    analysis_service: Annotated[V2AnalysisService, Depends(get_v2_analysis_service)],
     response: Response,
     period: Annotated[
         ListeningPeriod,
         Query(description="Período do histórico a considerar."),
     ] = ListeningPeriod.SEVEN_DAYS,
-) -> PaletteReport | JSONResponse:
+) -> ProfileAnalysisV2 | JSONResponse:
     normalized_username = username.strip()
     if not normalized_username:
         raise ApiProblem(
@@ -334,14 +346,56 @@ async def get_profile_palette(
             message="The profile must contain at least one visible character.",
         )
 
-    report = await palette_service.analyze(normalized_username, period)
-    response.headers["Cache-Control"] = PALETTE_CACHE_CONTROL
+    report = await analysis_service.analyze(normalized_username, period)
+    response.headers["Cache-Control"] = (
+        NO_STORE_HEADERS["Cache-Control"]
+        if report.hydration.status == "pending"
+        else PALETTE_CACHE_CONTROL
+    )
     return report
 
 
 @app.get(
-    "/v1/instruments/{slug}",
-    operation_id="getInstrument",
+    "/v2/examples/analysis",
+    operation_id="getExampleAnalysisV2",
+    response_model=ProfileAnalysisV2,
+    responses={
+        422: {"model": ApiError},
+        503: {"model": ApiError},
+    },
+)
+async def get_example_analysis_v2(
+    response: Response,
+    image_catalog: Annotated[InstrumentImageCatalog, Depends(get_image_catalog)],
+    period: Annotated[
+        ListeningPeriod,
+        Query(description="Período fictício a mostrar no perfil de exemplo."),
+    ] = ListeningPeriod.ONE_MONTH,
+    sample_id: Annotated[
+        str | None,
+        Query(
+            min_length=1,
+            max_length=64,
+            description="Identificador que mantém a mesma seleção de exemplo.",
+        ),
+    ] = None,
+) -> ProfileAnalysisV2:
+    resolved_sample_id = sample_id or uuid4().hex
+    analysis_service = V2AnalysisService(
+        history_provider=CuratedExampleListeningHistoryProvider(resolved_sample_id),
+        snapshot_provider=CuratedExampleSnapshotProjectionProvider(),
+        image_catalog=image_catalog,
+    )
+    report = await analysis_service.analyze("eu adoro beatles!", period)
+    response.headers["Cache-Control"] = NO_STORE_HEADERS["Cache-Control"]
+    return report.model_copy(
+        update={"is_example": True, "example_id": resolved_sample_id}
+    )
+
+
+@app.get(
+    "/v2/instruments/{slug}",
+    operation_id="getInstrumentV2",
     response_model=InstrumentResource,
     responses={404: {"model": ApiError}},
 )

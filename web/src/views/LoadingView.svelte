@@ -8,7 +8,7 @@
   <h1>{title}</h1>
   <p class="loading-description">{description}</p>
   <div class="loading-characters" aria-hidden="true">
-    [ <span>&amp;</span> <span>*</span> <span>$</span> <span>%</span> ]
+    <span class="loading-indicator"></span>
   </div>
   <p class="loading-detail">{detail}</p>
 </section>
@@ -39,19 +39,6 @@
     line-height: 1.5;
     white-space: pre;
   }
-  .loading-characters span {
-    color: var(--accent);
-    animation: erase-first 2s step-end infinite;
-  }
-  .loading-characters span:nth-child(2) {
-    animation-name: erase-second;
-  }
-  .loading-characters span:nth-child(3) {
-    animation-name: erase-third;
-  }
-  .loading-characters span:nth-child(4) {
-    animation-name: erase-fourth;
-  }
   .loading-detail {
     margin: 0;
     color: var(--muted);
@@ -60,54 +47,12 @@
     line-height: 1.5;
     overflow-wrap: anywhere;
   }
-  @keyframes erase-first {
-    0% {
-      opacity: 1;
-    }
-    20%,
-    100% {
-      opacity: 0;
-    }
-  }
-  @keyframes erase-second {
-    0% {
-      opacity: 1;
-    }
-    40%,
-    100% {
-      opacity: 0;
-    }
-  }
-  @keyframes erase-third {
-    0% {
-      opacity: 1;
-    }
-    60%,
-    100% {
-      opacity: 0;
-    }
-  }
-  @keyframes erase-fourth {
-    0% {
-      opacity: 1;
-    }
-    80%,
-    100% {
-      opacity: 0;
-    }
-  }
   @keyframes appear {
     from {
       opacity: 0;
     }
     to {
       opacity: 1;
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .loading-view,
-    .loading-characters span {
-      animation: none;
     }
   }
 </style>
