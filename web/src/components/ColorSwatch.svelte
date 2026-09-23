@@ -195,7 +195,7 @@
     width: 100%;
     padding: 5px 8px;
     border: 1px solid var(--line-strong);
-    border-radius: 0;
+    border-radius: 2px;
     background: transparent;
     color: var(--ink);
     font: 11px var(--meta);

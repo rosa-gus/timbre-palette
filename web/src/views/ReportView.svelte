@@ -194,7 +194,7 @@
         />{/each}
     </div>
     <p class="color-hint">
-      Selecione uma cor para ver o código e copiá-lo.
+      Selecione uma cor para copiá-la.
     </p>
     <div class="instrument-grid">
       {#each report.families.slice(0, 3) as family, index}
@@ -953,6 +953,9 @@
     .share-preview {
       width: calc(100% + 40px);
       margin-inline: -20px;
+    }
+    .share-preview > img {
+      border: 0;
     }
     .photo-caption-text {
       display: none;

@@ -1309,12 +1309,12 @@
       padding-top: 32px;
     }
     .profile-card {
-      grid-template-columns: 96px minmax(0, 1fr);
+      grid-template-columns: minmax(0, 1fr);
       gap: 16px;
       padding-bottom: 20px;
     }
     .profile-avatar {
-      width: 96px;
+      width: 100%;
     }
     .profile-avatar-drawing {
       font-size: 5px;
@@ -1347,7 +1347,7 @@
       padding-bottom: 28px;
     }
     .type-art {
-      align-self: flex-start;
+      align-self: center;
       margin: 12px 0 0;
     }
     .type-art pre {
@@ -1373,7 +1373,9 @@
     }
     .reach-grid > div,
     .reach-grid > div:first-child {
+      align-items: center;
       padding: 14px 0;
+      text-align: center;
     }
     .reach-grid > div + div {
       border-left: 0;
@@ -1383,8 +1385,9 @@
       margin-top: 40px;
     }
     .family-heading span:last-child {
-      max-width: 125px;
-      text-align: right;
+      width: 100%;
+      max-width: none;
+      text-align: left;
     }
     .vocabulary-bar,
     .vocabulary-family > p,
