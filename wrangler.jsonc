@@ -9,7 +9,7 @@
   "rules": [
     {
       "type": "Text",
-      "globs": ["**/_generated_image_catalog.json"],
+      "globs": ["**/_generated_image_catalog.json", "**/_curated_example_history.json"],
       "fallthrough": true
     }
   ],

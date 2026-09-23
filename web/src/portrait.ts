@@ -32,22 +32,15 @@ export function getPortraitCopy(report: PaletteReport): PortraitCopy {
   if (families.length === 1) {
     return {
       title: `Um primeiro retrato: ${names.toLocaleLowerCase("pt-BR")}.`,
-      summary:
-        `A família ${names.toLocaleLowerCase("pt-BR")} aparece nas faixas com informação instrumental disponível. ` +
-        "Ainda falta base para interpretar o conjunto da escuta.",
+      summary: `Nas faixas com informação instrumental disponível, encontramos ${names.toLocaleLowerCase("pt-BR")}.`,
       disclaimer,
     };
   }
 
-  const partial =
-    report.analysis.coverage_tracks < 1 || report.analysis.coverage_plays < 1;
   return {
     title: `${names}.`,
     summary:
-      `${names} são as famílias mais presentes nas faixas com informação instrumental disponível. ` +
-      (partial
-        ? "Este é um retrato parcial da sua escuta."
-        : "Ainda falta base para interpretar o temperamento dessa combinação."),
+      `${names} são as famílias mais presentes nas faixas com informação instrumental disponível.`,
     disclaimer,
   };
 }

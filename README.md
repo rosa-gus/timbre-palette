@@ -32,9 +32,10 @@ MusicBrainz data is consumed exclusively through versioned offline snapshots bui
 
 ## API
 
-The backend is a Python application built with FastAPI and designed to run on Cloudflare Workers. It exposes three primary resources:
+The backend is a Python application built with FastAPI and designed to run on Cloudflare Workers. It exposes these primary resources:
 
 - `GET /v2/profiles/{username}/analysis` — returns direct track evidence and, when supported, the artist vocabulary.
+- `GET /v2/examples/analysis` — builds a fictional listening history from a small curated JSON fixture of recordings and instrument evidence.
 - `GET /v2/instruments/{slug}` — returns a reviewed instrument or sound-family profile.
 - `GET /v2/catalog/stats` — returns a lightweight count from the active snapshot projection.
 
@@ -60,7 +61,7 @@ flowchart LR
     Hydrator -->|materialize projections| D1
 ```
 
-The HTTP Worker reads compact, versioned projections from D1. Missing targets are recorded without blocking the response. The snapshot hydrator groups them by R2 shard and materializes the requested direct-evidence and artist-vocabulary projections asynchronously. The ETL, object layout, publication, and license handling are documented in [MusicBrainz credit index](docs/musicbrainz-credit-index.md).
+The profile endpoint reads compact, versioned projections from D1. Missing targets are recorded without blocking the response; the snapshot hydrator groups them by R2 shard and materializes the requested evidence asynchronously. The example endpoint uses its bundled JSON fixture and does not depend on snapshot publication or hydration. The ETL, object layout, publication, and license handling are documented in [MusicBrainz credit index](docs/musicbrainz-credit-index.md).
 
 ## Front-end
 

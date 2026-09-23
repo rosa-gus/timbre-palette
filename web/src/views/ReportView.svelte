@@ -2,9 +2,9 @@
   import Arrow from "../components/Arrow.svelte";
   import Badge from "../components/Badge.svelte";
   import Button from "../components/Button.svelte";
-  import CoverageTooltip from "../components/CoverageTooltip.svelte";
   import ColorSwatch from "../components/ColorSwatch.svelte";
   import Dropdown from "../components/Dropdown.svelte";
+  import Tooltip from "../components/Tooltip.svelte";
   import { normalizePathname } from "../navigation";
   import { getPortraitCopy } from "../portrait";
   import { createAsciiArtwork } from "../sharing/ascii";
@@ -24,10 +24,13 @@
     note?: string;
   };
   export let report: PaletteReport;
+  export let isExample = false;
   export let embedded = false;
   export let hydrationPending = false;
   $: portrait = getPortraitCopy(report);
   $: asciiArtwork = createAsciiArtwork(report.families);
+  $: discoveryAvailable =
+    !!report.discovery && getAvailability("discovery") === "available";
   export let sectionOptions: SectionOption[] = [];
   export let periodLabels: Record<string, string>;
   export let statusLabels: Record<AnalysisStatus, string>;
@@ -92,7 +95,9 @@
 
   export let sharePreviewUrl = "";
   export let shareBusy = false;
+  export let canShareImage = false;
   export let onDownloadShare: () => void = () => undefined;
+  export let onShareImage: () => void = () => undefined;
   const natureLabels: Record<string, string> = {
     acoustic: "Acústica",
     electric: "Elétrica",
@@ -113,7 +118,12 @@
       <a class="back-link" href={homePath}><Arrow direction="left" />Voltar</a>
     </div>{/if}
   {#if !embedded}<div class="archive-header">
-      <p class="eyebrow">ESCUTA DE @{report.profile.username}</p>
+      <p class="eyebrow">
+        ESCUTA DE {isExample
+          ? report.profile.realname || "Besouro Hércules"
+          : `@${report.profile.username}`}
+        {#if isExample}<Badge tone="accent">EXEMPLO</Badge>{/if}
+      </p>
       <div class="archive-period">
         <span
           >{periodLabels[report.profile.period]}<span
@@ -127,7 +137,8 @@
           >{/if}
       </div>
       <a class="image-link" href="#share"
-        >Visualizar minha imagem <Arrow direction="up-right" /></a
+        >{isExample ? "Visualizar imagem do exemplo" : "Visualizar minha imagem"}
+        <Arrow direction="up-right" /></a
       >
     </div>{/if}
   <nav class="report-index" aria-label="Índice do retrato">
@@ -158,9 +169,19 @@
       <span>{report.profile.tracks_analyzed} faixas</span><span
         >{report.profile.total_plays} reproduções</span
       ><span
-        >{percent(report.analysis.coverage_tracks)} das faixas cobertas <CoverageTooltip
-          {hydrationPending}
-        /></span
+        >{percent(report.analysis.coverage_tracks)} das faixas cobertas
+          <Tooltip ariaLabel="O que significa a cobertura?" triggerLabel="[?]">
+            <p>
+              Cobertura é a proporção das faixas analisadas com evidências
+              instrumentais suficientes para contribuir para sua paleta.
+            </p>
+            <p>Faixas sem essas evidências ficam fora do cálculo.</p>
+            {#if hydrationPending}<p class="tooltip-note">
+                <span class="loading-indicator" aria-hidden="true"></span>
+                <span>Mais dados podem chegar depois.</span>
+              </p>{/if}
+          </Tooltip>
+        </span
       >
     </div>
     <div class="composition" aria-label="Composição da paleta instrumental">
@@ -172,6 +193,9 @@
           style={`flex-grow:${family.share};`}
         />{/each}
     </div>
+    <p class="color-hint">
+      Selecione uma cor para ver o código e copiá-lo.
+    </p>
     <div class="instrument-grid">
       {#each report.families.slice(0, 3) as family, index}
         <figure
@@ -230,6 +254,7 @@
     <div class="section-heading">
       <p class="eyebrow">02 / PALETA</p>
       <h2 id="palette-title">As presenças da sua escuta.</h2>
+      <p class="palette-scope">Entre as fontes identificadas</p>
     </div>
     <div class="palette-layout">
       <div class="family-list" aria-label="Famílias instrumentais">
@@ -298,15 +323,15 @@
   <section
     id="discovery"
     class="archive-section"
+    class:unavailable-section={!discoveryAvailable}
     aria-labelledby="discovery-title"
   >
-    <div class="section-heading">
-      <p class="eyebrow">03 / DESCOBERTA</p>
-      <h2 id="discovery-title">Uma presença inesperada.</h2>
-    </div>
-    {#if report.discovery && getAvailability("discovery") === "available"}<div
-        class="discovery-layout"
-      >
+    {#if discoveryAvailable && report.discovery}
+      <div class="section-heading">
+        <p class="eyebrow">03 / DESCOBERTA</p>
+        <h2 id="discovery-title">Uma presença inesperada.</h2>
+      </div>
+      <div class="discovery-layout">
         {#if report.discovery.image?.variants.length}<figure
             class="credited-image"
           >
@@ -336,9 +361,13 @@
             >Explorar instrumento <Arrow direction="right" /></Button
           >
         </div>
-      </div>{:else}<p class="unavailable">
-        Esta descoberta ainda aguarda evidência suficiente.
-      </p>{/if}
+      </div>
+    {:else}
+      <p class="eyebrow">03 / DESCOBERTA</p>
+      <p id="discovery-title">
+        Nenhuma descoberta para destacar neste período.
+      </p>
+    {/if}
   </section>
   <section
     id="share"
@@ -346,16 +375,26 @@
     aria-labelledby="share-title"
   >
     <div class="share-copy">
-      <p class="eyebrow">04 / SEU RETRATO PARA COMPARTILHAR</p>
-      <h2 id="share-title">Leve sua paleta<br />com você.</h2>
+      <p class="eyebrow">04 / {isExample ? "RETRATO DE EXEMPLO" : "SEU RETRATO PARA COMPARTILHAR"}</p>
+      <h2 id="share-title">
+        {isExample ? "Leve esta paleta" : "Leve sua paleta"}<br />com você.
+      </h2>
       <p class="large-copy">
-        As cores, os instrumentos e o retrato da sua escuta em uma imagem para
-        guardar ou compartilhar.
+        {isExample
+          ? "As cores, os instrumentos e o retrato da escuta do Besouro Hércules em uma imagem para guardar ou compartilhar."
+          : "As cores, os instrumentos e o retrato da sua escuta em uma imagem para guardar ou compartilhar."}
       </p>
       <Button variant="primary" disabled={shareBusy} on:click={onGenerateShare}
-        >{sharePreviewUrl ? "Atualizar imagem" : "Preparar minha imagem"}
+        >{sharePreviewUrl
+          ? "Atualizar imagem"
+          : isExample
+            ? "Preparar imagem do exemplo"
+            : "Preparar minha imagem"}
         <Arrow direction="right" /></Button
-      >{#if sharePreviewUrl}<Button
+      >{#if sharePreviewUrl}{#if canShareImage}<Button
+          variant="secondary"
+          on:click={onShareImage}>Compartilhar</Button
+        >{/if}<Button
           variant="secondary"
           on:click={onDownloadShare}>Baixar imagem</Button
         >{/if}
@@ -364,11 +403,14 @@
     <div class="share-preview">
       {#if sharePreviewUrl}<img
           src={sharePreviewUrl}
-          alt={`Imagem pronta para compartilhar: paleta de ${report.profile.username}`}
+          alt={`Imagem pronta para compartilhar: paleta de ${isExample ? report.profile.realname || "Besouro Hércules" : report.profile.username}`}
         />{:else}<div class="share-card-preview">
           <span class="eyebrow"
-            >TIMBRE PALETTE / @{report.profile.username}
+            >TIMBRE PALETTE / {isExample
+              ? report.profile.realname || "Besouro Hércules"
+              : `@${report.profile.username}`}
             <span class="separator-indicator" aria-hidden="true">·</span>
+            {#if isExample}EXEMPLO <span class="separator-indicator" aria-hidden="true">·</span> {/if}
             {periodLabels[report.profile.period]}</span
           ><strong>{portrait.title}</strong>
           <p class="preview-summary">{portrait.summary}</p>
@@ -380,7 +422,7 @@
                 class="preview-specimen"
                 style={`--specimen-tone:${item.color}`}
               >
-                <div class="preview-ascii" aria-hidden="true">
+                <div class="preview-ascii-drawing" aria-hidden="true">
                   <pre
                     style={`font-size:${Math.min(9, 100 / (item.columns * 0.6), 88 / (item.lines.length * 0.95))}cqw`}>{item.lines.join(
                       "\n",
@@ -534,6 +576,12 @@
     gap: 4px;
     margin-top: 8px;
   }
+  .color-hint {
+    grid-column: 1/-1;
+    margin: -2px 0 16px;
+    color: var(--muted);
+    font: 12px var(--meta);
+  }
   .instrument-grid {
     grid-column: 1/-1;
     display: grid;
@@ -658,6 +706,11 @@
   .section-heading .eyebrow {
     margin: 0 0 12px;
   }
+  .palette-scope {
+    margin: 14px 0 0;
+    color: var(--muted);
+    font: 12px var(--meta);
+  }
   .palette-layout,
   .discovery-layout {
     display: grid;
@@ -780,7 +833,7 @@
     min-width: 0;
     gap: 10px;
   }
-  .preview-ascii {
+  .preview-ascii-drawing {
     display: grid;
     place-items: center;
     container-type: inline-size;
@@ -788,7 +841,7 @@
     overflow: hidden;
     border-bottom: 2px solid var(--specimen-tone);
   }
-  .preview-ascii pre {
+  .preview-ascii-drawing pre {
     margin: 0;
     color: var(--specimen-tone);
     font-family: var(--meta);
@@ -818,8 +871,20 @@
     color: var(--muted);
     font-size: 12px;
   }
-  .unavailable {
+  .archive-section.unavailable-section {
+    display: flex;
+    align-items: baseline;
+    gap: 24px;
+    margin-top: 28px;
+    padding: 12px 0;
+    border-block: 1px solid var(--line);
+  }
+  .archive-section.unavailable-section > p {
+    margin: 0;
+  }
+  .archive-section.unavailable-section > p:last-child {
     color: var(--muted);
+    font-size: 14px;
   }
   @media (max-width: 800px) {
     .report-view {
@@ -880,6 +945,14 @@
     }
     .share-card-preview {
       padding: 20px;
+    }
+    .archive-section.unavailable-section {
+      flex-wrap: wrap;
+      gap: 4px 12px;
+    }
+    .share-preview {
+      width: calc(100% + 40px);
+      margin-inline: -20px;
     }
     .photo-caption-text {
       display: none;

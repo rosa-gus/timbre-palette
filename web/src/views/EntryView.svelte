@@ -3,6 +3,7 @@
   import chladniHeroVideo from "../../../assets/treated/chladni-hero.webm";
   import LoadingView from "./LoadingView.svelte";
   import Button from "../components/Button.svelte";
+  import Arrow from "../components/Arrow.svelte";
   import ColorSwatch from "../components/ColorSwatch.svelte";
   import SegmentedControl from "../components/SegmentedControl.svelte";
   import type { ListeningPeriod } from "../api/types";
@@ -18,6 +19,7 @@
   export let onUsernameChange: (value: string) => void = () => undefined;
   export let onPeriodChange: (value: ListeningPeriod) => void = () => undefined;
   export let onSubmit: () => void = () => undefined;
+  export let onExample: () => void = () => undefined;
 
   const accentSwatches = [
     { color: "#D76F78", label: "Accent forte" },
@@ -78,9 +80,15 @@
   aria-labelledby="entry-title"
   aria-busy={loading}
 >
-  <p id="entry-title" class="entry-tagline">
-    Duas leituras instrumentais da sua escuta.
-  </p>
+  <div class="entry-intro">
+    <p id="entry-title" class="entry-tagline">
+      Descubra do que sua escuta é feita.
+    </p>
+    <p class="entry-description">
+      Uma paleta de cores para os instrumentos documentados nas músicas que você
+      ouviu.
+    </p>
+  </div>
 
   <div class="entry-stage">
     <div class="hero-frame">
@@ -142,7 +150,18 @@
       on:submit|preventDefault={submitProfile}
     >
       <div class="field-block">
-        <label for="username">Seu perfil do Last.fm</label>
+        <div class="field-heading">
+          <label for="username">Seu perfil do Last.fm</label>
+          <button
+            class="example-button"
+            type="button"
+            disabled={loading}
+            aria-label="Ver uma escuta de exemplo"
+            on:click={onExample}
+          >
+            Ver exemplo<Arrow direction="up-right" />
+          </button>
+        </div>
         <div class="username-field">
           <span id="username-prefix" class="username-prefix"
             >www.last.fm/user/</span
@@ -189,10 +208,22 @@
     display: grid;
     align-content: center;
     justify-items: center;
-    gap: 26px;
+    gap: clamp(12px, 2.4svh, 24px);
     min-height: 0;
-    padding: 18px 4px;
+    padding: 32px 4px 12px;
     overflow: visible;
+  }
+  .entry-intro {
+    display: grid;
+    gap: 4px;
+    width: min(100%, 680px);
+    text-align: center;
+  }
+  .entry-description {
+    margin: 0;
+    color: var(--muted);
+    font-size: clamp(13px, 1.2vw, 15px);
+    line-height: 1.45;
   }
   .entry-stage {
     position: relative;
@@ -275,7 +306,7 @@
   }
   .entry-tagline {
     margin: 0;
-    color: var(--muted);
+    color: var(--ink);
     font-size: 1rem;
     line-height: 1.5;
   }
@@ -293,6 +324,12 @@
     display: grid;
     gap: 8px;
   }
+  .field-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
   .field-block label,
   .field-label {
     color: var(--muted);
@@ -300,6 +337,27 @@
     font-size: 13px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+  }
+  .example-button {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: var(--meta);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+  .example-button:hover:not(:disabled),
+  .example-button:focus-visible {
+    color: var(--accent-soft);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .example-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.62;
   }
   .username-field {
     display: grid;
@@ -336,7 +394,7 @@
   }
   .form-row {
     display: grid;
-    grid-template-columns: minmax(112px, 0.75fr) 1fr;
+    grid-template-columns: minmax(0, 1fr) auto;
     gap: 24px;
     align-items: end;
     margin-top: 25px;
@@ -349,17 +407,24 @@
     line-height: 1.5;
   }
   @media (min-width: 801px) {
-    .entry-stage {
-      width: min(100%, 680px, max(320px, calc((100svh - 530px) * 16 / 9)));
+    .entry-stage,
+    .entry-action-area {
+      width: min(100%, 680px, max(320px, calc((100svh - 640px) * 16 / 9)));
     }
   }
   @media (max-width: 800px) {
     .entry-view {
-      padding: 24px 0 30px;
+      gap: clamp(12px, 2svh, 18px);
+      padding: 28px 0 20px;
     }
     .entry-stage,
     .profile-form {
       width: 100%;
+    }
+    .entry-description {
+      max-width: 40ch;
+      margin-inline: auto;
+      font-size: 13px;
     }
     .username-field {
       grid-template-columns: 1fr;
@@ -379,6 +444,80 @@
     }
     .form-row :global(.ui-button) {
       width: 100%;
+    }
+  }
+  @media (max-height: 700px) {
+    .entry-view {
+      gap: 8px;
+      padding: 18px 0 6px;
+    }
+    .entry-intro {
+      gap: 2px;
+    }
+    .entry-tagline {
+      font-size: 14px;
+      line-height: 1.3;
+    }
+    .entry-description {
+      font-size: 12px;
+      line-height: 1.3;
+    }
+    .entry-stage,
+    .entry-action-area {
+      width: min(100%, 680px);
+    }
+    .hero-controls {
+      margin-top: 4px;
+    }
+    .field-block {
+      gap: 4px;
+    }
+    .form-row {
+      margin-top: 12px;
+    }
+  }
+  @media (max-width: 800px) and (max-height: 700px) {
+    .entry-view {
+      padding-top: 14px;
+      padding-bottom: 4px;
+    }
+    .username-field {
+      grid-template-columns: auto minmax(0, 1fr);
+      border: 1px solid var(--line-strong);
+    }
+    .username-prefix {
+      padding: 8px 9px;
+      border-right: 1px solid var(--line);
+      white-space: nowrap;
+    }
+    .username-field input {
+      min-width: 0;
+      padding: 8px 9px;
+    }
+    .form-row {
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: end;
+    }
+    .form-row :global(.ui-button) {
+      width: auto;
+    }
+    .period-field {
+      min-width: 0;
+    }
+    .period-field :global(.segmented-control) {
+      gap: 4px;
+    }
+    .period-field :global(.segment-button) {
+      min-height: 28px;
+      padding-inline: 6px;
+      font-size: 11px;
+    }
+  }
+  @media (min-width: 801px) and (max-height: 700px) {
+    .hero-frame {
+      height: clamp(72px, 15svh, 108px);
+      aspect-ratio: auto;
     }
   }
   @media (prefers-reduced-motion: reduce) {

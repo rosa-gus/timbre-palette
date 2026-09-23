@@ -150,6 +150,8 @@ function isProfileAnalysisV2(value: unknown): value is ProfileAnalysisV2 {
   const availableViews = value.available_views;
   const defaultView = value.default_view;
   return (
+    typeof value.is_example === "boolean" &&
+    isOptionalText(value.example_id) &&
     isProfileSummary(value.profile) &&
     isRecord(snapshot) &&
     typeof snapshot.snapshot_version === "string" &&
@@ -294,6 +296,27 @@ export async function getAnalysis(
       "A API devolveu uma análise incompatível com o contrato.",
       result.response.status,
       "invalid_report",
+    );
+  }
+  return result.data;
+}
+
+export async function getExampleAnalysis(
+  period: ListeningPeriod,
+  signal: AbortSignal,
+  sampleId?: string,
+): Promise<ProfileAnalysisV2> {
+  const params = new URLSearchParams({ period });
+  if (sampleId) params.set("sample_id", sampleId);
+  const result = await getJson<unknown>(
+    `/v2/examples/analysis?${params.toString()}`,
+    signal,
+  );
+  if (!isProfileAnalysisV2(result.data) || !result.data.is_example) {
+    throw new PaletteApiError(
+      "A API devolveu uma análise de exemplo incompatível com o contrato.",
+      result.response.status,
+      "invalid_example_report",
     );
   }
   return result.data;

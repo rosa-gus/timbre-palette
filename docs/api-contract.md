@@ -17,6 +17,10 @@ The response also contains `snapshot`, `hydration`, `available_views`, and
 coverage belong only to `track_palette`; vocabulary reach belongs only to
 `artist_vocabulary`.
 
+The envelope includes `is_example` and `example_id`. Profile analysis sets
+`is_example` to `false` and leaves `example_id` null. The example endpoint sets
+both fields so clients can label the profile and any shared image explicitly.
+
 The Last.fm history read requests up to 200 ranked candidates for the selected
 period. The direct palette's denominators include every valid candidate
 returned by that read, including candidates that are not yet documented. The
@@ -71,6 +75,23 @@ The endpoint returns HTTP `200` for a valid history, including insufficient or
 pending analysis states. A missing Last.fm profile, invalid period, empty
 history, unavailable active snapshot, or upstream failure uses the structured
 `ApiError` response.
+
+`GET /v2/examples/analysis?period=...&sample_id=...` returns the same analysis
+envelope without calling Last.fm or reading D1. It selects up to 15 recordings
+from a small bundled JSON fixture containing curated recording metadata and
+instrument evidence. Synthetic play counts create a fictional listening
+history for the selected period; they are not Last.fm observations. The
+fixture supplies the evidence directly, so example requests do not schedule
+snapshot hydration. Its response has `is_example: true` and returns the
+effective sample identifier as `example_id`. The fixture currently supplies
+track-level evidence only, so `artist_vocabulary` can remain `insufficient`.
+
+The browser creates a random `sample_id` when a visitor opens the example and
+keeps it in the URL. Reusing the same `sample_id`, period, and fixture version
+reproduces the same recording selection and play counts, including after a
+reload. A new ID selects another sample from the curated pool. The endpoint
+returns HTTP `503` with code `example_data_unavailable` if the bundled fixture
+is missing or invalid. The response is not cached.
 
 `GET /v2/instruments/{slug}` returns the reviewed editorial resource. `GET
 /v2/catalog/stats` returns counts from the active snapshot projection.

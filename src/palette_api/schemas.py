@@ -341,6 +341,8 @@ class ArtistVocabulary(ApiModel):
 
 
 class ProfileAnalysisV2(ApiModel):
+    is_example: bool = False
+    example_id: str | None = None
     profile: ProfileSummary
     snapshot: SnapshotInfo
     track_palette: PaletteReport

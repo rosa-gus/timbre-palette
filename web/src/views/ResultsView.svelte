@@ -1,10 +1,14 @@
 <script lang="ts">
   import { Tabs } from "bits-ui";
+  import { tick } from "svelte";
   import { normalizePathname } from "../navigation";
   import { getAsciiLines, hasAsciiDrawing } from "../sharing/ascii";
+  import { HERCULES_BEETLE_ASCII } from "../sharing/beetle";
   import Arrow from "../components/Arrow.svelte";
+  import Badge from "../components/Badge.svelte";
   import Dropdown from "../components/Dropdown.svelte";
   import SegmentedControl from "../components/SegmentedControl.svelte";
+  import Tooltip from "../components/Tooltip.svelte";
   import type {
     AnalysisStatus,
     AnalysisView,
@@ -38,12 +42,16 @@
   export let shareFeedback = "";
   export let sharePreviewUrl = "";
   export let shareBusy = false;
+  export let canShareImage = false;
   export let onDownloadShare: () => void;
   export let onOpenInstrument: () => void;
   export let onOpenInstrumentSlug: (slug: string) => void;
   export let onGenerateShare: () => void;
+  export let onShareImage: () => void;
   export let getAvailability: (section: SectionId) => SectionAvailability;
 
+  let selectedPeriodButton: HTMLButtonElement | null = null;
+  let dismissedLowCoveragePeriod: ListeningPeriod | null = null;
   const homePath = normalizePathname();
   const registeredMonthLabels = [
     "jan.",
@@ -105,9 +113,20 @@
     disabled: periodLoading,
   }));
   $: registeredLabel = formatRegisteredDate(result.profile.registered);
+  $: showLowCoverageNotice =
+    !periodLoading &&
+    !periodError &&
+    result.profile.period === period &&
+    palette.profile.period === period &&
+    palette.analysis.coverage_tracks <= 0.01 &&
+    selectedPeriodButton !== null &&
+    dismissedLowCoveragePeriod !== period;
 
   function percent(value: number): string {
     return `${Math.round(value * 100)}%`;
+  }
+  function coveragePercent(value: number): string {
+    return `${Number((value * 100).toFixed(1)).toLocaleString("pt-BR")}%`;
   }
   function count(value: number): string {
     return value.toLocaleString("pt-BR");
@@ -281,15 +300,37 @@
   }
 
   function handlePeriodChange(value: ListeningPeriod): void {
+    if (value !== period) dismissedLowCoveragePeriod = null;
     onPeriodChange(value);
+  }
+
+  function dismissLowCoverageNotice(): void {
+    dismissedLowCoveragePeriod = period;
+  }
+
+  async function showShareSection(event: MouseEvent): Promise<void> {
+    event.preventDefault();
+    if (activeView !== "track_palette") onSelectView("track_palette");
+    await tick();
+    const section = document.getElementById("share");
+    if (!section) return;
+    if (window.location.hash !== "#share") {
+      window.history.pushState({}, "", "#share");
+    }
+    section.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 </script>
 
 <div class="results-view">
   <a class="back-link" href={homePath}><Arrow direction="left" />VOLTAR</a>
-  <section class="profile-card" aria-labelledby="profile-title">
+  <section
+    class="profile-card"
+    aria-labelledby="profile-title"
+  >
     <div class="profile-avatar">
-      {#if result.profile.avatar_url}
+      {#if result.is_example}
+        <pre class="profile-avatar-drawing" role="img" aria-label="ascii de um besouro">{HERCULES_BEETLE_ASCII}</pre>
+      {:else if result.profile.avatar_url}
         <img
           src={result.profile.avatar_url}
           alt={`Foto de perfil de @${result.profile.username}`}
@@ -301,11 +342,22 @@
     </div>
     <div class="profile-copy">
       <div class="profile-identity">
-        <p class="eyebrow">PERFIL LAST.FM</p>
+        <div class="profile-label">
+          {#if !result.is_example}
+          <p class="eyebrow">
+            PERFIL LAST.FM
+          </p>
+          {/if}
+          {#if result.is_example}<Badge tone="accent">EXEMPLO</Badge>{/if}
+        </div>
         <h1 id="profile-title">
-          {result.profile.realname || `@${result.profile.username}`}
+          {result.is_example
+            ? result.profile.realname || "Besouro Hércules"
+            : result.profile.realname || `@${result.profile.username}`}
         </h1>
-        {#if result.profile.realname}<p class="profile-username">
+        {#if result.is_example}<p class="profile-username">
+            {result.profile.username}
+          </p>{:else if result.profile.realname}<p class="profile-username">
             @{result.profile.username}
           </p>{/if}
       </div>
@@ -313,6 +365,7 @@
         <div class="profile-meta">
           {#if registeredLabel}<span>SCROBBLANDO DESDE {registeredLabel}</span
             >{/if}
+          {#if result.is_example}<span>ESCUTA FICTÍCIA COM GRAVAÇÕES DO CATÁLOGO</span>{/if}
           {#if palette.analysis.data_source !== "catalog"}
             <span
               >{palette.analysis.data_source === "mock"
@@ -321,14 +374,23 @@
             >
           {/if}
         </div>
-        <a
-          class="profile-link"
-          href={lastFmUrl}
-          target="_blank"
-          rel="noreferrer"
-        >
-          VER NO LAST.FM <Arrow direction="up-right" />
-        </a>
+        <div class="profile-actions">
+          {#if directAvailable && !periodLoading}<a
+             class="profile-link"
+             href="#share"
+             on:click={showShareSection}
+              >{result.is_example ? "VER IMAGEM DO EXEMPLO" : "VER MINHA IMAGEM"}
+              <Arrow direction="right" /></a
+            >{/if}
+          {#if !result.is_example}<a
+            class="profile-link"
+            href={lastFmUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            VER NO LAST.FM <Arrow direction="up-right" />
+          </a>{/if}
+        </div>
       </div>
     </div>
     <div class="period-controls" aria-busy={periodLoading}>
@@ -337,6 +399,7 @@
         label="Período de análise"
         options={periodOptions}
         value={period}
+        bind:selectedButton={selectedPeriodButton}
         onChange={(value) => handlePeriodChange(value as ListeningPeriod)}
       />
       {#if periodLoading}
@@ -346,6 +409,21 @@
         </p>
       {:else if periodError}
         <p class="period-error" role="alert">{periodError}</p>
+      {/if}
+      {#if showLowCoverageNotice}
+        <Tooltip
+          frozen
+          anchor={selectedPeriodButton}
+          align="center"
+          onClose={dismissLowCoverageNotice}
+        >
+          <p aria-live="polite">
+            No período selecionado ({periodLabels[period]}), a cobertura de
+            faixas foi de apenas {coveragePercent(
+              palette.analysis.coverage_tracks,
+            )}. Escolha outro período para tentar encontrar uma cobertura maior.
+          </p>
+        </Tooltip>
       {/if}
     </div>
   </section>
@@ -381,6 +459,7 @@
       {#if directAvailable}
         <ReportView
           report={palette}
+          isExample={result.is_example}
           embedded
           {sectionOptions}
           {periodLabels}
@@ -389,7 +468,9 @@
           {shareFeedback}
           {sharePreviewUrl}
           {shareBusy}
+          {canShareImage}
           {onDownloadShare}
+          {onShareImage}
           {onOpenInstrument}
           {onOpenInstrumentSlug}
           {onGenerateShare}
@@ -712,20 +793,27 @@
   }
   .profile-card {
     display: grid;
-    grid-template-columns: 132px minmax(0, 1fr);
+    grid-template-columns: 192px minmax(0, 1fr);
     align-items: stretch;
     gap: 24px;
     padding: 0 0 24px;
     margin-bottom: 38px;
     border-bottom: 1px solid var(--line-strong);
   }
+  .profile-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
   .profile-avatar {
     display: grid;
-    width: 132px;
+    width: 192px;
     aspect-ratio: 1;
+    align-self: center;
     overflow: hidden;
     place-items: center;
     background: var(--panel);
+    border: 1px solid var(--line-strong);
     color: var(--accent-soft);
     font: 13px var(--meta);
   }
@@ -733,8 +821,14 @@
     display: block;
     width: 100%;
     height: 100%;
-    border: 1px solid var(--line-strong);
     object-fit: cover;
+  }
+  .profile-avatar-drawing {
+    margin: 0;
+    color: var(--accent-soft);
+    font: 9px/1.1 var(--meta);
+    white-space: pre;
+    transform: scaleX(1.3);
   }
   .profile-copy {
     display: flex;
@@ -774,6 +868,15 @@
     font: 12px var(--meta);
     letter-spacing: 0.05em;
     text-transform: uppercase;
+  }
+  .profile-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .profile-actions .profile-link {
+    justify-content: space-between;
   }
   .profile-link {
     display: inline-flex;
@@ -1178,10 +1281,6 @@
     color: var(--accent-soft);
     text-decoration-color: currentColor;
   }
-  .instrument-separator {
-    display: inline-block;
-    width: 2px;
-  }
   .vocabulary-state {
     max-width: 700px;
     padding: 45px 0 55px;
@@ -1216,6 +1315,9 @@
     }
     .profile-avatar {
       width: 96px;
+    }
+    .profile-avatar-drawing {
+      font-size: 5px;
     }
     .profile-identity h1 {
       font-size: clamp(1.6rem, 6vw, 2.2rem);

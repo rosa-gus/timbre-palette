@@ -88,8 +88,12 @@ function drawTextBlock(
 export async function createShareImage(
   report: PaletteReport,
   drawings?: AsciiDrawings,
+  options: { isExample?: boolean; displayName?: string } = {},
 ): Promise<Blob> {
   await document.fonts.ready;
+  const brandIcon = new Image();
+  brandIcon.src = `${import.meta.env.BASE_URL}favicon-196x196.png`;
+  const iconReady = await brandIcon.decode().then(() => true, () => false);
   const portrait = getPortraitCopy(report);
   const canvas = document.createElement("canvas");
   canvas.width = 1200;
@@ -121,7 +125,7 @@ export async function createShareImage(
   context.fillStyle = "#f3efec";
   context.font = "400 24px 'IBM Plex Mono', monospace";
   context.fillText(
-    `@${report.profile.username} / ${periodLabels[report.profile.period] ?? report.profile.period}`,
+    `${options.isExample ? options.displayName || "Besouro Hércules" : `@${report.profile.username}`} / ${periodLabels[report.profile.period] ?? report.profile.period}${options.isExample ? " / EXEMPLO" : ""}`,
     72,
     140,
     1056,
@@ -214,14 +218,18 @@ export async function createShareImage(
     72,
     1338,
   );
-  const partial =
-    report.analysis.coverage_tracks < 1 || report.analysis.coverage_plays < 1;
   context.fillText(
-    `${partial ? "Retrato parcial · " : ""}Informação instrumental em ${shortPercent(report.analysis.coverage_tracks)} das faixas analisadas.`,
+    `Informação instrumental em ${shortPercent(report.analysis.coverage_tracks)} das faixas analisadas.`,
     72,
     1370,
   );
-  if (report.analysis.data_source !== "catalog") {
+  if (options.isExample) {
+    context.fillText(
+      "Escuta fictícia com gravações e créditos reais do catálogo.",
+      72,
+      1402,
+    );
+  } else if (report.analysis.data_source !== "catalog") {
     context.fillText(
       report.analysis.data_source === "mock"
         ? "Dados demonstrativos."
@@ -230,19 +238,18 @@ export async function createShareImage(
       1402,
     );
   }
+  if (iconReady) context.drawImage(brandIcon, 72, 1418, 48, 48);
   context.fillStyle = brandPink;
-  context.fillRect(72, 1420, 204, 44);
-  context.fillStyle = "#000000";
   context.font = "500 20px 'IBM Plex Mono', monospace";
-  context.fillText("TIMBRE PALETTE", 88, 1450);
+  context.fillText("TIMBRE PALETTE", iconReady ? 136 : 72, 1450);
   context.fillStyle = "#b5adaa";
   context.font = "400 20px 'IBM Plex Mono', monospace";
   const address = new URL(window.location.href);
   context.fillText(
     `${address.host}${address.pathname === "/" ? "" : address.pathname}`,
-    296,
+    336,
     1450,
-    832,
+    792,
   );
   return new Promise((resolve, reject) => {
     canvas.toBlob(

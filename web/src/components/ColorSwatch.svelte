@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Tooltip } from "bits-ui";
+  import { Popover } from "bits-ui";
 
   export let color: string;
   export let label = "Cor da paleta";
@@ -7,8 +7,8 @@
   export let style = "";
   export let presenceName = "";
 
-  let open = false;
   let copied = false;
+  let copyFailed = false;
   let trigger: HTMLButtonElement | null = null;
   let copiedTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -29,6 +29,7 @@
   }
 
   async function copyColor(): Promise<void> {
+    copyFailed = false;
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(hex);
@@ -40,17 +41,24 @@
         textarea.style.opacity = "0";
         document.body.appendChild(textarea);
         textarea.select();
-        if (!document.execCommand("copy")) throw new Error("copy failed");
-        textarea.remove();
+        try {
+          if (!document.execCommand("copy")) throw new Error("copy failed");
+        } finally {
+          textarea.remove();
+        }
       }
       copied = true;
-      open = true;
       if (copiedTimer) clearTimeout(copiedTimer);
       copiedTimer = setTimeout(() => {
         copied = false;
       }, 1800);
     } catch {
       copied = false;
+      copyFailed = true;
+      if (copiedTimer) clearTimeout(copiedTimer);
+      copiedTimer = setTimeout(() => {
+        copyFailed = false;
+      }, 2400);
     }
   }
 
@@ -83,39 +91,48 @@
   }
 </script>
 
-<Tooltip.Provider delayDuration={180}>
-  <Tooltip.Root bind:open disableCloseOnTriggerClick>
-    <Tooltip.Trigger
-      bind:ref={trigger}
-      class={`color-swatch ${className}`}
-      style={`--swatch-color:${color};${style}`}
-      aria-label={`${label}: ${hex}. Clique para copiar`}
-      onclick={copyColor}
+<Popover.Root>
+  <Popover.Trigger
+    bind:ref={trigger}
+    class={`color-swatch ${className}`}
+    style={`--swatch-color:${color};${style}`}
+    aria-label={`${label}: ${hex}. Abrir detalhes da cor`}
+  >
+    <span class="visually-hidden">{label}: {hex}</span>
+  </Popover.Trigger>
+  <Popover.Portal>
+    <Popover.Content
+      class="color-popover"
+      side="bottom"
+      align="center"
+      sideOffset={12}
+      collisionPadding={12}
+      aria-label={`Detalhes de ${label}`}
     >
-      <span class="visually-hidden">{label}: {hex}</span>
-    </Tooltip.Trigger>
-    <Tooltip.Portal>
-      <Tooltip.Content
-        class="color-tooltip"
-        side="bottom"
-        align="center"
-        sideOffset={12}
-        collisionPadding={12}
-      >
-        <div use:alignStem>
-          {#if presenceName}
-            <span>{presenceName}</span>
-          {:else}<span
-            class="color-preview"
-            style={`background:${color}`}
-            aria-hidden="true"
-          ></span>{/if}
-          <span>{#if copied}Copiado {hex}{:else}{hex}<span class="separator-indicator" aria-hidden="true">·</span>clique para copiar{/if}</span>
-        </div>
-      </Tooltip.Content>
-    </Tooltip.Portal>
-  </Tooltip.Root>
-</Tooltip.Provider>
+      <div use:alignStem>
+        {#if presenceName}
+          <span class="color-popover-name">{presenceName}</span>
+        {:else}<span
+          class="color-preview"
+          style={`background:${color}`}
+          aria-hidden="true"
+        ></span>{/if}
+        <span class="color-popover-hex">{hex}</span>
+        <button
+          type="button"
+          class="color-copy"
+          aria-label={`Copiar código ${hex}`}
+          onclick={copyColor}
+          >{copied
+            ? "Código copiado"
+            : copyFailed
+              ? "Falha ao copiar"
+              : "Copiar código"}</button
+        >
+      </div>
+    </Popover.Content>
+  </Popover.Portal>
+</Popover.Root>
 
 <style>
   :global(.color-swatch) {
@@ -137,14 +154,17 @@
     min-height: 0;
   }
   :global(.color-swatch:hover),
-  :global(.color-swatch:focus-visible) {
+  :global(.color-swatch:focus-visible),
+  :global(.color-swatch[data-state="open"]) {
     outline: 2px solid var(--ink);
     outline-offset: -2px;
   }
-  :global(.color-tooltip) {
+  :global(.color-popover) {
     position: relative;
     z-index: 40;
-    padding: 8px 10px;
+    min-width: 132px;
+    max-width: calc(100vw - 24px);
+    padding: 12px;
     border: 1px solid var(--line-strong);
     border-radius: 0;
     background: var(--paper);
@@ -152,13 +172,15 @@
     font-family: var(--meta);
     font-size: 12px;
     line-height: 1.5;
-    white-space: nowrap;
     box-shadow: none;
   }
-  :global(.color-tooltip > div) {
+  :global(.color-popover > div) {
     display: grid;
     justify-items: center;
-    gap: 6px;
+    gap: 8px;
+  }
+  :global(.color-popover-name) {
+    font-size: 13px;
   }
   :global(.color-preview) {
     display: block;
@@ -166,7 +188,25 @@
     height: 18px;
     border: 1px solid var(--line-strong);
   }
-  :global(.color-tooltip::before) {
+  :global(.color-popover-hex) {
+    color: var(--muted);
+  }
+  :global(.color-copy) {
+    width: 100%;
+    padding: 5px 8px;
+    border: 1px solid var(--line-strong);
+    border-radius: 0;
+    background: transparent;
+    color: var(--ink);
+    font: 11px var(--meta);
+    cursor: pointer;
+  }
+  :global(.color-copy:hover),
+  :global(.color-copy:focus-visible) {
+    border-color: var(--accent-soft);
+    color: var(--accent-soft);
+  }
+  :global(.color-popover::before) {
     position: absolute;
     left: var(--stem-x, 50%);
     width: 1px;
@@ -175,10 +215,10 @@
     content: "";
     pointer-events: none;
   }
-  :global(.color-tooltip[data-side="bottom"]::before) {
+  :global(.color-popover[data-side="bottom"]::before) {
     bottom: 100%;
   }
-  :global(.color-tooltip[data-side="top"]::before) {
+  :global(.color-popover[data-side="top"]::before) {
     top: 100%;
   }
 </style>

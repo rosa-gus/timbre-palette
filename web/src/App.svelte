@@ -4,6 +4,7 @@
     getApiErrorMessage,
     getInstrument,
     getAnalysis,
+    getExampleAnalysis,
     normalizeUsername,
     getCatalogSize,
     catalogStorageKey,
@@ -84,11 +85,13 @@
   const headerMarks: Record<ResolvedTheme, { src: string; srcset: string }> = {
     dark: {
       src: "./timbre-mark-header-dark-1x.png",
-      srcset: "./timbre-mark-header-dark-1x.png 1x, ./timbre-mark-header-dark-2x.png 2x",
+      srcset:
+        "./timbre-mark-header-dark-1x.png 1x, ./timbre-mark-header-dark-2x.png 2x",
     },
     light: {
       src: "./timbre-mark-header-light-1x.png",
-      srcset: "./timbre-mark-header-light-1x.png 1x, ./timbre-mark-header-light-2x.png 2x",
+      srcset:
+        "./timbre-mark-header-light-1x.png 1x, ./timbre-mark-header-light-2x.png 2x",
     },
   };
   const homePath = normalizePathname();
@@ -99,6 +102,8 @@
   async function checkCatalog(signal: AbortSignal): Promise<void> {
     try {
       const current = await getCatalogSize(signal);
+      // Only consume the saved comparison when the indicator can be shown.
+      if (signal.aborted || view !== "entry") return;
       const saved = getStorageItem<unknown>(catalogStorageKey);
       if (
         saved &&
@@ -134,6 +139,8 @@
   let systemThemeQuery: MediaQueryList | null = null;
   let username = "";
   let period: ListeningPeriod = "1month";
+  let isExample = false;
+  let exampleId = "";
   let result: ProfileAnalysisV2 | null = null;
   let activeAnalysisView: AnalysisView = "track_palette";
   let formError = "";
@@ -146,6 +153,7 @@
   let sharePreviewUrl = "";
   let shareBlob: Blob | null = null;
   let shareBusy = false;
+  let canShareImage = false;
   let dialogOpen = false;
   let instrument: InstrumentResource | null = null;
   let instrumentLoading = false;
@@ -184,7 +192,15 @@
 
   function updateUrl(): void {
     const url = new URL(window.location.href);
-    url.searchParams.set("profile", username);
+    if (isExample) {
+      url.searchParams.delete("profile");
+      url.searchParams.set("example", "1");
+      url.searchParams.set("sample", exampleId);
+    } else {
+      url.searchParams.delete("example");
+      url.searchParams.delete("sample");
+      url.searchParams.set("profile", username);
+    }
     url.searchParams.set("period", period);
     url.searchParams.set("view", activeAnalysisView);
     window.history.replaceState({}, "", url);
@@ -234,8 +250,13 @@
       formError = "";
     }
     try {
-      const next = await getAnalysis(username, period, signal);
+      const next = isExample
+        ? await getExampleAnalysis(period, signal, exampleId || undefined)
+        : await getAnalysis(username, period, signal);
       result = next;
+      isExample = next.is_example;
+      exampleId = next.example_id ?? "";
+      username = next.profile.username;
       const requestedView = new URL(window.location.href).searchParams.get(
         "view",
       );
@@ -269,12 +290,35 @@
     void loadReport(true);
   }
   function submit(): void {
+    isExample = false;
+    exampleId = "";
+    loadingTitle = "Lendo seu histórico.";
+    loadingDescription = "As primeiras relações estão sendo reunidas.";
+    loadingDetail = "Consultando o Last.fm";
     username = normalizeUsername(username);
     if (!username) {
       formError = "Informe um perfil do Last.fm para começar.";
       return;
     }
     if (view === "loading") return;
+    void loadReport();
+  }
+  function createExampleId(): string {
+    const bytes = new Uint8Array(16);
+    window.crypto.getRandomValues(bytes);
+    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join(
+      "",
+    );
+  }
+  function openExample(): void {
+    if (view === "loading") return;
+    isExample = true;
+    exampleId = createExampleId();
+    username = "";
+    loadingTitle = "Preparando o exemplo.";
+    loadingDescription = "Selecionando gravações e créditos do catálogo.";
+    loadingDetail = "Consultando o catálogo";
+    formError = "";
     void loadReport();
   }
   function openInstrument(): void {
@@ -308,7 +352,10 @@
     shareBusy = true;
     shareFeedback = "Preparando sua imagem…";
     try {
-      const blob = await createShareImage(sourceReport);
+      const blob = await createShareImage(sourceReport, undefined, {
+        isExample: result.is_example,
+        displayName: result.profile.realname || "Besouro Hércules",
+      });
       if (result?.track_palette !== sourceReport || view !== "report") return;
       if (sharePreviewUrl) URL.revokeObjectURL(sharePreviewUrl);
       shareBlob = blob;
@@ -326,8 +373,43 @@
   }
   function downloadShare(): void {
     if (!shareBlob || !result) return;
-    downloadShareImage(shareBlob, result.profile.username);
+    downloadShareImage(
+      shareBlob,
+      result.is_example ? "besouro-hercules" : result.profile.username,
+    );
     shareFeedback = "Imagem baixada para guardar ou compartilhar.";
+  }
+  async function shareImage(): Promise<void> {
+    if (!shareBlob || !result || !canShareImage) return;
+    const usernameSlug = (
+      result.is_example ? "besouro-hercules" : result.profile.username
+    )
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/gi, "-");
+    const file = new File(
+      [shareBlob],
+      `paleta-${usernameSlug || "escuta"}.png`,
+      { type: "image/png" },
+    );
+    try {
+      await navigator.share({
+        files: [file],
+        title: result.is_example
+          ? "Escuta de exemplo do Besouro Hércules"
+          : "Minha escuta em cores",
+        text: result.is_example
+          ? "Uma escuta fictícia montada com gravações e créditos reais do catálogo."
+          : "Os instrumentos encontrados nas músicas que ouvi formaram esta paleta.",
+      });
+      shareFeedback = "Compartilhamento concluído.";
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        shareFeedback = "Compartilhamento cancelado.";
+        return;
+      }
+      shareFeedback =
+        "Não foi possível compartilhar agora. Você ainda pode baixar a imagem.";
+    }
   }
   onDestroy(() => {
     controller?.abort();
@@ -372,16 +454,31 @@
   }
   onMount(() => {
     const catalogController = new AbortController();
+    try {
+      if (
+        typeof navigator.share === "function" &&
+        typeof navigator.canShare === "function"
+      ) {
+        const probeFile = new File([], "paleta.png", { type: "image/png" });
+        canShareImage = navigator.canShare({ files: [probeFile] });
+      }
+    } catch {
+      canShareImage = false;
+    }
     void checkCatalog(catalogController.signal);
     const savedTheme = getStorageItem<unknown>(themeStorageKey);
     setTheme(isTheme(savedTheme) ? savedTheme : "system");
     const params = new URL(window.location.href).searchParams;
     const profile = params.get("profile");
     const requested = params.get("period") as ListeningPeriod | null;
-    if (profile) {
+    if (requested && periods.some((item) => item.value === requested))
+      period = requested;
+    if (params.get("example") === "1") {
+      isExample = true;
+      exampleId = params.get("sample") || createExampleId();
+      void loadReport();
+    } else if (profile) {
       username = normalizeUsername(profile);
-      if (requested && periods.some((item) => item.value === requested))
-        period = requested;
       void loadReport();
     }
     return () => {
@@ -432,9 +529,14 @@
         {loadingTitle}
         {loadingDescription}
         {loadingDetail}
-        onUsernameChange={(value) => (username = value)}
+        onUsernameChange={(value) => {
+          username = value;
+          isExample = false;
+          exampleId = "";
+        }}
         onPeriodChange={(value) => (period = value)}
         onSubmit={submit}
+        onExample={openExample}
       />
     {:else if view === "report" && result}
       <ResultsView
@@ -449,11 +551,13 @@
         {shareFeedback}
         {sharePreviewUrl}
         {shareBusy}
+        {canShareImage}
         {periodLoading}
         {periodError}
         {periods}
         onPeriodChange={changePeriod}
         onDownloadShare={downloadShare}
+        onShareImage={shareImage}
         onOpenInstrument={openInstrument}
         onOpenInstrumentSlug={(slug) => void loadInstrument(slug)}
         onGenerateShare={generateShare}
@@ -465,7 +569,7 @@
   <footer class="site-footer">
     <div class="footer-explainers">
       <div class="footer-explainer">
-        <Dropdown title="Limites técnicos">
+        <Dropdown title="Limites da análise">
           <p class="limits-intro">Uma leitura aproximada da sua escuta.</p>
           <p>
             A paleta combina seu histórico público do Last.fm com créditos
@@ -480,12 +584,21 @@
             significa ausência na música.
           </p>
           <p>
-            O catálogo ainda está em construção: faixas sem evidência
-            instrumental aceita não entram no cálculo da paleta. A consulta usa
-            um snapshot offline do MusicBrainz; sua hidratação pode melhorar uma
-            visita futura, sem garantir novos créditos. O vocabulário dos
-            artistas descreve gravações documentadas desses artistas e não
-            comprova instrumentos em cada faixa ouvida.
+            Faixas sem créditos instrumentais suficientes ficam fora do cálculo
+            da paleta. Artistas pouco conhecidos e parte da música atual,
+            sobretudo a produzida com software, podem ter menos créditos
+            publicados: sons programados, sintetizados ou sampleados nem sempre
+            são registrados como instrumentos.
+          </p>
+          <p>
+            O catálogo pode receber novos dados, então uma consulta futura pode
+            trazer outro resultado, sem garantia de identificar mais
+            instrumentos.
+          </p>
+          <p>
+            O vocabulário dos artistas reúne instrumentos documentados em
+            gravações desses artistas; não confirma que estejam nas músicas que
+            você ouviu.
           </p>
           <p>
             O temperamento da escuta é uma interpretação editorial e lúdica. Não
@@ -495,7 +608,11 @@
       </div>
       {#if view === "report" && result}
         <div class="footer-explainer footer-explainer--source">
-          <Dropdown title="Fonte dos créditos e versões" align="end">
+          <Dropdown
+            title="Fonte dos créditos e versões"
+            align="end"
+            mobileStart
+          >
             <p>
               Os instrumentos vêm de créditos publicados no MusicBrainz. Usamos
               o snapshot {result.snapshot.snapshot_version}, uma cópia desses

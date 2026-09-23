@@ -31,4 +31,4 @@ include = ["palette_api*"]
 exclude = ["palette_api.tools*"]
 
 [tool.setuptools.package-data]
-palette_api = ["_generated_image_catalog.json"]
+palette_api = ["_generated_image_catalog.json", "_curated_example_history.json"]

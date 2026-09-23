@@ -1,9 +1,12 @@
 <script lang="ts">
   export let title: string;
   export let align: "start" | "end" = "start";
+  export let mobileStart = false;
 </script>
 
-<details class={`ui-dropdown ui-dropdown--${align}`}>
+<details
+  class={`ui-dropdown ui-dropdown--${align}${mobileStart ? " ui-dropdown--mobile-start" : ""}`}
+>
   <summary>{title}</summary>
   <div class="dropdown-content"><slot /></div>
 </details>
@@ -29,12 +32,11 @@
     display: none;
   }
   summary::before {
-    content: "▸";
-    font-size: 18px;
+    content: "[+]";
+    font: 12px/1 var(--meta);
   }
   .ui-dropdown[open] > summary::before {
-    content: "▾";
-    font-size: 18px;
+    content: "[-]";
   }
   .ui-dropdown--end > summary {
     margin-left: auto;
@@ -66,5 +68,18 @@
   }
   .dropdown-content :global(p:last-child) {
     margin-bottom: 0;
+  }
+  @media (max-width: 800px) {
+    .ui-dropdown--mobile-start > summary {
+      margin-left: 0;
+      text-align: start;
+    }
+    .ui-dropdown--mobile-start > .dropdown-content {
+      margin-left: 0;
+      padding: 4px 0 16px 20px;
+      border-left: 1px solid var(--line-strong);
+      border-right: 0;
+      text-align: start;
+    }
   }
 </style>

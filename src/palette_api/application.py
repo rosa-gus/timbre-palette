@@ -674,6 +674,11 @@ class PaletteService:
                 "O histórico foi obtido do Last.fm. As evidências instrumentais "
                 "ainda são fictícias e servem apenas para desenvolver o produto."
             )
+        elif history.instrumentation_source is DataSource.CATALOG:
+            base_notice = (
+                "Escuta fictícia montada com gravações do catálogo e relacionada "
+                "às evidências instrumentais publicadas no projeto."
+            )
         else:
             base_notice = (
                 "Histórico e evidências instrumentais fictícios. O contrato e o "

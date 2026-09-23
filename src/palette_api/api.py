@@ -1,11 +1,11 @@
 import json
 from typing import Annotated
+from uuid import uuid4
 
 from collections.abc import Mapping
 
 from fastapi import Depends, FastAPI, Path, Query, Request, Response
 from fastapi.exceptions import RequestValidationError
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from palette_api.application import (
@@ -41,8 +41,11 @@ from palette_api.schemas import (
     ProfileAnalysisV2,
 )
 from palette_api.v2 import (
+    CuratedExampleListeningHistoryProvider,
+    CuratedExampleSnapshotProjectionProvider,
     D1SnapshotHydrationScheduler,
     D1SnapshotProjectionProvider,
+    ExampleHistoryUnavailableError,
     MockSnapshotProjectionProvider,
     SnapshotUnavailableError,
     V2AnalysisService,
@@ -61,15 +64,6 @@ app = FastAPI(
     summary="Retratos instrumentais de históricos públicos do Last.fm.",
     version="2.0.0",
 )
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
-    allow_methods=["GET"],
-    allow_headers=["Accept"],
-)
-
 
 @app.get("/v2/catalog/stats", operation_id="getCatalogStatsV2")
 async def get_catalog_stats(request: Request) -> JSONResponse:
@@ -293,6 +287,18 @@ async def handle_snapshot_unavailable(
     return JSONResponse(status_code=503, content=response.model_dump(), headers=NO_STORE_HEADERS)
 
 
+@app.exception_handler(ExampleHistoryUnavailableError)
+async def handle_example_history_unavailable(
+    _request: Request,
+    error: ExampleHistoryUnavailableError,
+) -> JSONResponse:
+    response = ApiError(
+        code="example_data_unavailable",
+        message=str(error) or "The curated example data is unavailable.",
+    )
+    return JSONResponse(status_code=503, content=response.model_dump(), headers=NO_STORE_HEADERS)
+
+
 @app.exception_handler(Exception)
 async def handle_unexpected_error(request: Request, error: Exception) -> JSONResponse:
     print(
@@ -347,6 +353,44 @@ async def get_profile_analysis_v2(
         else PALETTE_CACHE_CONTROL
     )
     return report
+
+
+@app.get(
+    "/v2/examples/analysis",
+    operation_id="getExampleAnalysisV2",
+    response_model=ProfileAnalysisV2,
+    responses={
+        422: {"model": ApiError},
+        503: {"model": ApiError},
+    },
+)
+async def get_example_analysis_v2(
+    response: Response,
+    image_catalog: Annotated[InstrumentImageCatalog, Depends(get_image_catalog)],
+    period: Annotated[
+        ListeningPeriod,
+        Query(description="Período fictício a mostrar no perfil de exemplo."),
+    ] = ListeningPeriod.ONE_MONTH,
+    sample_id: Annotated[
+        str | None,
+        Query(
+            min_length=1,
+            max_length=64,
+            description="Identificador que mantém a mesma seleção de exemplo.",
+        ),
+    ] = None,
+) -> ProfileAnalysisV2:
+    resolved_sample_id = sample_id or uuid4().hex
+    analysis_service = V2AnalysisService(
+        history_provider=CuratedExampleListeningHistoryProvider(resolved_sample_id),
+        snapshot_provider=CuratedExampleSnapshotProjectionProvider(),
+        image_catalog=image_catalog,
+    )
+    report = await analysis_service.analyze("eu adoro beatles!", period)
+    response.headers["Cache-Control"] = NO_STORE_HEADERS["Cache-Control"]
+    return report.model_copy(
+        update={"is_example": True, "example_id": resolved_sample_id}
+    )
 
 
 @app.get(

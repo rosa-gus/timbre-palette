@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { RadioGroup } from "bits-ui";
+
   type Option = {
     value: string;
     label: string;
@@ -9,30 +11,55 @@
   export let value = "";
   export let label = "Escolha uma opção";
   export let onChange: (value: string) => void = () => undefined;
+  export let selectedButton: HTMLButtonElement | null = null;
+
+  function exposeSelectedButton(node: HTMLButtonElement, selected: boolean) {
+    function updateSelection(isSelected: boolean) {
+      if (isSelected) selectedButton = node;
+      else if (selectedButton === node) selectedButton = null;
+    }
+
+    updateSelection(selected);
+    return {
+      update: updateSelection,
+      destroy() {
+        if (selectedButton === node) selectedButton = null;
+      },
+    };
+  }
 </script>
 
-<div class="segmented-control" role="radiogroup" aria-label={label}>
+<RadioGroup.Root
+  class="segmented-control"
+  aria-label={label}
+  orientation="horizontal"
+  {value}
+  onValueChange={onChange}
+>
   {#each options as option}
-    <button
-      type="button"
-      class:active={value === option.value}
-      class="segment-button"
+    <RadioGroup.Item
+      value={option.value}
       disabled={option.disabled}
-      role="radio"
-      aria-checked={value === option.value}
-      aria-label={option.note
-        ? `${option.label}, ${option.note}`
-        : option.label}
-      on:click={() => onChange(option.value)}>{option.label}</button
     >
+      {#snippet child({ props })}
+        <button
+          {...props}
+          class="segment-button"
+          aria-label={option.note
+            ? `${option.label}, ${option.note}`
+            : option.label}
+          use:exposeSelectedButton={value === option.value}
+        >{option.label}</button>
+      {/snippet}
+    </RadioGroup.Item>
   {/each}
-</div>
+</RadioGroup.Root>
 
 <style>
-  .segmented-control {
+  :global(.segmented-control) {
     display: flex;
     flex-wrap: wrap;
-    gap: 5px;
+    gap: 8px;
   }
   .segment-button {
     min-height: 30px;
@@ -48,7 +75,7 @@
     text-transform: uppercase;
   }
   .segment-button:hover,
-  .segment-button.active {
+  .segment-button[data-state="checked"] {
     border-color: var(--accent-soft);
     color: var(--accent-pale);
   }

@@ -238,6 +238,8 @@ export interface VocabularyFamily {
 }
 
 export interface ProfileAnalysisV2 {
+  is_example: boolean;
+  example_id: string | null;
   profile: ProfileSummary;
   snapshot: SnapshotInfo;
   track_palette: PaletteReport;

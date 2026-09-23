@@ -39,3 +39,21 @@ Originals and treated derivatives are registered in
 Cavaquinho, surdo, tamborim, and cuíca use the corresponding family images.
 Captions identify these as family-level representations and do not attribute
 the photograph to the specific instrument.
+
+## ASCII drawings
+
+Some ASCII drawings in the project are based on artworks published in the
+[ASCII Art Archive](https://www.asciiart.eu/), including the beetle in
+`web/src/sharing/beetle.ts`. These drawings were adapted for the project's
+compact profile and sharing layouts.
+
+## Example artist vocabulary
+
+- **Source:** The example bundles aggregate artist instrument evidence from the
+  [MusicBrainz instrument-credit snapshot](https://musicbrainz.org/doc/MusicBrainz_Database/Download),
+  version `20260912-002318`.
+- **License and attribution:** CC0; MusicBrainz, derived instrumental-credit
+  index. The snapshot manifest hash is recorded in
+  `src/palette_api/_curated_example_history.json`.
+- The example history also includes [Béradêro by Chico César](https://musicbrainz.org/recording/c49173b2-3901-4c45-b37a-2a716cdbefb2),
+  listed on the MusicBrainz release [Aos Vivos](https://musicbrainz.org/release/8922a747-49ba-4e62-8bfc-615c128f52b1).

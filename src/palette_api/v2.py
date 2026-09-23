@@ -1,17 +1,21 @@
-"""API v2 analysis domain and its D1 snapshot projection reader.
+"""API v2 analysis providers and the D1 snapshot projection reader.
 
-The HTTP Worker reads only compact, versioned D1 projections. R2 is read by
-the snapshot hydrator and is intentionally not a dependency of this module or
-of the public request path.
+Real profile requests read compact, versioned D1 projections. The public
+example endpoint uses a bundled curated fixture instead. R2 is read only by the
+snapshot hydrator and is not a dependency of the public request path.
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
+import random
 from collections import defaultdict
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any, Protocol
+from functools import lru_cache
+from pathlib import Path
+from typing import Any, Protocol, TypedDict
 
 from palette_api.application import EmptyListeningHistoryError, PaletteService
 from palette_api.domain import (
@@ -22,6 +26,7 @@ from palette_api.domain import (
     ListeningHistory,
     ListeningHistoryProvider,
     ListeningPeriod,
+    ProfileDetails,
     RecordingStatus,
     SoundNature,
     Track,
@@ -60,6 +65,18 @@ MAX_RECORDING_HYDRATION_TARGETS = 50
 
 class SnapshotUnavailableError(RuntimeError):
     """Raised when D1 has no active, usable MusicBrainz snapshot."""
+
+
+class ExampleHistoryUnavailableError(RuntimeError):
+    """Raised when the curated fixture cannot form an example history."""
+
+
+class ExampleRecordingCandidate(TypedDict):
+    mbid: str
+    title: str
+    artist: str
+    artist_mbid: str | None
+    layers: list[dict[str, Any]]
 
 
 @dataclass(frozen=True, slots=True)
@@ -101,6 +118,311 @@ class SnapshotHydrationScheduler(Protocol):
         snapshot_version: str,
         targets: tuple[HydrationTarget, ...],
     ) -> None: ...
+
+
+@lru_cache(maxsize=1)
+def _curated_example_fixture() -> tuple[dict[str, Any], str]:
+    path = Path(__file__).with_name("_curated_example_history.json")
+    try:
+        content = path.read_bytes()
+        fixture = json.loads(content)
+    except (OSError, ValueError) as error:
+        raise ExampleHistoryUnavailableError(
+            "The curated example data is unavailable or invalid."
+        ) from error
+    if not isinstance(fixture, dict) or not isinstance(fixture.get("version"), str):
+        raise ExampleHistoryUnavailableError(
+            "The curated example data is unavailable or invalid."
+        )
+    recordings = fixture.get("recordings")
+    multipliers = fixture.get("period_multipliers")
+    try:
+        target_count = int(fixture["target_recordings"])
+        artist_limit = int(fixture["max_recordings_per_artist"])
+        if target_count < 5 or artist_limit < 1 or not isinstance(recordings, list):
+            raise ValueError("invalid example selection settings")
+        if not isinstance(multipliers, dict) or any(
+            int(multipliers[period.value]) < 1 for period in ListeningPeriod
+        ):
+            raise ValueError("invalid example period multipliers")
+        vocabulary_snapshot = fixture.get("vocabulary_snapshot")
+        vocabulary_rows = fixture.get("artist_vocabulary")
+        if not isinstance(vocabulary_snapshot, dict) or any(
+            not isinstance(vocabulary_snapshot.get(field), str)
+            or not vocabulary_snapshot[field].strip()
+            for field in (
+                "snapshot_version",
+                "schema_version",
+                "manifest_hash",
+                "object_prefix",
+                "methodology_version",
+            )
+        ):
+            raise ValueError("invalid example vocabulary snapshot")
+        if not isinstance(vocabulary_rows, list):
+            raise ValueError("invalid example artist vocabulary")
+        for row in vocabulary_rows:
+            if not isinstance(row, dict) or any(
+                not isinstance(row.get(field), str) or not row[field].strip()
+                for field in (
+                    "artist_mbid",
+                    "instrument_slug",
+                    "instrument_name",
+                    "family_slug",
+                    "family_name",
+                    "source_scope",
+                )
+            ):
+                raise ValueError("invalid example vocabulary row")
+            if row["source_scope"] not in {"recording", "track"} or any(
+                float(row[field]) < 0
+                for field in (
+                    "distinct_recordings",
+                    "documented_recordings",
+                    "prevalence",
+                    "evidence_quality",
+                )
+            ):
+                raise ValueError("invalid example vocabulary metrics")
+            if float(row["prevalence"]) > 1 or float(row["evidence_quality"]) > 1:
+                raise ValueError("invalid example vocabulary rates")
+        seen_mbids: set[str] = set()
+        for recording in recordings:
+            if not isinstance(recording, dict) or any(
+                not isinstance(recording.get(field), str) or not recording[field].strip()
+                for field in ("mbid", "title", "artist")
+            ):
+                raise ValueError("invalid example recording")
+            artist_mbid = recording.get("artist_mbid")
+            if artist_mbid is not None and (
+                not isinstance(artist_mbid, str) or not artist_mbid.strip()
+            ):
+                raise ValueError("invalid example artist identity")
+            if recording["mbid"] in seen_mbids:
+                raise ValueError("duplicate example recording")
+            seen_mbids.add(recording["mbid"])
+            layers = recording.get("layers")
+            if not isinstance(layers, list):
+                raise ValueError("invalid example recording layers")
+            for layer in layers:
+                if not isinstance(layer, dict):
+                    raise ValueError("invalid example layer")
+                _example_layer(layer)
+        if len(recordings) < 5:
+            raise ValueError("not enough curated recordings")
+    except (KeyError, TypeError, ValueError) as error:
+        raise ExampleHistoryUnavailableError(
+            "The curated example data is unavailable or invalid."
+        ) from error
+    return fixture, hashlib.sha256(content).hexdigest()
+
+
+class CuratedExampleListeningHistoryProvider:
+    """Build a reproducible fictional history from a bundled JSON fixture."""
+
+    def __init__(self, sample_id: str) -> None:
+        self._sample_id = sample_id
+
+    async def get_history(
+        self,
+        username: str,
+        period: ListeningPeriod,
+    ) -> ListeningHistory:
+        fixture, _ = _curated_example_fixture()
+        chooser = random.Random(f"{self._sample_id}:{period.value}")
+        recordings = fixture["recordings"]
+        direct_evidence_candidates = [
+            item for item in recordings if isinstance(item, dict) and item.get("layers")
+        ]
+        other_candidates = [
+            item for item in recordings if isinstance(item, dict) and not item.get("layers")
+        ]
+        chooser.shuffle(direct_evidence_candidates)
+        chooser.shuffle(other_candidates)
+        selected = _choose_example_candidates(
+            direct_evidence_candidates,
+            other_candidates,
+            int(fixture.get("target_recordings", 15)),
+            int(fixture.get("max_recordings_per_artist", 3)),
+            {
+                str(row["artist_mbid"]).lower()
+                for row in fixture.get("artist_vocabulary", [])
+                if int(row["distinct_recordings"]) >= MIN_QUALIFYING_RECORDINGS
+            },
+        )
+        if len(selected) < 5:
+            raise ExampleHistoryUnavailableError(
+                "The curated data does not contain enough recordings for an example."
+            )
+
+        try:
+            play_multiplier = int(fixture["period_multipliers"][period.value])
+            vocabulary_artist_mbids = {
+                str(row["artist_mbid"]).lower()
+                for row in fixture.get("artist_vocabulary", [])
+                if int(row["distinct_recordings"]) >= MIN_QUALIFYING_RECORDINGS
+            }
+            tracks = [
+                Track(
+                    title=str(item["title"]),
+                    artist=str(item["artist"]),
+                    artist_mbid=(str(item["artist_mbid"]) if item.get("artist_mbid") else None),
+                    play_count=(
+                        12 * play_multiplier
+                        if str(item.get("artist_mbid", "")).lower()
+                        in vocabulary_artist_mbids
+                        else chooser.randint(2, 12) * play_multiplier
+                    ),
+                    mbid=str(item["mbid"]),
+                    layers=tuple(_example_layer(layer) for layer in item["layers"]),
+                )
+                for item in selected
+            ]
+        except (KeyError, TypeError, ValueError) as error:
+            raise ExampleHistoryUnavailableError(
+                "The curated example data is unavailable or invalid."
+            ) from error
+        tracks.sort(key=lambda track: (-track.play_count, track.mbid or ""))
+        return ListeningHistory(
+            username=username,
+            period=period,
+            tracks=tuple(tracks),
+            history_source=DataSource.MOCK,
+            instrumentation_source=DataSource.CATALOG,
+            profile=ProfileDetails(
+                realname="Besouro Hércules",
+            ),
+        )
+
+
+def _example_layer(item: Mapping[str, Any]) -> InstrumentLayer:
+    nature = item.get("nature")
+    return InstrumentLayer(
+        slug=str(item["slug"]),
+        name=str(item["name"]),
+        family_slug=str(item["family_slug"]),
+        family_name=str(item["family_name"]),
+        nature=SoundNature(str(nature)) if nature else None,
+        role=str(item.get("role", "")),
+        confidence=Confidence(str(item.get("confidence", "documented"))),
+        prominence=float(item.get("prominence", 1.0)),
+        claim_level=ClaimLevel(str(item.get("claim_level", "instrument"))),
+    )
+
+
+def _choose_example_candidates(
+    direct_evidence_candidates: list[ExampleRecordingCandidate],
+    other_candidates: list[ExampleRecordingCandidate],
+    target_count: int,
+    artist_limit: int,
+    priority_artist_mbids: set[str] | None = None,
+) -> list[ExampleRecordingCandidate]:
+    selected: list[ExampleRecordingCandidate] = []
+    artist_counts: dict[str, int] = defaultdict(int)
+    priority_artist_mbids = {
+        mbid.lower() for mbid in (priority_artist_mbids or set())
+    }
+    for candidate in direct_evidence_candidates + other_candidates:
+        artist_mbid = str(candidate.get("artist_mbid") or "").lower()
+        if artist_mbid in priority_artist_mbids and artist_counts[artist_mbid] == 0:
+            selected.append(candidate)
+            artist_counts[artist_mbid] = 1
+
+    def add_candidates(
+        candidates: list[ExampleRecordingCandidate], quota: int
+    ) -> None:
+        initial_count = len(selected)
+        for require_new_artist in (True, False):
+            for candidate in candidates:
+                if len(selected) - initial_count >= quota:
+                    return
+                if any(item["mbid"] == candidate["mbid"] for item in selected):
+                    continue
+                artist_key = (
+                    candidate.get("artist_mbid")
+                    or f"name:{(candidate.get('artist') or '').casefold()}"
+                )
+                if require_new_artist and artist_counts[artist_key] > 0:
+                    continue
+                if artist_counts[artist_key] >= artist_limit:
+                    continue
+                selected.append(candidate)
+                artist_counts[artist_key] += 1
+
+    other_quota = min(len(other_candidates), target_count // 3)
+    direct_evidence_quota = target_count - other_quota
+    add_candidates(direct_evidence_candidates, direct_evidence_quota)
+    add_candidates(other_candidates, target_count - len(selected))
+    add_candidates(
+        direct_evidence_candidates + other_candidates,
+        target_count - len(selected),
+    )
+    return selected
+
+
+class CuratedExampleSnapshotProjectionProvider:
+    """Treat the bundled example evidence as a complete, static projection."""
+
+    async def prepare(self, history: ListeningHistory) -> SnapshotPreparation:
+        fixture, _manifest_hash = _curated_example_fixture()
+        version = str(fixture["version"])
+        vocabulary_snapshot = fixture["vocabulary_snapshot"]
+        snapshot = SnapshotInfo(
+            snapshot_version=str(vocabulary_snapshot["snapshot_version"]),
+            schema_version=str(vocabulary_snapshot["schema_version"]),
+            manifest_hash=str(vocabulary_snapshot["manifest_hash"]),
+            object_prefix=str(vocabulary_snapshot["object_prefix"]),
+            methodology_version=str(vocabulary_snapshot["methodology_version"]),
+        )
+        resolved_tracks = tuple(
+            Track(
+                title=track.title,
+                artist=track.artist,
+                play_count=track.play_count,
+                mbid=track.mbid,
+                lastfm_url=track.lastfm_url,
+                layers=track.layers,
+                recording_status=(
+                    RecordingStatus.RESOLVED
+                    if track.layers
+                    else RecordingStatus.RESOLVED_WITHOUT_EVIDENCE
+                ),
+                recording_status_detail=track.recording_status_detail,
+                release_mbid=track.release_mbid,
+                artist_mbid=track.artist_mbid,
+            )
+            for track in history.tracks
+        )
+        prepared_history = ListeningHistory(
+            username=history.username,
+            period=history.period,
+            tracks=resolved_tracks,
+            history_source=history.history_source,
+            instrumentation_source=DataSource.CATALOG,
+            catalog_version=version,
+            profile=history.profile,
+        )
+        return SnapshotPreparation(
+            snapshot=snapshot,
+            history=prepared_history,
+            vocabulary_rows=tuple(
+                SnapshotVocabularyRow(
+                    artist_mbid=str(row["artist_mbid"]).lower(),
+                    instrument_slug=str(row["instrument_slug"]),
+                    instrument_name=str(row["instrument_name"]),
+                    family_slug=str(row["family_slug"]),
+                    family_name=str(row["family_name"]),
+                    distinct_recordings=int(row["distinct_recordings"]),
+                    documented_recordings=int(row["documented_recordings"]),
+                    prevalence=float(row["prevalence"]),
+                    evidence_quality=float(row["evidence_quality"]),
+                    source_scope=str(row["source_scope"]),
+                )
+                for row in fixture["artist_vocabulary"]
+            ),
+            pending_artist_mbids=frozenset(),
+            targets=(),
+        )
 
 
 class MockSnapshotProjectionProvider:
