@@ -84,6 +84,8 @@ async def test_v2_mock_analysis_has_two_separate_products() -> None:
     assert response.status_code == 200
     body = response.json()
     assert set(body) == {
+        "is_example",
+        "example_id",
         "profile",
         "snapshot",
         "track_palette",
@@ -92,6 +94,8 @@ async def test_v2_mock_analysis_has_two_separate_products() -> None:
         "default_view",
         "hydration",
     }
+    assert body["is_example"] is False
+    assert body["example_id"] is None
     assert body["default_view"] == "track_palette"
     assert body["available_views"] == ["track_palette"]
     assert body["artist_vocabulary"]["status"] == "insufficient"
