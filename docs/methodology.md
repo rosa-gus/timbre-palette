@@ -88,8 +88,9 @@ work that cannot meet the thresholds is reported as `insufficient`.
 
 The vocabulary exposes `available`, `pending`, or `insufficient`. The direct
 palette uses `ready`, `partial`, or `insufficient`. The default view is the
-direct palette when it is ready, the artist vocabulary when it is available and
-the direct palette is not ready, and null when neither product has a primary
+direct palette when it is ready or partial and available. The artist vocabulary
+becomes the default only when the direct palette is insufficient and the
+vocabulary is available. The default is null when neither product has a primary
 result. A partial direct palette remains in the response as a limited view.
 
 Every response identifies the active snapshot and methodology versions. Any

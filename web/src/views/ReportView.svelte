@@ -231,9 +231,9 @@
                 {#if family.image.credit.photographer_url}<a
                     href={family.image.credit.photographer_url}
                     target="_blank"
-                    rel="noreferrer">Foto: {family.image.credit.photographer}</a
+                    rel="noreferrer">{family.image.credit.photographer}</a
                   >{:else if family.image.credit.photographer}<span
-                    >Foto: {family.image.credit.photographer}</span
+                    >{family.image.credit.photographer}</span
                   >{/if}
               </p>
             </div>{:else}<div class="image-placeholder">{family.name}</div>{/if}
