@@ -62,7 +62,7 @@ PALETTE_CACHE_CONTROL = "public, max-age=300, s-maxage=300"
 app = FastAPI(
     title="Timbre Palette API",
     summary="Retratos instrumentais de históricos públicos do Last.fm.",
-    version="2.0.0",
+    version="2.0.1",
 )
 
 @app.get("/v2/catalog/stats", operation_id="getCatalogStatsV2")

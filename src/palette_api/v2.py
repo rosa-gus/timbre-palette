@@ -1232,9 +1232,9 @@ class V2AnalysisService:
             available_views.append("artist_vocabulary")
         default_view = (
             "track_palette"
-            if palette.analysis.status == "ready" and palette_available
+            if palette.analysis.status in {"ready", "partial"} and palette_available
             else "artist_vocabulary"
-            if vocabulary_available
+            if palette.analysis.status == "insufficient" and vocabulary_available
             else None
         )
         pending_recordings = sum(

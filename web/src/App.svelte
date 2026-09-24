@@ -221,13 +221,20 @@
         : "artist_vocabulary";
     }
     if (requested === "track_palette") return "track_palette";
+    if (next.track_palette.analysis.status !== "insufficient") {
+      return "track_palette";
+    }
+    if (
+      next.artist_vocabulary.status !== "insufficient" &&
+      (next.available_views.includes("artist_vocabulary") ||
+        next.artist_vocabulary.status === "pending")
+    ) {
+      return "artist_vocabulary";
+    }
     if (next.default_view && next.available_views.includes(next.default_view)) {
       return next.default_view;
     }
-    if (
-      next.available_views.includes("artist_vocabulary") ||
-      next.artist_vocabulary.status === "pending"
-    ) {
+    if (next.available_views.includes("artist_vocabulary")) {
       return "artist_vocabulary";
     }
     return "track_palette";

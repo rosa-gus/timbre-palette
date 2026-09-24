@@ -148,7 +148,7 @@ class StaticVocabularyProvider:
 
 
 @pytest.mark.anyio
-async def test_vocabulary_can_become_the_default_view() -> None:
+async def test_partial_palette_stays_default_when_vocabulary_is_available() -> None:
     artist_mbids = tuple(
         f"00000000-0000-0000-0000-00000000000{index}" for index in range(1, 5)
     )
@@ -212,7 +212,7 @@ async def test_vocabulary_can_become_the_default_view() -> None:
     assert body["artist_vocabulary"]["families"][0]["tone"] == {
         "shadow": "#000000", "highlight": "#F29191"
     }
-    assert body["default_view"] == "artist_vocabulary"
+    assert body["default_view"] == "track_palette"
     assert body["available_views"] == ["track_palette", "artist_vocabulary"]
     assert body["track_palette"]["analysis"]["status"] == "partial"
 
@@ -291,6 +291,8 @@ async def test_pending_vocabulary_is_available_when_materialized_rows_already_pa
     assert response.status_code == 200
     body = response.json()
     assert body["artist_vocabulary"]["status"] == "available"
+    assert body["track_palette"]["analysis"]["status"] == "insufficient"
+    assert body["default_view"] == "artist_vocabulary"
     assert body["artist_vocabulary"]["availability"]["reason"] == (
         "available_with_pending_hydration"
     )

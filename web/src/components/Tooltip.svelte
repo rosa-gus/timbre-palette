@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Tooltip as BitsTooltip } from "bits-ui";
+  import { Popover as BitsPopover } from "bits-ui";
 
   export let frozen = false;
   export let anchor: HTMLElement | null = null;
@@ -55,20 +55,18 @@
     };
   }
 
-  function onPointerDown(event: PointerEvent) {
-    if (event.pointerType !== "touch") return;
-    event.preventDefault();
-    open = !open;
-  }
-
   function close() {
     dismissed = true;
     open = false;
     onClose();
   }
 
-  function handleInteractOutside(event: PointerEvent) {
-    if (frozen) event.preventDefault();
+  function handleInteractOutside() {
+    if (frozen) close();
+  }
+
+  function preventAutoFocus(event: Event) {
+    event.preventDefault();
   }
 
   function handleEscapeKeydown(event: KeyboardEvent) {
@@ -78,8 +76,7 @@
   }
 </script>
 
-<BitsTooltip.Provider delayDuration={200}>
-  <BitsTooltip.Root bind:open disableCloseOnTriggerClick>
+<BitsPopover.Root bind:open>
     {#if frozen && !anchor}
       <span
         bind:this={trigger}
@@ -87,22 +84,29 @@
         aria-hidden="true"
       ></span>
     {:else if !frozen}
-      <BitsTooltip.Trigger
+      <BitsPopover.Trigger
         bind:ref={trigger}
+        openOnHover
+        openDelay={200}
+        closeDelay={0}
         class="tooltip-trigger"
         aria-label={ariaLabel}
-        onpointerdown={onPointerDown}>{triggerLabel}</BitsTooltip.Trigger
+        >{triggerLabel}</BitsPopover.Trigger
       >
     {/if}
-    <BitsTooltip.Content
+    <BitsPopover.Content
       class={frozen ? "app-tooltip app-tooltip-frozen" : "app-tooltip"}
       {side}
       {align}
       {sideOffset}
       {collisionPadding}
       customAnchor={frozen ? anchor ?? trigger : undefined}
+      trapFocus={false}
+      onOpenAutoFocus={preventAutoFocus}
+      onCloseAutoFocus={preventAutoFocus}
       onInteractOutside={handleInteractOutside}
       onEscapeKeydown={handleEscapeKeydown}
+      aria-label={ariaLabel}
     >
       <div use:alignStem>
         <slot />
@@ -115,9 +119,8 @@
           >
         {/if}
       </div>
-    </BitsTooltip.Content>
-  </BitsTooltip.Root>
-</BitsTooltip.Provider>
+    </BitsPopover.Content>
+</BitsPopover.Root>
 
 <style>
   :global(.tooltip-trigger) {
@@ -133,8 +136,7 @@
     vertical-align: baseline;
   }
   :global(.tooltip-trigger:hover),
-  :global(.tooltip-trigger[data-state="delayed-open"]),
-  :global(.tooltip-trigger[data-state="instant-open"]) {
+  :global(.tooltip-trigger[data-state="open"]) {
     color: var(--ink);
   }
   :global(.app-tooltip) {

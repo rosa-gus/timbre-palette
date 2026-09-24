@@ -221,17 +221,10 @@
                           href={resource.image.credit.photographer_url}
                           target="_blank"
                           rel="noreferrer"
-                          >Foto: {resource.image.credit.photographer ??
+                          >{resource.image.credit.photographer ??
                             "Ver crédito"}</a
                         >{:else if resource.image.credit.photographer}<span
-                          >Foto: {resource.image.credit.photographer}</span
-                        >{/if}
-                      {#if resource.image.credit.license_url}<a
-                          href={resource.image.credit.license_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          >{resource.image.credit.license ??
-                            "Licença da imagem"}</a
+                          >{resource.image.credit.photographer}</span
                         >{/if}
                     </figcaption>
                   </figure>
@@ -277,9 +270,7 @@
                     class="instrument-block"
                     aria-label="Uma curiosidade"
                   >
-                    <h3 class="eyebrow">
-                      UMA CURIOSIDADE
-                    </h3>
+                    <h3 class="eyebrow">UMA CURIOSIDADE</h3>
                     <p>
                       {section.text}
                       {#each section.citations as citation}{#if sourceNumber(citation.source_id)}<a
@@ -298,62 +289,62 @@
                       </p>{/if}
                     <Dropdown title="Sobre este trecho">
                       <div class="instrument-details">
-                      <dl>
-                        <div>
-                          <dt>Conteúdo</dt>
-                          <dd>
-                            {section.content_type === "fact"
-                              ? "Informação factual"
-                              : "Síntese editorial"}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt>Estado editorial</dt>
-                          <dd>
-                            {statusLabels[section.status] ?? section.status}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt>Dados bibliográficos</dt>
-                          <dd>
-                            {section.review.source_metadata_verified
-                              ? "Verificados"
-                              : "Verificação pendente"}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt>Suporte à afirmação</dt>
-                          <dd>
-                            {section.review.claim_support_verified
-                              ? "Revisado"
-                              : "Revisão pendente"}
-                          </dd>
-                        </div>
-                        {#if section.review.reviewed_at}<div>
-                            <dt>Revisão</dt>
+                        <dl>
+                          <div>
+                            <dt>Conteúdo</dt>
                             <dd>
-                              {date(
-                                section.review.reviewed_at,
-                              )}{#if section.review.reviewer}<span
+                              {section.content_type === "fact"
+                                ? "Informação factual"
+                                : "Síntese editorial"}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>Estado editorial</dt>
+                            <dd>
+                              {statusLabels[section.status] ?? section.status}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>Dados bibliográficos</dt>
+                            <dd>
+                              {section.review.source_metadata_verified
+                                ? "Verificados"
+                                : "Verificação pendente"}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>Suporte à afirmação</dt>
+                            <dd>
+                              {section.review.claim_support_verified
+                                ? "Revisado"
+                                : "Revisão pendente"}
+                            </dd>
+                          </div>
+                          {#if section.review.reviewed_at}<div>
+                              <dt>Revisão</dt>
+                              <dd>
+                                {date(
+                                  section.review.reviewed_at,
+                                )}{#if section.review.reviewer}<span
+                                    class="separator-indicator"
+                                    aria-hidden="true">·</span
+                                  >{section.review.reviewer}{/if}
+                              </dd>
+                            </div>{/if}
+                        </dl>
+                        {#if section.review.editorial_note}<p>
+                            {section.review.editorial_note}
+                          </p>{/if}{#each section.citations as citation}{#if citation.locator || citation.note}<p
+                            >
+                              <strong
+                                >Referência {sourceNumber(citation.source_id) ||
+                                  "indisponível"}:</strong
+                              >
+                              {citation.locator ?? ""}{#if citation.note}<span
                                   class="separator-indicator"
                                   aria-hidden="true">·</span
-                                >{section.review.reviewer}{/if}
-                            </dd>
-                          </div>{/if}
-                      </dl>
-                      {#if section.review.editorial_note}<p>
-                          {section.review.editorial_note}
-                        </p>{/if}{#each section.citations as citation}{#if citation.locator || citation.note}<p
-                          >
-                            <strong
-                              >Referência {sourceNumber(citation.source_id) ||
-                                "indisponível"}:</strong
-                            >
-                            {citation.locator ?? ""}{#if citation.note}<span
-                                class="separator-indicator"
-                                aria-hidden="true">·</span
-                              >{citation.note}{/if}
-                          </p>{/if}{/each}
+                                >{citation.note}{/if}
+                            </p>{/if}{/each}
                       </div>
                     </Dropdown>
                   </section>
@@ -374,7 +365,8 @@
                         class="instrument-review-note instrument-loading-note"
                         role="status"
                       >
-                        <span class="loading-indicator" aria-hidden="true"></span>
+                        <span class="loading-indicator" aria-hidden="true"
+                        ></span>
                         <span>Carregando fichas relacionadas…</span>
                       </p>{/if}{#if relationsError}<p
                         class="instrument-review-note"
@@ -388,7 +380,16 @@
                     <h3 class="eyebrow">SAIBA MAIS</h3>
                     <ul>
                       {#each resource.further_reading as article}
-                        <li><a href={article.url} target="_blank" rel="noopener noreferrer">{article.title} <Arrow direction="up-right" /></a>{#if article.publisher}<p>{article.publisher}</p>{/if}</li>
+                        <li>
+                          <a
+                            href={article.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            >{article.title} <Arrow direction="up-right" /></a
+                          >{#if article.publisher}<p>
+                              {article.publisher}
+                            </p>{/if}
+                        </li>
                       {/each}
                     </ul>
                   </section>
@@ -418,47 +419,47 @@
                               >{/if}
                             <p class="instrument-source-meta">
                               {#each sourceMetaParts(source) as part, index}{#if index > 0}<span
-                                  class="separator-indicator"
-                                  aria-hidden="true">·</span
-                                >{/if}{part}{/each}
+                                    class="separator-indicator"
+                                    aria-hidden="true">·</span
+                                  >{/if}{part}{/each}
                             </p>
                             <Dropdown title="Ver detalhes da fonte">
                               <div class="instrument-details">
-                              <dl>
-                                <div>
-                                  <dt>Tipo</dt>
-                                  <dd>
-                                    {sourceTypeLabels[source.source_type] ??
-                                      source.source_type}
-                                  </dd>
-                                </div>
-                                <div>
-                                  <dt>Idioma</dt>
-                                  <dd>{language(source.language)}</dd>
-                                </div>
-                                <div>
-                                  <dt>Metadados</dt>
-                                  <dd>
-                                    {source.metadata_verified
-                                      ? "Verificados"
-                                      : "Verificação pendente"}
-                                  </dd>
-                                </div>
-                                {#if source.locator}<div>
-                                    <dt>Localizador</dt>
-                                    <dd>{source.locator}</dd>
-                                  </div>{/if}{#if source.license}<div>
-                                    <dt>Licença</dt>
-                                    <dd>{source.license}</dd>
-                                  </div>{/if}{#if source.accessed_at}<div>
-                                    <dt>Consultada em</dt>
-                                    <dd>{date(source.accessed_at)}</dd>
-                                  </div>{/if}{#if source.verified_at}<div>
-                                    <dt>Verificada em</dt>
-                                    <dd>{date(source.verified_at)}</dd>
-                                  </div>{/if}
-                              </dl>
-                              {#if source.note}<p>{source.note}</p>{/if}
+                                <dl>
+                                  <div>
+                                    <dt>Tipo</dt>
+                                    <dd>
+                                      {sourceTypeLabels[source.source_type] ??
+                                        source.source_type}
+                                    </dd>
+                                  </div>
+                                  <div>
+                                    <dt>Idioma</dt>
+                                    <dd>{language(source.language)}</dd>
+                                  </div>
+                                  <div>
+                                    <dt>Metadados</dt>
+                                    <dd>
+                                      {source.metadata_verified
+                                        ? "Verificados"
+                                        : "Verificação pendente"}
+                                    </dd>
+                                  </div>
+                                  {#if source.locator}<div>
+                                      <dt>Localizador</dt>
+                                      <dd>{source.locator}</dd>
+                                    </div>{/if}{#if source.license}<div>
+                                      <dt>Licença</dt>
+                                      <dd>{source.license}</dd>
+                                    </div>{/if}{#if source.accessed_at}<div>
+                                      <dt>Consultada em</dt>
+                                      <dd>{date(source.accessed_at)}</dd>
+                                    </div>{/if}{#if source.verified_at}<div>
+                                      <dt>Verificada em</dt>
+                                      <dd>{date(source.verified_at)}</dd>
+                                    </div>{/if}
+                                </dl>
+                                {#if source.note}<p>{source.note}</p>{/if}
                               </div>
                             </Dropdown>
                           </div>
@@ -467,24 +468,24 @@
                   </section>{/if}
                 <Dropdown title="Sobre esta ficha">
                   <div class="instrument-details instrument-about">
-                  <dl>
-                    <div>
-                      <dt>Procedência</dt>
-                      <dd>
-                        {resource.data_source === "mock"
-                          ? "Dados demonstrativos"
-                          : "Catálogo instrumental"}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>Catálogo</dt>
-                      <dd>{resource.catalog_version}</dd>
-                    </div>
-                    <div>
-                      <dt>Catálogo de imagens</dt>
-                      <dd>{resource.image_catalog_version}</dd>
-                    </div>
-                  </dl>
+                    <dl>
+                      <div>
+                        <dt>Procedência</dt>
+                        <dd>
+                          {resource.data_source === "mock"
+                            ? "Dados demonstrativos"
+                            : "Catálogo instrumental"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>Catálogo</dt>
+                        <dd>{resource.catalog_version}</dd>
+                      </div>
+                      <div>
+                        <dt>Catálogo de imagens</dt>
+                        <dd>{resource.image_catalog_version}</dd>
+                      </div>
+                    </dl>
                   </div>
                 </Dropdown>
               </div>
