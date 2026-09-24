@@ -1,8 +1,7 @@
 <script lang="ts">
-  import { Tooltip } from "bits-ui";
+  import { Popover } from "bits-ui";
   export let percent: number;
   export let added: number;
-  let open = false;
   let trigger: HTMLButtonElement | null = null;
   $: percentage = percent < 0.1 ? "<0,1" : new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(percent);
   function alignStem(node: HTMLDivElement) {
@@ -22,25 +21,21 @@
     update();
     return { destroy() { observer.disconnect(); resize.disconnect(); } };
   }
-  function toggleTouch(event: PointerEvent) {
-    if (event.pointerType !== "touch") return;
+  function preventAutoFocus(event: Event) {
     event.preventDefault();
-    open = !open;
   }
 </script>
 
-<Tooltip.Provider delayDuration={200}>
-  <Tooltip.Root bind:open disableCloseOnTriggerClick>
-    <Tooltip.Trigger bind:ref={trigger} class="catalog-growth" aria-label={`Crescimento do catálogo: +${percentage}% desde sua última visita neste navegador`} onpointerdown={toggleTouch}>+{percentage}%</Tooltip.Trigger>
-    <Tooltip.Content class="catalog-tooltip" side="bottom" align="end" sideOffset={18} collisionPadding={16}>
+<Popover.Root>
+    <Popover.Trigger bind:ref={trigger} openOnHover openDelay={200} closeDelay={0} class="catalog-growth" aria-label={`Crescimento do catálogo: +${percentage}% desde sua última visita neste navegador`}>+{percentage}%</Popover.Trigger>
+    <Popover.Content class="catalog-tooltip" side="bottom" align="end" sideOffset={18} collisionPadding={16} trapFocus={false} onOpenAutoFocus={preventAutoFocus} onCloseAutoFocus={preventAutoFocus} aria-label="Crescimento do catálogo">
       <div use:alignStem>
         <p class="catalog-title">Nosso catálogo cresceu {percentage}%.</p>
         <p>Mais {added.toLocaleString("pt-BR")} gravações com instrumentos documentados desde sua última visita neste navegador.</p>
         <p>Ao consultar um perfil, faixas e artistas ainda não materializados podem ser consultados em segundo plano no snapshot MusicBrainz publicado. Novas evidências podem aparecer em uma visita futura.</p>
       </div>
-    </Tooltip.Content>
-  </Tooltip.Root>
-</Tooltip.Provider>
+    </Popover.Content>
+</Popover.Root>
 
 <style>
   :global(.catalog-growth) { padding:5px 0; border:0; border-radius:0; background:transparent; color:var(--accent); font-family:var(--meta); font-size:13px; font-weight:400; line-height:1.5; letter-spacing:.065em; white-space:nowrap; cursor:help; }
