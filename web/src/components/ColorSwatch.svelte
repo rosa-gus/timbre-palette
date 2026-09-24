@@ -113,10 +113,10 @@
         {#if presenceName}
           <span class="color-popover-name">{presenceName}</span>
         {:else}<span
-          class="color-preview"
-          style={`background:${color}`}
-          aria-hidden="true"
-        ></span>{/if}
+            class="color-preview"
+            style={`background:${color}`}
+            aria-hidden="true"
+          ></span>{/if}
         <span class="color-popover-hex">{hex}</span>
         <button
           type="button"
