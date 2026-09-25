@@ -22,6 +22,12 @@
   let contextResource: InstrumentResource | null = null;
   let relationsController: AbortController | null = null;
   const cache = new Map<string, InstrumentResource>();
+  function imageCaption(value: string): string {
+    return value
+      .replace(/^Imagem ilustrativa da família [^:]+:\s*/i, "")
+      .replace(/^Imagem do instrumento\s*/i, "")
+      .trim();
+  }
   const statusLabels: Record<string, string> = {
     sourced: "Fonte vinculada",
     reviewed: "Revisado",
@@ -205,43 +211,47 @@
                 class="instrument-visual"
                 aria-label="Imagem do instrumento"
               >
-                {#if resource.image?.variants.length}
-                  <figure class="instrument-photo">
+                <figure class="instrument-photo">
+                  {#if resource.image?.variants.length}
                     <img
                       src={resource.image.variants[0].url}
                       alt={resource.image.alt}
                       width={resource.image.variants[0].width}
                       height={resource.image.variants[0].height}
                     />
+                  {:else}<div class="instrument-image-empty">
+                      <span>{resource.name}</span><small
+                        >Imagem ainda não disponível.</small
+                      >
+                    </div>{/if}
+                  <div
+                    class="instrument-tones"
+                    aria-label={`Variações do tom de ${resource.name}`}
+                  >
+                    {#each toneSwatches(resource.tone?.highlight ?? "#F29191") as swatch}<ColorSwatch
+                        color={swatch}
+                        label={`Variação de tom de ${resource.name}`}
+                      />{/each}
+                  </div>
+                  {#if resource.image?.variants.length}
                     <figcaption class="instrument-photo-credit">
                       {#if resource.image.resolution === "exact"}<span
-                          >{resource.image.caption}</span
+                          >FOTO · {imageCaption(resource.image.caption)}</span
                         >{/if}
                       {#if resource.image.credit.photographer_url}<a
                           href={resource.image.credit.photographer_url}
                           target="_blank"
                           rel="noreferrer"
                           >{resource.image.credit.photographer ??
-                            "Ver crédito"}</a
+                            "Ver crédito"}<Arrow
+                            direction="up-right"
+                          /></a
                         >{:else if resource.image.credit.photographer}<span
                           >{resource.image.credit.photographer}</span
                         >{/if}
                     </figcaption>
-                  </figure>
-                {:else}<div class="instrument-image-empty">
-                    <span>{resource.name}</span><small
-                      >Imagem ainda não disponível.</small
-                    >
-                  </div>{/if}
-                <div
-                  class="instrument-tones"
-                  aria-label={`Variações do tom de ${resource.name}`}
-                >
-                  {#each toneSwatches(resource.tone?.highlight ?? "#F29191") as swatch}<ColorSwatch
-                      color={swatch}
-                      label={`Variação de tom de ${resource.name}`}
-                    />{/each}
-                </div>
+                  {/if}
+                </figure>
                 {#if resource.image && resource.image.resolution !== "exact"}<p
                     class="instrument-image-note"
                   >

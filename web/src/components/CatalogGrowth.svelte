@@ -81,7 +81,7 @@
     border: 0;
     border-radius: 0;
     background: transparent;
-    color: var(--accent);
+    color: var(--accent-soft);
     font-family: var(--meta);
     font-size: 13px;
     font-weight: 400;

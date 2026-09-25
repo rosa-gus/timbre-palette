@@ -1,7 +1,7 @@
 {
   "name": "timbre-palette",
-  "version": "0.2.1",
-  "productStatus": "prototype",
+  "version": "0.2.2",
+  "productStatus": "pilot",
   "private": true,
   "type": "module",
   "license": "GPL-3.0-only",

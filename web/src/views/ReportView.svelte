@@ -79,6 +79,13 @@
     return hex(mix(base, [0, 0, 0], 0.6));
   }
 
+  function imageCaption(value: string): string {
+    return value
+      .replace(/^Imagem ilustrativa da família [^:]+:\s*/i, "")
+      .replace(/^Imagem do instrumento\s*/i, "")
+      .trim();
+  }
+
   function toneSwatches(family: FamilyPresence): string[] {
     const base =
       parseHex(family.tone?.highlight ?? fallbackTone) ??
@@ -226,16 +233,6 @@
                 width={family.image.variants[0].width}
                 height={family.image.variants[0].height}
               />
-              <p class="photo-caption">
-                <span class="photo-caption-text">{family.image.caption}</span>
-                {#if family.image.credit.photographer_url}<a
-                    href={family.image.credit.photographer_url}
-                    target="_blank"
-                    rel="noreferrer">{family.image.credit.photographer}</a
-                  >{:else if family.image.credit.photographer}<span
-                    >{family.image.credit.photographer}</span
-                  >{/if}
-              </p>
             </div>{:else}<div class="image-placeholder">{family.name}</div>{/if}
           <div
             class="tone-strip"
@@ -246,6 +243,20 @@
                 label={`Variação de tom de ${family.name}`}
               />{/each}
           </div>
+          {#if family.image?.variants.length}<p class="photo-caption">
+              <span class="photo-caption-text"
+                >FOTO · {imageCaption(family.image.caption)}</span
+              >{#if family.image.credit.photographer_url}<a
+                  href={family.image.credit.photographer_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  >{family.image.credit.photographer ?? "Ver crédito"}<Arrow
+                    direction="up-right"
+                  /></a
+                >{:else if family.image.credit.photographer}<span
+                  >{family.image.credit.photographer}</span
+                >{/if}
+            </p>{/if}
         </figure>
       {/each}
     </div>
@@ -344,13 +355,17 @@
             />
             <figcaption class="photo-caption">
               <span class="photo-caption-text"
-                >{report.discovery.image.caption}</span
+                >FOTO · {imageCaption(report.discovery.image.caption)}</span
               >{#if report.discovery.image.credit.photographer_url}
                 <a
                   href={report.discovery.image.credit.photographer_url}
                   target="_blank"
                   rel="noreferrer"
-                  >Foto: {report.discovery.image.credit.photographer}</a
+                  >{report.discovery.image.credit.photographer ?? "Ver crédito"}<Arrow
+                    direction="up-right"
+                  /></a
+              >{:else if report.discovery.image.credit.photographer}<span
+                  >{report.discovery.image.credit.photographer}</span
                 >{/if}
             </figcaption>
           </figure>{/if}
@@ -659,41 +674,29 @@
     margin-top: 4px;
   }
   .credited-image {
-    position: relative;
+    min-width: 0;
   }
   .photo-caption {
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    max-width: 100%;
     display: grid;
-    gap: 4px;
-    padding: 12px 16px;
+    gap: 2px;
+    padding: 8px 0 0;
     margin: 0;
-    background: rgb(0 0 0 / 0.82);
-    color: var(--on-dark);
-    font-size: 12px;
-    line-height: 1.5;
-    opacity: 0;
-    transition: opacity 150ms ease;
+    color: var(--muted);
+    font: 12px/1.5 var(--meta);
+    letter-spacing: 0.035em;
   }
-  .credited-image:hover .photo-caption,
-  .credited-image:focus-within .photo-caption {
-    opacity: 1;
+  .photo-caption-text {
+    color: var(--quiet);
+    text-transform: uppercase;
   }
   .photo-caption a {
     justify-self: start;
+    color: var(--ink);
     text-underline-offset: 3px;
   }
-  @media (hover: none) {
-    .photo-caption {
-      opacity: 1;
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .photo-caption {
-      transition: none;
-    }
+  .photo-caption a:hover,
+  .photo-caption a:focus-visible {
+    color: var(--accent-soft);
   }
   .archive-section {
     margin-top: 64px;
@@ -956,9 +959,6 @@
     }
     .share-preview > img {
       border: 0;
-    }
-    .photo-caption-text {
-      display: none;
     }
   }
 </style>

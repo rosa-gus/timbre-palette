@@ -587,19 +587,20 @@
                         </p>
                         <p class="artist-instruments">
                           {#each artistInstruments(artist) as instrument, instrumentIndex (instrument.name)}
-                            {#if instrumentIndex > 0}<span aria-hidden="true"> · </span>{/if}
-                            {#if instrument.slug}
-                              <button
-                                type="button"
-                                class="instrument-link"
-                                on:click={() =>
-                                  instrument.slug &&
-                                  onOpenInstrumentSlug(instrument.slug)}
-                                >{instrument.name}</button
-                              >
-                            {:else}
-                              {instrument.name}
-                            {/if}
+                            <span class="artist-instrument-entry">
+                              {#if instrumentIndex > 0}<span
+                                  class="separator-indicator"
+                                  aria-hidden="true">·</span
+                                >{/if}
+                              {#if instrument.slug}<button
+                                  type="button"
+                                  class="instrument-link"
+                                  on:click={() =>
+                                    instrument.slug &&
+                                    onOpenInstrumentSlug(instrument.slug)}
+                                  >{instrument.name}</button
+                                >{:else}{instrument.name}{/if}
+                            </span>
                           {/each}
                         </p>
                         <p class="artist-card-note">
@@ -1139,9 +1140,17 @@
     font-size: 14px;
   }
   .artist-instruments {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
     margin: 16px 0 4px;
     font: 12px var(--meta);
     line-height: 1.5;
+  }
+  .artist-instrument-entry {
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
   }
   .artist-card-note {
     margin: 0;
