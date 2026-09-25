@@ -206,7 +206,7 @@ main {
 .theme-toggle:hover,
 .theme-toggle:focus-visible {
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--accent-soft);
 }
 .site-footer a {
   text-decoration: none;
@@ -220,7 +220,7 @@ main {
 .loading-indicator {
   display: inline-block;
   flex: 0 0 4.4em;
-  color: var(--accent);
+  color: var(--accent-soft);
   font-family: var(--meta);
   white-space: pre;
 }

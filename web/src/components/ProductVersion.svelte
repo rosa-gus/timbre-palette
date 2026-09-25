@@ -6,6 +6,7 @@
     prototype: "Protótipo",
     development: "Em desenvolvimento",
     beta: "Beta",
+    pilot: "Piloto",
     stable: "Estável",
   } as const;
   let open = false;

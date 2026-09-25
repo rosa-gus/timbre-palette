@@ -13,7 +13,13 @@ const product = JSON.parse(
   readFileSync(new URL("./package.json", import.meta.url), "utf8"),
 ) as { version: string; productStatus: string };
 
-const productStatuses = ["prototype", "development", "beta", "stable"] as const;
+const productStatuses = [
+  "prototype",
+  "development",
+  "beta",
+  "pilot",
+  "stable",
+] as const;
 if (!productStatuses.some((status) => status === product.productStatus)) {
   throw new Error(
     `Invalid productStatus in package.json: ${product.productStatus}. Expected one of: ${productStatuses.join(", ")}`,

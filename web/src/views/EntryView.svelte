@@ -290,14 +290,14 @@
   }
   .hero-play span {
     margin-left: 5px;
-    color: var(--accent);
+    color: var(--accent-soft);
   }
   .hero-play:hover:not(:disabled),
   .hero-play:focus-visible {
     color: var(--accent-soft);
   }
   .hero-play.playing {
-    color: var(--accent);
+    color: var(--accent-soft);
   }
   .hero-play:disabled {
     color: var(--quiet);
