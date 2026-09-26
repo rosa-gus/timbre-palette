@@ -20,7 +20,7 @@
     "musicbrainz:publish": "python3 scripts/publish_snapshot.py",
     "editorial:validate": "python3 scripts/publish_editorial.py editorial/src/instruments.json",
     "editorial:sql": "python3 scripts/publish_editorial.py editorial/src/instruments.json --sql",
-    "typecheck:web": "tsc --noEmit -p tsconfig.web.json && svelte-check --tsconfig ./tsconfig.web.json",
+    "typecheck:web": "tsc --noEmit -p web/tsconfig.json && svelte-check --tsconfig ./web/tsconfig.json",
     "typecheck:editorial": "tsc --noEmit -p tsconfig.editorial.json && svelte-check --tsconfig ./tsconfig.editorial.json",
     "typecheck:hydrator": "tsc --noEmit -p workers/hydrator/tsconfig.json",
     "typecheck:api": "tsc --noEmit -p workers/api/tsconfig.json",
