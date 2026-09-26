@@ -35,10 +35,10 @@ jobs:
           python -m pip install --editable ".[dev]"
 
       - name: Prepare generated catalog
-        run: python src/palette_api/tools/publish_images.py
+        run: python scripts/publish_images.py
 
       - name: Validate editorial manifest
-        run: python src/palette_api/tools/publish_editorial.py editorial/src/instruments.json
+        run: python scripts/publish_editorial.py editorial/src/instruments.json
 
       - name: Run unit tests
         run: python -m pytest

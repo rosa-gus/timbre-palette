@@ -32,7 +32,7 @@ MusicBrainz data is consumed exclusively through versioned offline snapshots bui
 
 ## API
 
-The public API is a TypeScript Cloudflare Worker. It provides bounded Last.fm history pages and profile metadata, read-only snapshot evidence, and a queue for asynchronous hydration. The browser combines those responses into the Profile Analysis v2 report; the API does not assemble the report on the production request path.
+The public API is the TypeScript Cloudflare Worker in `workers/api/`. It provides bounded Last.fm history pages and profile metadata, read-only snapshot evidence, and a queue for asynchronous hydration. The browser combines those responses into the Profile Analysis v2 report; the API does not assemble the report on the production request path.
 
 The API exposes these resources:
 
@@ -67,7 +67,7 @@ flowchart LR
     Hydrator -->|materialize projections| D1
 ```
 
-The browser requests history in pages of 50, pins evidence reads to one snapshot, assembles the report, and submits missing targets in a separate bounded request. Hydration never blocks report assembly. Curated examples use a static fixture and do not call Last.fm or queue hydration. The Python server assembler remains available only for local comparison through `yarn dev:api:reference`. The ETL, object layout, publication, and license handling are documented in [MusicBrainz credit index](docs/musicbrainz-credit-index.md).
+The browser requests history in pages of 50, pins evidence reads to one snapshot, assembles the report, and submits missing targets in a separate bounded request. Hydration never blocks report assembly. Curated examples use a static fixture and do not call Last.fm or queue hydration. The former Python server assembler lives in `reference/server-assembly/` and remains available only for local comparison through `yarn dev:api:reference`. The ETL, object layout, publication, and license handling are documented in [MusicBrainz credit index](docs/musicbrainz-credit-index.md).
 
 ## Front-end
 

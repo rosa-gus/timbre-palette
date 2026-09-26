@@ -4,7 +4,7 @@ The active public API is the TypeScript Cloudflare Worker configured by the root
 
 The active API runtime version is `3.0.0`, reflecting the split v3 profile-input and evidence contract. The report schema remains v2. The local FastAPI server-assembly reference retains version `2.1.1`.
 
-The former FastAPI implementation remains in `src/palette_api/` as a local reference for server-side assembly. It is not deployed as the public API and is not used by the default front-end runtime.
+The former FastAPI implementation remains in `reference/server-assembly/` for local comparison. It is not deployed as the public API or used by the default front-end runtime.
 
 ## Profile request flow
 
@@ -90,7 +90,7 @@ The report keeps `track_palette` and `artist_vocabulary` independent. The direct
 
 ## Curated example
 
-The example profile is assembled in the browser from `public/profile-analysis-example.json`, generated from `src/palette_api/_curated_example_history.json` by `yarn prepare:images`. It does not call Last.fm, D1, or the hydration endpoint. The sample ID and selected period seed deterministic recording selection and play counts for the current fixture version. Synthetic play counts are illustrative and are not Last.fm observations.
+The example profile is assembled in the browser from `public/profile-analysis-example.json`, generated from `reference/server-assembly/src/palette_api/_curated_example_history.json` by `yarn prepare:images`. It does not call Last.fm, D1, or the hydration endpoint. The sample ID and selected period seed deterministic recording selection and play counts for the current fixture version. Synthetic play counts are illustrative and are not Last.fm observations.
 
 The sample includes direct track evidence and a small artist-vocabulary fixture. Its `history_source` is `mock`, its instrumentation source is `catalog`, and its report sets `is_example` to `true` with the effective ID in `example_id`.
 

@@ -13,7 +13,8 @@ const CORS_HEADERS = {
 
 export async function catalogStats(env: Env): Promise<Response> {
   try {
-    const row = await env.DB.prepare(`
+    const row = await env.DB.prepare(
+      `
       SELECT COUNT(DISTINCT recording_mbid) AS recordings_with_evidence
       FROM snapshot_recordings
       WHERE status = 'complete' AND mapped_credit_count > 0
@@ -24,17 +25,33 @@ export async function catalogStats(env: Env): Promise<Response> {
           ORDER BY published_at DESC, created_at DESC
           LIMIT 1
         )
-    `).first<Row>();
-    return json({ recordings_with_evidence: number(row?.recordings_with_evidence) }, 200, {
-      "Cache-Control": "public, max-age=300, s-maxage=300",
-    });
+    `,
+    ).first<Row>();
+    return json(
+      { recordings_with_evidence: number(row?.recordings_with_evidence) },
+      200,
+      {
+        "Cache-Control": "public, max-age=300, s-maxage=300",
+      },
+    );
   } catch (error) {
-    console.error({ event: "catalog_stats_failed", error_type: errorType(error) });
-    return failure("catalog_unavailable", "Catalog statistics are unavailable.", 503);
+    console.error({
+      event: "catalog_stats_failed",
+      error_type: errorType(error),
+    });
+    return failure(
+      "catalog_unavailable",
+      "Catalog statistics are unavailable.",
+      503,
+    );
   }
 }
 
-export async function getInstrument(url: URL, env: Env, encodedSlug: string): Promise<Response> {
+export async function getInstrument(
+  url: URL,
+  env: Env,
+  encodedSlug: string,
+): Promise<Response> {
   let slug: string;
   try {
     slug = decodeURIComponent(encodedSlug).trim().toLowerCase();
@@ -46,53 +63,92 @@ export async function getInstrument(url: URL, env: Env, encodedSlug: string): Pr
   }
 
   try {
-    const alias = await env.DB.prepare(`
+    const alias = await env.DB.prepare(
+      `
       SELECT canonical_slug FROM instrument_slug_aliases WHERE alias_slug = ?
       UNION ALL
       SELECT canonical_slug FROM family_slug_aliases WHERE alias_slug = ?
       LIMIT 1
-    `).bind(slug, slug).first<Row>();
+    `,
+    )
+      .bind(slug, slug)
+      .first<Row>();
     const canonicalSlug = string(alias?.canonical_slug) ?? slug;
-    let row = await env.DB.prepare(`
+    let row = await env.DB.prepare(
+      `
       SELECT slug, name, family_slug, description, sound_production
       FROM instruments WHERE slug = ?
-    `).bind(canonicalSlug).first<Row>();
+    `,
+    )
+      .bind(canonicalSlug)
+      .first<Row>();
     let kind: "instrument" | "family" = "instrument";
     let familySlug: string | null = null;
     if (row) {
       familySlug = string(row.family_slug);
     } else {
-      row = await env.DB.prepare(`
+      row = await env.DB.prepare(
+        `
         SELECT slug, name, description, sound_production
         FROM instrument_families WHERE slug = ?
-      `).bind(canonicalSlug).first<Row>();
+      `,
+      )
+        .bind(canonicalSlug)
+        .first<Row>();
       kind = "family";
-      if (!row) return failure("instrument_not_found", "Instrument or sound family not found.", 404);
+      if (!row)
+        return failure(
+          "instrument_not_found",
+          "Instrument or sound family not found.",
+          404,
+        );
     }
 
-    const [catalogVersionRow, roleRows, relatedRows, editorialRows, readingRows] = await Promise.all([
-      env.DB.prepare(`
+    const [
+      catalogVersionRow,
+      roleRows,
+      relatedRows,
+      editorialRows,
+      readingRows,
+    ] = await Promise.all([
+      env.DB.prepare(
+        `
         SELECT version FROM catalog_versions ORDER BY published_at DESC, id DESC LIMIT 1
-      `).first<Row>(),
-      all(env.DB.prepare(kind === "instrument"
-        ? "SELECT role FROM instrument_common_roles WHERE instrument_slug = ? ORDER BY id"
-        : "SELECT role FROM instrument_common_roles WHERE family_slug = ? ORDER BY id"
-      ).bind(canonicalSlug)),
-      all(env.DB.prepare(`
+      `,
+      ).first<Row>(),
+      all(
+        env.DB.prepare(
+          kind === "instrument"
+            ? "SELECT role FROM instrument_common_roles WHERE instrument_slug = ? ORDER BY id"
+            : "SELECT role FROM instrument_common_roles WHERE family_slug = ? ORDER BY id",
+        ).bind(canonicalSlug),
+      ),
+      all(
+        env.DB.prepare(
+          `
         SELECT target_slug FROM instrument_relations WHERE source_slug = ? ORDER BY id
-      `).bind(canonicalSlug)),
+      `,
+        ).bind(canonicalSlug),
+      ),
       editorialContent(env, canonicalSlug, kind),
-      all(env.DB.prepare(kind === "instrument"
-        ? `SELECT title, url, publisher FROM instrument_further_reading
+      all(
+        env.DB.prepare(
+          kind === "instrument"
+            ? `SELECT title, url, publisher FROM instrument_further_reading
            WHERE instrument_slug = ? AND status IN ('reviewed', 'published') ORDER BY position, id`
-        : `SELECT title, url, publisher FROM instrument_further_reading
-           WHERE family_slug = ? AND status IN ('reviewed', 'published') ORDER BY position, id`
-      ).bind(canonicalSlug)),
+            : `SELECT title, url, publisher FROM instrument_further_reading
+           WHERE family_slug = ? AND status IN ('reviewed', 'published') ORDER BY position, id`,
+        ).bind(canonicalSlug),
+      ),
     ]);
 
     const version = string(catalogVersionRow?.version) ?? "unknown";
     const familyForImage = familySlug ?? canonicalSlug;
-    const image = resolveImage(canonicalSlug, familyForImage, env.IMAGE_ASSET_BASE_URL ?? "");
+    const image = resolveImage(
+      canonicalSlug,
+      familyForImage,
+      env.IMAGE_ASSET_BASE_URL ?? "",
+    );
     const familyTone = tone(familyForImage);
     const resource = {
       data_source: "catalog",
@@ -105,7 +161,9 @@ export async function getInstrument(url: URL, env: Env, encodedSlug: string): Pr
       description: string(row.description) ?? "",
       sound_production: string(row.sound_production) ?? "",
       common_roles: roleRows.map((item) => string(item.role)).filter(isString),
-      related_slugs: relatedRows.map((item) => string(item.target_slug)).filter(isString),
+      related_slugs: relatedRows
+        .map((item) => string(item.target_slug))
+        .filter(isString),
       sections: editorialRows.sections,
       sources: editorialRows.sources,
       further_reading: readingRows.map((item) => ({
@@ -116,10 +174,20 @@ export async function getInstrument(url: URL, env: Env, encodedSlug: string): Pr
       image,
       tone: familyTone,
     };
-    return json(resource, 200, { "Cache-Control": "public, max-age=300, s-maxage=300" });
+    return json(resource, 200, {
+      "Cache-Control": "public, max-age=300, s-maxage=300",
+    });
   } catch (error) {
-    console.error({ event: "instrument_catalog_failed", slug, error_type: errorType(error) });
-    return failure("catalog_unavailable", "The instrument catalog is unavailable.", 503);
+    console.error({
+      event: "instrument_catalog_failed",
+      slug,
+      error_type: errorType(error),
+    });
+    return failure(
+      "catalog_unavailable",
+      "The instrument catalog is unavailable.",
+      503,
+    );
   }
 }
 
@@ -128,8 +196,11 @@ async function editorialContent(
   slug: string,
   kind: "instrument" | "family",
 ): Promise<{ sections: Row[]; sources: Row[] }> {
-  const subjectColumn = kind === "instrument" ? "instrument_slug" : "family_slug";
-  const rows = await all(env.DB.prepare(`
+  const subjectColumn =
+    kind === "instrument" ? "instrument_slug" : "family_slug";
+  const rows = await all(
+    env.DB.prepare(
+      `
     SELECT b.id AS block_id, b.section_kind, b.text, b.content_type,
            b.status, b.claim_support_verified, b.reviewed_at,
            b.reviewer, b.editorial_note,
@@ -159,7 +230,9 @@ async function editorialContent(
           AND COALESCE(source.metadata_verified, 0) <> 1
       )
     ORDER BY b.id, c.source_id
-  `).bind(slug));
+  `,
+    ).bind(slug),
+  );
 
   const blocks = new Map<string, Row>();
   const sources = new Map<string, Row>();
@@ -192,11 +265,16 @@ async function editorialContent(
       note: string(row.citation_note),
     });
     const metadataVerified = Boolean(row.metadata_verified);
-    sourceVerified.set(sourceId, (sourceVerified.get(sourceId) ?? true) && metadataVerified);
+    sourceVerified.set(
+      sourceId,
+      (sourceVerified.get(sourceId) ?? true) && metadataVerified,
+    );
     if (!sources.has(sourceId)) {
       let contributors: string[] = [];
       try {
-        const parsed: unknown = JSON.parse(string(row.contributors_json) ?? "[]");
+        const parsed: unknown = JSON.parse(
+          string(row.contributors_json) ?? "[]",
+        );
         if (Array.isArray(parsed)) contributors = parsed.filter(isString);
       } catch {
         contributors = [];
@@ -225,8 +303,12 @@ async function editorialContent(
     return {
       ...block,
       review: {
-        source_metadata_verified: citations.length > 0 && citations.every((citation) =>
-          sourceVerified.get(String(citation.source_id)) === true),
+        source_metadata_verified:
+          citations.length > 0 &&
+          citations.every(
+            (citation) =>
+              sourceVerified.get(String(citation.source_id)) === true,
+          ),
         claim_support_verified: block.claim_support_verified,
         reviewed_at: block.reviewed_at,
         reviewer: block.reviewer,
@@ -237,39 +319,86 @@ async function editorialContent(
   return { sections, sources: [...sources.values()] };
 }
 
-function resolveImage(slug: string, familySlug: string, baseUrl: string): Row | null {
+function resolveImage(
+  slug: string,
+  familySlug: string,
+  baseUrl: string,
+): Row | null {
   const imageItems = imageManifest.images as Row[];
-  const imageById = new Map(imageItems.map((item) => [String(item.slug ?? ""), item]));
-  const candidates: { assetId: string; resolution: "exact" | "related" | "family" }[] = [];
-  const instrumentImages = imageManifest.instrument_images as Record<string, string>;
-  const fallbacks = imageManifest.instrument_fallbacks as Record<string, string>;
-  const familyImages = imageManifest.family_images as Record<string, { asset_id?: string }>;
-  if (instrumentImages[slug]) candidates.push({ assetId: instrumentImages[slug], resolution: "exact" });
-  if (fallbacks[slug]) candidates.push({ assetId: fallbacks[slug], resolution: "related" });
-  if (familyImages[familySlug]?.asset_id) candidates.push({ assetId: familyImages[familySlug].asset_id!, resolution: "family" });
+  const imageById = new Map(
+    imageItems.map((item) => [String(item.slug ?? ""), item]),
+  );
+  const candidates: {
+    assetId: string;
+    resolution: "exact" | "related" | "family";
+  }[] = [];
+  const instrumentImages = imageManifest.instrument_images as Record<
+    string,
+    string
+  >;
+  const fallbacks = imageManifest.instrument_fallbacks as Record<
+    string,
+    string
+  >;
+  const familyImages = imageManifest.family_images as Record<
+    string,
+    { asset_id?: string }
+  >;
+  if (instrumentImages[slug])
+    candidates.push({ assetId: instrumentImages[slug], resolution: "exact" });
+  if (fallbacks[slug])
+    candidates.push({ assetId: fallbacks[slug], resolution: "related" });
+  if (familyImages[familySlug]?.asset_id)
+    candidates.push({
+      assetId: familyImages[familySlug].asset_id!,
+      resolution: "family",
+    });
   const familyNames = imageManifest.family_names as Record<string, string>;
   const defaults = imageManifest.defaults as Record<string, unknown>;
   for (const candidate of candidates) {
     const image = imageById.get(candidate.assetId);
     const publication = object(image?.publication);
-    if (!image || !["approved", "published"].includes(String(publication.status ?? "draft"))) continue;
-    const variants = Array.isArray(image.variants) ? image.variants.filter(isObject) : [];
-    if (variants.some((variant) => String(variant.url ?? "").includes("<hash>"))) continue;
-    const variant = variants.find((item) => item.name === "detail") ?? variants[0];
-    const rawUrl = string(variant?.url) ?? string(publication.url) ?? string(image.output);
+    if (
+      !image ||
+      !["approved", "published"].includes(String(publication.status ?? "draft"))
+    )
+      continue;
+    const variants = Array.isArray(image.variants)
+      ? image.variants.filter(isObject)
+      : [];
+    if (
+      variants.some((variant) => String(variant.url ?? "").includes("<hash>"))
+    )
+      continue;
+    const variant =
+      variants.find((item) => item.name === "detail") ?? variants[0];
+    const rawUrl =
+      string(variant?.url) ?? string(publication.url) ?? string(image.output);
     if (!rawUrl) continue;
-    const assetBase = (baseUrl || "https://rosa-gus.github.io/timbre-palette/").replace(/\/+$/, "") + "/";
-    const relativeUrl = rawUrl.replace(/^https?:\/\/[^/]+\//, "").replace(/^\/+/, "");
+    const assetBase =
+      (baseUrl || "https://rosa-gus.github.io/timbre-palette/").replace(
+        /\/+$/,
+        "",
+      ) + "/";
+    const relativeUrl = rawUrl
+      .replace(/^https?:\/\/[^/]+\//, "")
+      .replace(/^\/+/, "");
     let url: string;
-    try { url = new URL(relativeUrl, assetBase).toString(); } catch { continue; }
+    try {
+      url = new URL(relativeUrl, assetBase).toString();
+    } catch {
+      continue;
+    }
     const imageFamily = string(image.family_slug) ?? familySlug;
-    const depicted = string(image.instrument_slug) ?? string(image.slug) ?? slug;
+    const depicted =
+      string(image.instrument_slug) ?? string(image.slug) ?? slug;
     const label = string(image.depicted_name) ?? depicted;
-    const caption = candidate.resolution === "family"
-      ? `Imagem ilustrativa da família ${familyNames[imageFamily] ?? imageFamily}: ${label}.`
-      : candidate.resolution === "related"
-        ? `Imagem relacionada ao instrumento ${label}.`
-        : `Imagem do instrumento ${label}.`;
+    const caption =
+      candidate.resolution === "family"
+        ? `Imagem ilustrativa da família ${familyNames[imageFamily] ?? imageFamily}: ${label}.`
+        : candidate.resolution === "related"
+          ? `Imagem relacionada ao instrumento ${label}.`
+          : `Imagem do instrumento ${label}.`;
     const treatment = { ...defaults, ...object(image.treatment) };
     const credit = object(image.credit);
     return {
@@ -278,12 +407,14 @@ function resolveImage(slug: string, familySlug: string, baseUrl: string): Row | 
       depicted_instrument_slug: depicted,
       alt: string(image.alt) ?? `Imagem de ${label}.`,
       caption,
-      variants: [{
-        name: "detail",
-        url,
-        width: number(variant?.width),
-        height: number(variant?.height),
-      }],
+      variants: [
+        {
+          name: "detail",
+          url,
+          width: number(variant?.width),
+          height: number(variant?.height),
+        },
+      ],
       tone: {
         shadow: string(treatment.shadow) ?? "#000000",
         highlight: string(treatment.highlight) ?? "#f29191",
@@ -305,7 +436,10 @@ function tone(familySlug: string): Row | null {
   const tones = imageManifest.family_tones as Record<string, Row>;
   const value = tones[familySlug];
   if (!value) return null;
-  return { shadow: string(value.shadow) ?? "#000000", highlight: string(value.highlight) ?? "#f29191" };
+  return {
+    shadow: string(value.shadow) ?? "#000000",
+    highlight: string(value.highlight) ?? "#f29191",
+  };
 }
 
 export function openApiDocument(): Response {
@@ -314,7 +448,8 @@ export function openApiDocument(): Response {
     info: {
       title: "Timbre Palette API",
       version: API_VERSION,
-      description: "Provides Last.fm profile data and snapshot evidence. The browser assembles profile analysis reports.",
+      description:
+        "Provides Last.fm profile data and snapshot evidence. The browser assembles profile analysis reports.",
     },
     servers: [{ url: "/" }],
     paths: {
@@ -322,32 +457,61 @@ export function openApiDocument(): Response {
         get: {
           summary: "Check API health",
           responses: {
-            "200": response("API health", { type: "object", properties: {
-              status: { type: "string", const: "ok" },
-              service: { type: "string", const: "timbre-palette-api" },
-              version: { type: "string", example: API_VERSION },
-            } }),
+            "200": response("API health", {
+              type: "object",
+              properties: {
+                status: { type: "string", const: "ok" },
+                service: { type: "string", const: "timbre-palette-api" },
+                version: { type: "string", example: API_VERSION },
+              },
+            }),
           },
         },
       },
       "/openapi.json": {
         get: {
           summary: "Get the OpenAPI document",
-          responses: { "200": response("OpenAPI 3.1 document", { type: "object" }) },
+          responses: {
+            "200": response("OpenAPI 3.1 document", { type: "object" }),
+          },
         },
       },
       "/v3/profiles/{username}/tracks": {
         get: {
           summary: "Read one page of a public Last.fm listening history",
-          description: "Returns the upstream Last.fm top-tracks JSON for one page. The API key remains server-side. Pages contain exactly 50 tracks and page numbers are limited to 1–4.",
+          description:
+            "Returns the upstream Last.fm top-tracks JSON for one page. The API key remains server-side. Pages contain exactly 50 tracks and page numbers are limited to 1–4.",
           parameters: [
             pathParameter("username", "Last.fm username"),
-            queryParameter("period", "Listening period", { type: "string", enum: ["7day", "1month", "3month", "6month", "12month", "overall"], default: "7day" }),
-            queryParameter("page", "One-based page number", { type: "integer", minimum: 1, maximum: 4, default: 1 }),
-            queryParameter("limit", "Page size; only 50 is accepted", { type: "integer", enum: [50], default: 50 }),
+            queryParameter("period", "Listening period", {
+              type: "string",
+              enum: [
+                "7day",
+                "1month",
+                "3month",
+                "6month",
+                "12month",
+                "overall",
+              ],
+              default: "7day",
+            }),
+            queryParameter("page", "One-based page number", {
+              type: "integer",
+              minimum: 1,
+              maximum: 4,
+              default: 1,
+            }),
+            queryParameter("limit", "Page size; only 50 is accepted", {
+              type: "integer",
+              enum: [50],
+              default: 50,
+            }),
           ],
           responses: {
-            "200": response("Last.fm top-tracks JSON", { type: "object", description: "The Last.fm user.gettoptracks response." }),
+            "200": response("Last.fm top-tracks JSON", {
+              type: "object",
+              description: "The Last.fm user.gettoptracks response.",
+            }),
             ...errorResponses(["422", "502", "503"]),
           },
         },
@@ -357,11 +521,21 @@ export function openApiDocument(): Response {
           summary: "Read public Last.fm profile metadata",
           parameters: [pathParameter("username", "Last.fm username")],
           responses: {
-            "200": response("Profile metadata", { type: "object", required: ["username", "profile"], properties: {
-              username: { type: "string" },
-              profile: { type: "object", description: "The Last.fm user.getinfo user object." },
-              wall_ms: { type: "integer", description: "Elapsed Worker time in milliseconds." },
-            } }),
+            "200": response("Profile metadata", {
+              type: "object",
+              required: ["username", "profile"],
+              properties: {
+                username: { type: "string" },
+                profile: {
+                  type: "object",
+                  description: "The Last.fm user.getinfo user object.",
+                },
+                wall_ms: {
+                  type: "integer",
+                  description: "Elapsed Worker time in milliseconds.",
+                },
+              },
+            }),
             ...errorResponses(["404", "422", "502", "503"]),
           },
         },
@@ -369,19 +543,36 @@ export function openApiDocument(): Response {
       "/v3/evidence": {
         post: {
           summary: "Read snapshot evidence for a bounded batch of identities",
-          description: "Reads aliases, recording statuses and claims, artist statuses, and artist vocabulary from one snapshot. Either MBID array may be empty. Supply snapshot_version after the first batch to keep subsequent reads pinned to the same snapshot.",
-          requestBody: jsonRequestBody("Profile evidence request", { "$ref": "#/components/schemas/ProfileEvidenceRequest" }),
+          description:
+            "Reads aliases, recording statuses and claims, artist statuses, and artist vocabulary from one snapshot. Either MBID array may be empty. Supply snapshot_version after the first batch to keep subsequent reads pinned to the same snapshot.",
+          requestBody: jsonRequestBody("Profile evidence request", {
+            $ref: "#/components/schemas/ProfileEvidenceRequest",
+          }),
           responses: {
-            "200": response("Snapshot evidence batch", { type: "object", required: ["snapshot", "aliases", "recording_statuses", "recording_claims", "artist_statuses", "artist_vocabulary"], properties: {
-              snapshot: { "$ref": "#/components/schemas/Snapshot" },
-              aliases: { type: "array", items: { type: "object" } },
-              recording_statuses: { type: "array", items: { type: "object" } },
-              recording_claims: { type: "array", items: { type: "object" } },
-              artist_statuses: { type: "array", items: { type: "object" } },
-              artist_vocabulary: { type: "array", items: { type: "object" } },
-              counts: { type: "object" },
-              wall_ms: { type: "integer" },
-            } }),
+            "200": response("Snapshot evidence batch", {
+              type: "object",
+              required: [
+                "snapshot",
+                "aliases",
+                "recording_statuses",
+                "recording_claims",
+                "artist_statuses",
+                "artist_vocabulary",
+              ],
+              properties: {
+                snapshot: { $ref: "#/components/schemas/Snapshot" },
+                aliases: { type: "array", items: { type: "object" } },
+                recording_statuses: {
+                  type: "array",
+                  items: { type: "object" },
+                },
+                recording_claims: { type: "array", items: { type: "object" } },
+                artist_statuses: { type: "array", items: { type: "object" } },
+                artist_vocabulary: { type: "array", items: { type: "object" } },
+                counts: { type: "object" },
+                wall_ms: { type: "integer" },
+              },
+            }),
             ...errorResponses(["400", "413", "422", "503"]),
           },
         },
@@ -389,10 +580,15 @@ export function openApiDocument(): Response {
       "/v3/hydration": {
         post: {
           summary: "Queue bounded snapshot hydration targets",
-          description: "Deduplicates and stores missing recording, track, and artist targets for the background snapshot hydrator. It does not wait for hydration to finish.",
-          requestBody: jsonRequestBody("Hydration request", { "$ref": "#/components/schemas/HydrationRequest" }),
+          description:
+            "Deduplicates and stores missing recording, track, and artist targets for the background snapshot hydrator. It does not wait for hydration to finish.",
+          requestBody: jsonRequestBody("Hydration request", {
+            $ref: "#/components/schemas/HydrationRequest",
+          }),
           responses: {
-            "202": response("Targets accepted for asynchronous processing", { "$ref": "#/components/schemas/HydrationAccepted" }),
+            "202": response("Targets accepted for asynchronous processing", {
+              $ref: "#/components/schemas/HydrationAccepted",
+            }),
             ...errorResponses(["400", "413", "422", "503"]),
           },
         },
@@ -400,7 +596,9 @@ export function openApiDocument(): Response {
       "/v2/instruments/{slug}": {
         get: {
           summary: "Read a reviewed instrument or sound-family resource",
-          parameters: [pathParameter("slug", "Instrument or sound-family slug")],
+          parameters: [
+            pathParameter("slug", "Instrument or sound-family slug"),
+          ],
           responses: {
             "200": response("Editorial resource", { type: "object" }),
             ...errorResponses(["404", "422", "503"]),
@@ -411,9 +609,13 @@ export function openApiDocument(): Response {
         get: {
           summary: "Read statistics for the active evidence catalog",
           responses: {
-            "200": response("Catalog statistics", { type: "object", required: ["recordings_with_evidence"], properties: {
-              recordings_with_evidence: { type: "integer", minimum: 0 },
-            } }),
+            "200": response("Catalog statistics", {
+              type: "object",
+              required: ["recordings_with_evidence"],
+              properties: {
+                recordings_with_evidence: { type: "integer", minimum: 0 },
+              },
+            }),
             ...errorResponses(["503"]),
           },
         },
@@ -425,17 +627,35 @@ export function openApiDocument(): Response {
           type: "object",
           required: ["error", "message"],
           properties: {
-            error: { type: "string", description: "Stable machine-readable error code." },
-            message: { type: "string", description: "English description of the error." },
+            error: {
+              type: "string",
+              description: "Stable machine-readable error code.",
+            },
+            message: {
+              type: "string",
+              description: "English description of the error.",
+            },
           },
         },
         ProfileEvidenceRequest: {
           type: "object",
           required: ["track_mbids", "artist_mbids"],
           properties: {
-            track_mbids: { type: "array", maxItems: 50, items: { type: "string", format: "uuid" } },
-            artist_mbids: { type: "array", maxItems: 50, items: { type: "string", format: "uuid" } },
-            snapshot_version: { type: "string", maxLength: 128, description: "Optional snapshot pin for subsequent batches." },
+            track_mbids: {
+              type: "array",
+              maxItems: 50,
+              items: { type: "string", format: "uuid" },
+            },
+            artist_mbids: {
+              type: "array",
+              maxItems: 50,
+              items: { type: "string", format: "uuid" },
+            },
+            snapshot_version: {
+              type: "string",
+              maxLength: 128,
+              description: "Optional snapshot pin for subsequent batches.",
+            },
           },
         },
         HydrationRequest: {
@@ -443,8 +663,16 @@ export function openApiDocument(): Response {
           required: ["snapshot_version", "recording_targets", "artist_mbids"],
           properties: {
             snapshot_version: { type: "string", maxLength: 128 },
-            recording_targets: { type: "array", maxItems: 50, items: { "$ref": "#/components/schemas/RecordingHydrationTarget" } },
-            artist_mbids: { type: "array", maxItems: 200, items: { type: "string", format: "uuid" } },
+            recording_targets: {
+              type: "array",
+              maxItems: 50,
+              items: { $ref: "#/components/schemas/RecordingHydrationTarget" },
+            },
+            artist_mbids: {
+              type: "array",
+              maxItems: 200,
+              items: { type: "string", format: "uuid" },
+            },
           },
         },
         RecordingHydrationTarget: {
@@ -457,7 +685,13 @@ export function openApiDocument(): Response {
         },
         Snapshot: {
           type: "object",
-          required: ["snapshot_version", "index_schema_version", "manifest_hash", "object_prefix", "methodology_version"],
+          required: [
+            "snapshot_version",
+            "index_schema_version",
+            "manifest_hash",
+            "object_prefix",
+            "methodology_version",
+          ],
           properties: {
             snapshot_version: { type: "string" },
             index_schema_version: { type: "string" },
@@ -480,10 +714,20 @@ export function openApiDocument(): Response {
 }
 
 function pathParameter(name: string, description: string) {
-  return { name, in: "path", required: true, description, schema: { type: "string" } };
+  return {
+    name,
+    in: "path",
+    required: true,
+    description,
+    schema: { type: "string" },
+  };
 }
 
-function queryParameter(name: string, description: string, schema: Record<string, unknown>) {
+function queryParameter(
+  name: string,
+  description: string,
+  schema: Record<string, unknown>,
+) {
   return { name, in: "query", required: false, description, schema };
 }
 
@@ -492,11 +736,21 @@ function response(description: string, schema: Record<string, unknown>) {
 }
 
 function jsonRequestBody(description: string, schema: Record<string, unknown>) {
-  return { required: true, content: { "application/json": { schema, description } } };
+  return {
+    required: true,
+    content: { "application/json": { schema, description } },
+  };
 }
 
-function errorResponses(statuses: string[]): Record<string, ReturnType<typeof response>> {
-  return Object.fromEntries(statuses.map((status) => [status, response("Request failed", { "$ref": "#/components/schemas/ApiError" })]));
+function errorResponses(
+  statuses: string[],
+): Record<string, ReturnType<typeof response>> {
+  return Object.fromEntries(
+    statuses.map((status) => [
+      status,
+      response("Request failed", { $ref: "#/components/schemas/ApiError" }),
+    ]),
+  );
 }
 
 async function all(statement: D1PreparedStatement): Promise<Row[]> {
@@ -504,12 +758,21 @@ async function all(statement: D1PreparedStatement): Promise<Row[]> {
   return result.results ?? [];
 }
 
-function json(payload: unknown, status = 200, extra: Record<string, string> = {}): Response {
-  return Response.json(payload, { status, headers: { ...CORS_HEADERS, ...extra } });
+function json(
+  payload: unknown,
+  status = 200,
+  extra: Record<string, string> = {},
+): Response {
+  return Response.json(payload, {
+    status,
+    headers: { ...CORS_HEADERS, ...extra },
+  });
 }
 
 function object(value: unknown): Row {
-  return value !== null && typeof value === "object" && !Array.isArray(value) ? value as Row : {};
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? (value as Row)
+    : {};
 }
 
 function string(value: unknown): string | null {
@@ -521,9 +784,15 @@ function number(value: unknown): number {
   return Number.isFinite(result) ? result : 0;
 }
 
-function isString(value: unknown): value is string { return typeof value === "string"; }
-function isObject(value: unknown): value is Row { return value !== null && typeof value === "object" && !Array.isArray(value); }
-function errorType(error: unknown): string { return error instanceof Error ? error.name : "UnknownError"; }
+function isString(value: unknown): value is string {
+  return typeof value === "string";
+}
+function isObject(value: unknown): value is Row {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+function errorType(error: unknown): string {
+  return error instanceof Error ? error.name : "UnknownError";
+}
 
 function failure(code: string, message: string, status: number): Response {
   return json({ error: code, message }, status);

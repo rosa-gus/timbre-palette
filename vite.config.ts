@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 
 function sourceVersion(path: string): string {
   const source = readFileSync(new URL(path, import.meta.url), "utf8");
-  const version = source.match(/\b(?:version(?:\s*:\s*str)?|API_VERSION)\s*=\s*"([^"]+)"/);
+  const version = source.match(/\b(?:version(?:\s*:\s*str)?|API_VERSION|METHODOLOGY_VERSION)\s*=\s*"([^"]+)"/);
   if (!version) throw new Error(`Version missing in ${path}`);
   return version[1];
 }
@@ -31,7 +31,7 @@ export default defineConfig({
     __PRODUCT_METADATA__: JSON.stringify({
       product: product.version,
       status: product.productStatus,
-      method: sourceVersion("./src/palette_api/methodology.py"),
+      method: sourceVersion("./web/src/analysis/browser.ts"),
       api: sourceVersion("./workers/api/src/version.ts"),
     }),
   },
