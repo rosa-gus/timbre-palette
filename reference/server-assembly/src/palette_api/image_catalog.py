@@ -71,7 +71,7 @@ class InstrumentImageCatalog:
     def _read_manifest() -> dict[str, Any]:
         path = Path(__file__).with_name("_generated_image_catalog.json")
         if not path.is_file():
-            path = Path(__file__).resolve().parents[2] / "catalog" / "instrument-images.json"
+            path = Path(__file__).resolve().parents[4] / "catalog" / "instrument-images.json"
         try:
             return json.loads(path.read_text(encoding="utf-8"))
         except (OSError, ValueError):

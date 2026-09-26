@@ -61,8 +61,8 @@ PALETTE_CACHE_CONTROL = "public, max-age=300, s-maxage=300"
 
 app = FastAPI(
     title="Timbre Palette API",
-    summary="Retratos instrumentais de históricos públicos do Last.fm.",
-    version="2.0.1",
+    summary="Instrumental portraits built from public Last.fm listening histories.",
+    version="2.1.1",
 )
 
 @app.get("/v2/catalog/stats", operation_id="getCatalogStatsV2")
@@ -307,7 +307,6 @@ async def handle_unexpected_error(request: Request, error: Exception) -> JSONRes
                 "event": "unhandled_error",
                 "path": request.url.path,
                 "error_type": type(error).__name__,
-                "error": str(error),
             }
         )
     )
@@ -335,7 +334,7 @@ async def get_profile_analysis_v2(
     response: Response,
     period: Annotated[
         ListeningPeriod,
-        Query(description="Período do histórico a considerar."),
+        Query(description="Listening-history period to analyze."),
     ] = ListeningPeriod.SEVEN_DAYS,
 ) -> ProfileAnalysisV2 | JSONResponse:
     normalized_username = username.strip()
@@ -369,14 +368,14 @@ async def get_example_analysis_v2(
     image_catalog: Annotated[InstrumentImageCatalog, Depends(get_image_catalog)],
     period: Annotated[
         ListeningPeriod,
-        Query(description="Período fictício a mostrar no perfil de exemplo."),
+        Query(description="Synthetic listening-history period for the example profile."),
     ] = ListeningPeriod.ONE_MONTH,
     sample_id: Annotated[
         str | None,
         Query(
             min_length=1,
             max_length=64,
-            description="Identificador que mantém a mesma seleção de exemplo.",
+            description="Identifier that keeps the same example selection reproducible.",
         ),
     ] = None,
 ) -> ProfileAnalysisV2:

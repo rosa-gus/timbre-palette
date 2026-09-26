@@ -22,7 +22,7 @@ The project is currently in a pilot phase. Its results are designed to be transp
 
 ### Last.fm
 
-Last.fm provides the public listening history used as the input for an analysis. The API reads up to 200 ranked tracks for the requested period, then checks the local snapshot in batches so documented tracks below the first 50 ranks can contribute. Visitors do not authenticate with their Last.fm accounts. A project API key is required when running the real integration.
+Last.fm provides the public listening history used as the input for an analysis. The browser requests up to four pages of 50 ranked tracks for the selected period, then checks the local snapshot in batches so documented tracks below the first 50 ranks can contribute. Visitors do not authenticate with their Last.fm accounts. A project API key is required when running the real integration.
 
 Last.fm is a listening-history source, not an authoritative source of instrumentation.
 
@@ -32,14 +32,17 @@ MusicBrainz data is consumed exclusively through versioned offline snapshots bui
 
 ## API
 
-The backend is a Python application built with FastAPI and designed to run on Cloudflare Workers. It exposes these primary resources:
+The public API is the TypeScript Cloudflare Worker in `workers/api/`. It provides bounded Last.fm history pages and profile metadata, read-only snapshot evidence, and a queue for asynchronous hydration. The browser combines those responses into the Profile Analysis v2 report; the API does not assemble the report on the production request path.
 
-- `GET /v2/profiles/{username}/analysis` — returns direct track evidence and, when supported, the artist vocabulary.
-- `GET /v2/examples/analysis` — builds a fictional listening history from a small curated JSON fixture of recordings and instrument evidence.
-- `GET /v2/instruments/{slug}` — returns a reviewed instrument or sound-family profile.
-- `GET /v2/catalog/stats` — returns a lightweight count from the active snapshot projection.
+The API exposes these resources:
 
-FastAPI publishes the canonical OpenAPI schema at `GET /openapi.json` and interactive documentation at `GET /docs`. Palette requests return immediately with the available result and never wait for snapshot hydration.
+- `GET /v3/profiles/{username}/tracks` — streams one 50-track Last.fm page. Pages 1–4 are available.
+- `GET /v3/profiles/{username}/metadata` — returns public Last.fm profile metadata.
+- `POST /v3/evidence` — reads evidence for up to 50 track MBIDs and 50 artist MBIDs from one pinned snapshot.
+- `POST /v3/hydration` — queues up to 50 recording or track targets and 200 artist targets for background processing.
+- `GET /v2/instruments/{slug}` and `GET /v2/catalog/stats` — serve reviewed catalog resources and a summary count.
+
+The canonical OpenAPI document is available at `GET /openapi.json`. It describes the active TypeScript Worker contract; no interactive `/docs` page is served. The former FastAPI report assembler remains in the repository as a local reference implementation and is not the production API.
 
 Detailed catalog behavior, persistence, and business rules are maintained in the API documentation:
 
@@ -52,20 +55,23 @@ Detailed catalog behavior, persistence, and business rules are maintained in the
 
 ```mermaid
 flowchart LR
-    Browser[Public Svelte application] -->|HTTPS| API[FastAPI HTTP Worker]
+    Browser[Public Svelte application] -->|history pages and metadata| API[TypeScript API Worker]
     API -->|public listening history| LastFM[Last.fm API]
-    API -->|read accepted evidence| D1[(Cloudflare D1)]
-    API -->|record missing targets| D1
+    Browser -->|batched evidence requests| API
+    API -->|read snapshot projections| D1[(Cloudflare D1)]
+    Browser -->|queue missing targets| API
+    API -->|record hydration jobs| D1
+    Browser -->|assemble Profile Analysis v2| Report[Profile report]
     Hydrator[Snapshot hydrator] -->|claim jobs| D1
     Hydrator -->|read versioned shards| R2[(R2 credit index)]
     Hydrator -->|materialize projections| D1
 ```
 
-The profile endpoint reads compact, versioned projections from D1. Missing targets are recorded without blocking the response; the snapshot hydrator groups them by R2 shard and materializes the requested evidence asynchronously. The example endpoint uses its bundled JSON fixture and does not depend on snapshot publication or hydration. The ETL, object layout, publication, and license handling are documented in [MusicBrainz credit index](docs/musicbrainz-credit-index.md).
+The browser requests history in pages of 50, pins evidence reads to one snapshot, assembles the report, and submits missing targets in a separate bounded request. Hydration never blocks report assembly. Curated examples use a static fixture and do not call Last.fm or queue hydration. The former Python server assembler lives in `reference/server-assembly/` and remains available only for local comparison through `yarn dev:api:reference`. The ETL, object layout, publication, and license handling are documented in [MusicBrainz credit index](docs/musicbrainz-credit-index.md).
 
 ## Front-end
 
-Both interfaces use Svelte, strict TypeScript, Vite, semantic HTML, and project-owned CSS. The public application is a static build and contains no server credentials or authoritative analysis rules.
+Both interfaces use Svelte, strict TypeScript, Vite, semantic HTML, and project-owned CSS. The public application is a static build with no server credentials. Its versioned browser code assembles the Profile Analysis v2 report.
 
 ### Central Panel
 
@@ -128,7 +134,7 @@ Copy the development template:
 cp .dev.vars.example .dev.vars
 ```
 
-Set `LASTFM_API_KEY` in `.dev.vars` to a valid Last.fm application key. This key is optional when using the mock API. `IMAGE_ASSET_BASE_URL` may remain set to the local Vite origin. Never commit `.dev.vars` or place credentials in frontend environment variables.
+Set `LASTFM_API_KEY` in `.dev.vars` to a valid Last.fm application key. The key is optional when using the local reference mock. `IMAGE_ASSET_BASE_URL` may remain set to the local Vite origin. Never commit `.dev.vars` or place credentials in frontend environment variables.
 
 ### 5. Start the API
 
@@ -138,13 +144,15 @@ To run the API with local D1 migrations:
 yarn dev:api
 ```
 
-The API is available at `http://localhost:8787`, and its interactive documentation is available at `http://localhost:8787/docs`.
+The public Worker API is available at `http://localhost:8787`; its OpenAPI document is at `http://localhost:8787/openapi.json`.
 
-For deterministic development without a Last.fm key or external requests, run the mock API instead:
+For deterministic profile data without a Last.fm key or external requests, run the local server-assembly reference in mock mode:
 
 ```sh
 yarn dev:api:mock
 ```
+
+The mock reference listens on port `8788`. Enable server mode and set its URL as described below to use it for profile requests; catalog resources continue to use the active TypeScript API on port `8787`.
 
 ### 6. Start the public front-end
 
@@ -155,6 +163,21 @@ VITE_API_BASE_URL=http://localhost:8787 yarn dev:web
 ```
 
 Open `http://127.0.0.1:5173/`. The ASCII portrait workspace is available at `http://127.0.0.1:5173/portrait-preview.html`.
+
+Browser assembly is the default in development and production. To compare it with the retained Python server assembler, start the local reference service:
+
+```sh
+yarn dev:api:reference
+```
+
+Then set these values in the ignored `.env.local` file before starting Vite:
+
+```dotenv
+VITE_PROFILE_ANALYSIS_MODE=server
+VITE_PROFILE_SERVER_API_BASE_URL=http://127.0.0.1:8788
+```
+
+The reference Worker is for local comparison only and has no production deployment role. Remove those values to return to browser assembly. `VITE_API_BASE_URL` selects the active TypeScript API URL; the local default is `http://localhost:8787`. Runtime mode can also be selected through `public/profile-analysis-config.json` without rebuilding the front-end.
 
 ### 7. Start the editorial panel
 
@@ -173,9 +196,13 @@ Open `http://127.0.0.1:5174/`.
 yarn editorial:validate
 yarn typecheck:web
 yarn typecheck:editorial
+yarn typecheck:api
+yarn typecheck:hydrator
 yarn build:web
 yarn build:editorial
 ```
+
+Regenerate the active API Worker bindings after changing `wrangler.jsonc` with `yarn types:api`.
 
 ## Guidelines
 

@@ -3,9 +3,9 @@ requires = ["setuptools>=75"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "timbre-palette-api"
-version = "2.0.1"
-description = "API pública para retratos instrumentais de perfis do Last.fm."
+name = "timbre-palette-server-assembly-reference"
+version = "2.1.1"
+description = "Local reference for server-side profile assembly."
 requires-python = ">=3.13"
 dependencies = [
     "fastapi>=0.116,<1",
@@ -22,13 +22,12 @@ dev = [
 
 [tool.pytest.ini_options]
 addopts = "-q"
-pythonpath = ["src"]
+pythonpath = ["reference/server-assembly/src"]
 testpaths = ["tests"]
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["reference/server-assembly/src"]
 include = ["palette_api*"]
-exclude = ["palette_api.tools*"]
 
 [tool.setuptools.package-data]
 palette_api = ["_generated_image_catalog.json", "_curated_example_history.json"]

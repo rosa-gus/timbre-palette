@@ -8,7 +8,8 @@ flowchart TD
     EP --> ED[(Editorial D1 projection)]
     MB[MusicBrainz dump] --> ETL[Rust ETL]
     ETL --> R2[(Versioned R2 shards)]
-    API[Palette API] -->|read projections| D1[(Cloudflare D1)]
+    API[TypeScript API Worker] -->|read projections| D1[(Cloudflare D1)]
+    Browser[Profile browser] -->|submit missing targets| API
     API -->|record missing targets| J[(snapshot_hydration_jobs)]
     H[Snapshot hydrator] -->|claim jobs| J
     H -->|read grouped shards| R2
@@ -18,9 +19,9 @@ flowchart TD
 
 ## Public read model
 
-The API v2 reads the active snapshot metadata and its compact projections for recording evidence, track aliases, and artist vocabulary. A request can read up to 200 Last.fm candidates and sends their identities to the compact D1 projections in bounded batch queries. A request with absent data records deduplicated hydration targets in D1 and returns the available state immediately; missing recording/track targets are capped at 50 per request, so the larger read pool does not fan out into one job per candidate.
+The browser requests up to 200 Last.fm candidates in pages of 50 and reads the active snapshot metadata and its compact D1 projections for recording evidence, track aliases, and artist vocabulary. It sends each page's identities through bounded evidence requests, then assembles the report locally. After assembly, the browser submits deduplicated missing targets in a separate hydration request: at most 50 recording or track identities and 200 artist identities. Neither evidence lookup nor hydration makes a live MusicBrainz request.
 
-Direct track evidence and Artist Vocabulary are separate products. Vocabulary never enters `Track.layers`, never raises direct-evidence coverage, and cannot unlock discovery, sound balance, or temperament. Discovery and temperament are derived only from the documented layers already attached to the listening history.
+Direct track evidence and Artist Vocabulary are separate products. Vocabulary never enters `Track.layers`, never raises direct-evidence coverage, and cannot unlock discovery, sound balance, or temperament. Discovery and temperament are derived only from the documented layers already attached to the listening history. The report assembly rules and public endpoint contract are documented in [Public API and profile assembly contract](api-contract.md).
 
 ## Snapshot hydration
 

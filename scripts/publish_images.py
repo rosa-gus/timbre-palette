@@ -35,8 +35,17 @@ def publish(manifest_path: Path) -> int:
     for source, destination in prepared:
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(source, destination)
-    index = root / "src" / "palette_api" / "_generated_image_catalog.json"
-    index.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    reference_package = root / "reference" / "server-assembly" / "src" / "palette_api"
+    index = reference_package / "_generated_image_catalog.json"
+    manifest_json = json.dumps(manifest, ensure_ascii=False, indent=2) + "\n"
+    index.write_text(manifest_json, encoding="utf-8")
+    (public_root / "profile-analysis-catalog.json").write_text(
+        manifest_json, encoding="utf-8"
+    )
+    shutil.copyfile(
+        reference_package / "_curated_example_history.json",
+        public_root / "profile-analysis-example.json",
+    )
     print(f"Prepared {len(prepared)} image(s) in {public_root}; generated {index.name}")
     return len(prepared)
 

@@ -101,9 +101,11 @@ class LastFmListeningHistoryProvider:
         username: str,
         period: ListeningPeriod,
     ) -> ListeningHistory:
+        print("profile_analysis checkpoint=lastfm_request_started")
         response = await self._transport.get_json(
             self._build_top_tracks_url(username, period)
         )
+        print("profile_analysis checkpoint=lastfm_response_decoded")
         payload = response.body
 
         if isinstance(payload, Mapping) and "error" in payload:
@@ -125,7 +127,9 @@ class LastFmListeningHistoryProvider:
 
         canonical_username = self._canonical_username(top_tracks, username)
         tracks = self._parse_tracks(top_tracks.get("track", []))
+        print("profile_analysis checkpoint=tracks_parsed")
         profile = await self._get_profile(canonical_username)
+        print("profile_analysis checkpoint=history_ready")
         return ListeningHistory(
             username=canonical_username,
             period=period,

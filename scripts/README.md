@@ -1,4 +1,4 @@
-# Backend Tooling
+# Offline tools
 
 Offline utilities for editorial image processing and static asset publication.
 No tool runs during an API request.
@@ -14,9 +14,9 @@ python3 -m pip install 'Pillow>=10,<13'
 ### Batch preparation
 
 ```sh
-python3 src/palette_api/tools/prepare_images.py
-python3 src/palette_api/tools/prepare_images.py --force
-python3 src/palette_api/tools/prepare_images.py --manifest catalog/instrument-images.json
+python3 scripts/prepare_images.py
+python3 scripts/prepare_images.py --force
+python3 scripts/prepare_images.py --manifest catalog/instrument-images.json
 ```
 
 `prepare_images.py` validates manifest schema v1 and generates treated PNGs from
@@ -27,7 +27,7 @@ the repository root.
 ### Single-file treatment
 
 ```sh
-python3 src/palette_api/tools/treat_instrument.py \
+python3 scripts/treat_instrument.py \
   assets/piano.jpeg assets/treated/piano.png
 ```
 
@@ -61,7 +61,7 @@ ffmpeg -i assets/chladni-intro.mp4 \
   -vf "crop=3840:2160:128:0,scale=760:428:flags=lanczos" \
   -an -c:v libvpx-vp9 -crf 10 -b:v 0 -deadline realtime -cpu-used 8 \
   /tmp/chladni-hero-760.webm
-python3 src/palette_api/tools/treat_instrument.py \
+python3 scripts/treat_instrument.py \
   /tmp/chladni-hero-760.webm assets/treated/chladni-hero.webm \
   --poster assets/treated/chladni-hero.png --width 760 --fps 20 --crf 32
 ```
@@ -83,10 +83,13 @@ yarn prepare:images
 public/instruments/<asset-id>/<sha256-prefix>/detail.png
 ```
 
-It also generates `src/palette_api/_generated_image_catalog.json`, which is a
-build artifact and is ignored by Git. The content hash changes the public path
-when the treated PNG changes. The command does not alter source images or the
-editorial manifest.
+It generates `reference/server-assembly/src/palette_api/_generated_image_catalog.json` and publishes
+`public/profile-analysis-catalog.json` plus
+`public/profile-analysis-example.json`. The generated catalog and example
+fixture are build artifacts and are ignored by Git. The content hash changes
+the public path when a treated PNG changes. The example file is copied from
+`reference/server-assembly/src/palette_api/_curated_example_history.json` for browser-side example
+assembly. The command does not alter source images or the editorial manifest.
 
 `yarn dev:web` and `yarn build:web` run this publication step automatically.
 Run `prepare_images.py` first when a source photograph, treatment parameter, or
@@ -113,7 +116,7 @@ The staging materializer writes projected JSONL tables, a schema-versioned
 manifest, and a `LICENSE-MUSICBRAINZ.txt` notice. Use its `aggregate` and
 `serve` subcommands to produce the uploadable artifact.
 
-See [MusicBrainz credit index](../../../docs/musicbrainz-credit-index.md) for
+See [MusicBrainz credit index](../docs/musicbrainz-credit-index.md) for
 the hydration contract and provenance.
 
 ## Editorial publication

@@ -1175,15 +1175,20 @@ class V2AnalysisService:
         username: str,
         period: ListeningPeriod,
     ) -> ProfileAnalysisV2:
+        trace_profile = isinstance(self._snapshot_provider, D1SnapshotProjectionProvider)
         history = await self._history_provider.get_history(username, period)
         if not history.tracks:
             raise EmptyListeningHistoryError(username)
         preparation = await self._snapshot_provider.prepare(history)
+        if trace_profile:
+            print("profile_analysis checkpoint=projection_ready")
         if self._hydration_scheduler is not None:
             await self._hydration_scheduler.schedule(
                 preparation.snapshot.snapshot_version,
                 preparation.targets,
             )
+            if trace_profile:
+                print("profile_analysis checkpoint=hydration_scheduled")
 
         palette = PaletteService(
             history_provider=self._history_provider,
@@ -1191,12 +1196,16 @@ class V2AnalysisService:
         ).build_report(
             preparation.history
         )
+        if trace_profile:
+            print("profile_analysis checkpoint=palette_ready")
         vocabulary = self._vocabulary_analyzer.analyze(
             history,
             preparation.snapshot,
             preparation.vocabulary_rows,
             preparation.pending_artist_mbids,
         )
+        if trace_profile:
+            print("profile_analysis checkpoint=vocabulary_ready")
         vocabulary = vocabulary.model_copy(update={
             "families": [
                 family.model_copy(update={
@@ -1243,7 +1252,7 @@ class V2AnalysisService:
         )
         pending_aliases = sum(target.kind == "track" for target in preparation.targets)
         pending_artists = sum(target.kind == "artist" for target in preparation.targets)
-        return ProfileAnalysisV2(
+        report = ProfileAnalysisV2(
             profile=palette.profile,
             snapshot=preparation.snapshot,
             track_palette=palette,
@@ -1259,6 +1268,9 @@ class V2AnalysisService:
                 pending_aliases=pending_aliases,
             ),
         )
+        if trace_profile:
+            print("profile_analysis checkpoint=report_ready")
+        return report
 
 
 def _unique_instruments(rows: list[SnapshotVocabularyRow]) -> list[SnapshotVocabularyRow]:

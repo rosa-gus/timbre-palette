@@ -29,6 +29,8 @@
   import CatalogGrowth from "./components/CatalogGrowth.svelte";
   import ResultsView from "./views/ResultsView.svelte";
   import EntryView from "./views/EntryView.svelte";
+  import { getBrowserAnalysis, getBrowserExampleAnalysis } from "./analysis/browser";
+  import { loadRuntimeConfig, profileAnalysisMode } from "./api/runtime-config";
 
   type SectionId = "portrait" | "palette" | "discovery" | "share";
   const periods: { value: ListeningPeriod; label: string }[] = [
@@ -95,7 +97,6 @@
     },
   };
   const homePath = normalizePathname();
-
   let view: "entry" | "loading" | "report" = "entry";
   let catalogGrowth: { percent: number; added: number } | null = null;
 
@@ -149,6 +150,7 @@
   let loadingDetail = "Consultando o Last.fm";
   let periodLoading = false;
   let periodError = "";
+  let periodRevealKey = 0;
   let shareFeedback = "";
   let sharePreviewUrl = "";
   let shareBlob: Blob | null = null;
@@ -253,14 +255,31 @@
       periodLoading = true;
       periodError = "";
     } else {
+      periodRevealKey = 0;
       view = "loading";
       formError = "";
     }
     try {
+      await loadRuntimeConfig();
+      const useBrowserAssembly = profileAnalysisMode() === "browser";
       const next = isExample
-        ? await getExampleAnalysis(period, signal, exampleId || undefined)
-        : await getAnalysis(username, period, signal);
+        ? useBrowserAssembly
+          ? await getBrowserExampleAnalysis(period, signal, exampleId || undefined)
+          : await getExampleAnalysis(period, signal, exampleId || undefined)
+        : useBrowserAssembly
+          ? await getBrowserAnalysis(username, period, signal, (phase, current, total) => {
+              if (signal.aborted) return;
+              loadingDetail = phase === "tracks"
+                ? `Carregando faixas (${current}/${total})`
+                : phase === "profile"
+                  ? "Carregando perfil (1/1)"
+                  : phase === "evidence"
+                    ? `Consultando evidências (${current}/${total})`
+                    : "Montando resultado...";
+            })
+          : await getAnalysis(username, period, signal);
       result = next;
+      if (preserveReport) periodRevealKey += 1;
       isExample = next.is_example;
       exampleId = next.example_id ?? "";
       username = next.profile.username;
@@ -472,7 +491,7 @@
     } catch {
       canShareImage = false;
     }
-    void checkCatalog(catalogController.signal);
+    void loadRuntimeConfig().then(() => checkCatalog(catalogController.signal));
     const savedTheme = getStorageItem<unknown>(themeStorageKey);
     setTheme(isTheme(savedTheme) ? savedTheme : "system");
     const params = new URL(window.location.href).searchParams;
@@ -561,6 +580,7 @@
         {canShareImage}
         {periodLoading}
         {periodError}
+        {periodRevealKey}
         {periods}
         onPeriodChange={changePeriod}
         onDownloadShare={downloadShare}

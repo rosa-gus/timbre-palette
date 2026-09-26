@@ -6,19 +6,31 @@ import type {
   ProfileAnalysisV2,
 } from "./types";
 import { storageKey } from "../storage";
+import {
+  boundedText,
+  readBoundedJson,
+  sanitizeInstrumentResource,
+  sanitizeProfileAnalysis,
+} from "./input-validation";
+import {
+  analysisApiBaseUrl as configuredAnalysisApiBaseUrl,
+  apiBaseUrl as configuredApiBaseUrl,
+  loadRuntimeConfig,
+} from "./runtime-config";
 
-const API_BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8787"
-).replace(/\/$/, "");
+export { loadRuntimeConfig };
 
 // v2 stats count the active snapshot projection; do not compare them with
 // values cached under the former catalog semantics.
 export const catalogStorageKey = storageKey("catalog", "last-seen", "v2");
 
+export function apiBaseUrl(): string { return configuredApiBaseUrl(); }
+function analysisApiBaseUrl(): string { return configuredAnalysisApiBaseUrl(); }
+
 export async function getCatalogSize(signal: AbortSignal): Promise<number> {
-  const response = await fetch(`${API_BASE_URL}/v2/catalog/stats`, { signal });
+  const response = await fetch(`${apiBaseUrl()}/v2/catalog/stats`, { signal });
   if (!response.ok) throw new Error("Catalog statistics unavailable");
-  const value: unknown = await response.json();
+  const value: unknown = await readBoundedJson(response);
   if (!isRecord(value) || !Number.isSafeInteger(value.recordings_with_evidence) ||
       typeof value.recordings_with_evidence !== "number" || value.recordings_with_evidence < 0) {
     throw new Error("Invalid catalog statistics");
@@ -42,28 +54,37 @@ export class PaletteApiError extends Error {
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
-function isOptionalText(value: unknown): value is string | null | undefined {
-  return value === undefined || value === null || typeof value === "string";
+function isCount(value: unknown, max = Number.MAX_SAFE_INTEGER): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0 && value <= max;
+}
+
+function isUnitFraction(value: unknown): value is number {
+  return isFiniteNumber(value) && value >= 0 && value <= 1;
+}
+
+function isOptionalText(value: unknown, maxLength = 512): value is string | null | undefined {
+  return value === undefined || value === null ||
+    (typeof value === "string" && value.length <= maxLength && !value.includes("\u0000"));
 }
 
 function isProfileSummary(value: unknown): value is ProfileSummary {
   if (!isRecord(value)) return false;
   return (
-    typeof value.username === "string" &&
-    typeof value.period === "string" &&
-    isFiniteNumber(value.tracks_analyzed) &&
-    isFiniteNumber(value.total_plays) &&
-    isOptionalText(value.profile_url) &&
-    isOptionalText(value.avatar_url) &&
-    isOptionalText(value.realname) &&
-    isOptionalText(value.registered)
+    boundedText(value.username, 64) !== null &&
+    ["overall", "7day", "1month", "3month", "6month", "12month"].includes(value.period as string) &&
+    isCount(value.tracks_analyzed, 200) &&
+    isCount(value.total_plays) &&
+    isOptionalText(value.profile_url, 2_048) &&
+    isOptionalText(value.avatar_url, 2_048) &&
+    isOptionalText(value.realname, 256) &&
+    isOptionalText(value.registered, 64)
   );
 }
 
@@ -82,7 +103,8 @@ function parseApiError(value: unknown, status: number): PaletteApiError {
     return new PaletteApiError(
       value.message,
       status,
-      typeof value.code === "string" ? value.code : "api_error",
+      typeof value.code === "string" ? value.code
+        : typeof value.error === "string" ? value.error : "api_error",
     );
   }
   return new PaletteApiError(
@@ -108,14 +130,14 @@ function isPaletteReport(value: unknown): value is PaletteReport {
     (analysis.status === "partial" ||
       analysis.status === "ready" ||
       analysis.status === "insufficient") &&
-    isFiniteNumber(analysis.coverage_tracks) &&
-    isFiniteNumber(analysis.coverage_plays) &&
+    isUnitFraction(analysis.coverage_tracks) &&
+    isUnitFraction(analysis.coverage_plays) &&
     isRecord(vocalPresence) &&
     isFiniteNumber(vocalPresence.documented_tracks) &&
     isFiniteNumber(vocalPresence.documented_artists) &&
     isFiniteNumber(vocalPresence.documented_plays) &&
-    isFiniteNumber(vocalPresence.track_ratio) &&
-    isFiniteNumber(vocalPresence.play_ratio) &&
+    isUnitFraction(vocalPresence.track_ratio) &&
+    isUnitFraction(vocalPresence.play_ratio) &&
     isRecord(availability) &&
     [
       "families",
@@ -123,24 +145,24 @@ function isPaletteReport(value: unknown): value is PaletteReport {
       "discovery",
       "temperament",
     ].every((key) => isAvailability(availability[key])) &&
-    Array.isArray(families) &&
+    Array.isArray(families) && families.length <= 50 &&
     families.every(
       (family) =>
         isRecord(family) &&
-        typeof family.name === "string" &&
-        isFiniteNumber(family.share),
+        boundedText(family.name, 256) !== null &&
+        isUnitFraction(family.share),
     ) &&
-    Array.isArray(recordings) &&
+    Array.isArray(recordings) && recordings.length <= 200 &&
     recordings.every(
       (recording) =>
         isRecord(recording) &&
-        typeof recording.title === "string" &&
-        typeof recording.artist === "string",
+        boundedText(recording.title, 512) !== null &&
+        boundedText(recording.artist, 256) !== null,
     )
   );
 }
 
-function isProfileAnalysisV2(value: unknown): value is ProfileAnalysisV2 {
+export function isProfileAnalysisV2(value: unknown): value is ProfileAnalysisV2 {
   if (!isRecord(value)) return false;
   const snapshot = value.snapshot;
   const hydration = value.hydration;
@@ -167,13 +189,16 @@ function isProfileAnalysisV2(value: unknown): value is ProfileAnalysisV2 {
     isRecord(vocabularyAvailability) &&
     typeof vocabularyAvailability.reason === "string" &&
     isRecord(reach) &&
-    ["track_reach", "play_reach", "qualified_artists", "total_artists",
-      "qualified_tracks", "total_tracks", "qualified_plays", "total_plays",
-      "unresolved_artists", "unresolved_tracks"].every((key) => isFiniteNumber(reach[key])) &&
-    Array.isArray(vocabulary.families) &&
+    ["track_reach", "play_reach"].every((key) => isUnitFraction(reach[key])) &&
+    ["qualified_artists", "total_artists", "qualified_tracks", "total_tracks",
+      "qualified_plays", "total_plays", "unresolved_artists", "unresolved_tracks"]
+      .every((key) => isCount(reach[key])) &&
+    isUnitFraction(vocabulary.concentration) &&
+    Array.isArray(vocabulary.families) && vocabulary.families.length <= 50 &&
     vocabulary.families.every((family) => isRecord(family) &&
-      typeof family.name === "string" && isFiniteNumber(family.share) &&
-      isFiniteNumber(family.supporting_artists) && Array.isArray(family.instruments) &&
+      typeof family.name === "string" && isUnitFraction(family.share) &&
+      isCount(family.supporting_artists) && Array.isArray(family.instruments) &&
+      family.instruments.length <= 100 &&
       (family.tone === null || (isRecord(family.tone) &&
         typeof family.tone.shadow === "string" &&
         typeof family.tone.highlight === "string")) &&
@@ -202,11 +227,9 @@ function isProfileAnalysisV2(value: unknown): value is ProfileAnalysisV2 {
       defaultView === "artist_vocabulary") &&
     isRecord(hydration) &&
     (hydration.status === "complete" || hydration.status === "pending") &&
-    [
-      "pending_recordings",
-      "pending_artists",
-      "pending_aliases",
-    ].every((key) => isFiniteNumber(hydration[key]))
+    isCount(hydration.pending_recordings, 50) &&
+    isCount(hydration.pending_artists, 200) &&
+    isCount(hydration.pending_aliases, 50)
   );
 }
 
@@ -218,19 +241,40 @@ function isInstrumentResource(value: unknown): value is InstrumentResource {
     typeof value.description === "string" &&
     typeof value.sound_production === "string" &&
     Array.isArray(value.common_roles) &&
+    value.common_roles.every((role) => typeof role === "string") &&
     Array.isArray(value.related_slugs) &&
+    value.related_slugs.every((slug) => typeof slug === "string") &&
     Array.isArray(value.sections) &&
-    Array.isArray(value.sources)
+    value.sections.every((section) => isRecord(section) &&
+      typeof section.text === "string" && typeof section.status === "string" &&
+      isRecord(section.review) &&
+      typeof section.review.claim_support_verified === "boolean" &&
+      typeof section.review.source_metadata_verified === "boolean" &&
+      Array.isArray(section.citations) &&
+      section.citations.every((citation) => isRecord(citation) &&
+        typeof citation.source_id === "string")) &&
+    Array.isArray(value.sources) &&
+    value.sources.every((source) => isRecord(source) &&
+      typeof source.id === "string" && typeof source.title === "string" &&
+      typeof source.source_type === "string" &&
+      typeof source.language === "string" &&
+      /^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/.test(source.language) &&
+      Array.isArray(source.contributors) &&
+      source.contributors.every((contributor) => typeof contributor === "string")) &&
+    (value.further_reading === undefined || (Array.isArray(value.further_reading) &&
+      value.further_reading.every((article) => isRecord(article) &&
+        typeof article.title === "string" && typeof article.url === "string")))
   );
 }
 
 async function getJson<T>(
   path: string,
   signal: AbortSignal,
+  baseUrl = apiBaseUrl(),
 ): Promise<{ data: T; response: Response }> {
   let response: Response;
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
+    response = await fetch(`${baseUrl}${path}`, {
       headers: { Accept: "application/json" },
       signal,
     });
@@ -246,8 +290,9 @@ async function getJson<T>(
 
   let payload: unknown;
   try {
-    payload = await response.json();
-  } catch {
+    payload = await readBoundedJson(response);
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") throw error;
     throw new PaletteApiError(
       "A API devolveu uma resposta inválida.",
       response.status,
@@ -290,6 +335,7 @@ export async function getAnalysis(
   const result = await getJson<unknown>(
     `/v2/profiles/${encodedUsername}/analysis?period=${encodeURIComponent(period)}`,
     signal,
+    analysisApiBaseUrl(),
   );
   if (!isProfileAnalysisV2(result.data)) {
     throw new PaletteApiError(
@@ -298,7 +344,7 @@ export async function getAnalysis(
       "invalid_report",
     );
   }
-  return result.data;
+  return sanitizeProfileAnalysis(result.data);
 }
 
 export async function getExampleAnalysis(
@@ -311,6 +357,7 @@ export async function getExampleAnalysis(
   const result = await getJson<unknown>(
     `/v2/examples/analysis?${params.toString()}`,
     signal,
+    analysisApiBaseUrl(),
   );
   if (!isProfileAnalysisV2(result.data) || !result.data.is_example) {
     throw new PaletteApiError(
@@ -319,7 +366,7 @@ export async function getExampleAnalysis(
       "invalid_example_report",
     );
   }
-  return result.data;
+  return sanitizeProfileAnalysis(result.data);
 }
 
 export async function getInstrument(
@@ -337,18 +384,32 @@ export async function getInstrument(
       "invalid_instrument",
     );
   }
-  return result.data;
+  return sanitizeInstrumentResource(result.data);
 }
 
 export function getApiErrorMessage(error: unknown): string {
-  if (error instanceof PaletteApiError) return error.message;
+  if (error instanceof PaletteApiError) {
+    const localized: Record<string, string> = {
+      invalid_username: "Informe um perfil válido do Last.fm.",
+      invalid_username_or_period: "O perfil ou período informado é inválido.",
+      invalid_page_or_limit: "A página solicitada é inválida.",
+      lastfm_key_missing: "A consulta do histórico não está configurada.",
+      lastfm_unavailable: "Não foi possível consultar o Last.fm agora.",
+      lastfm_profile_not_found: "Esse perfil não foi encontrado no Last.fm.",
+      lastfm_rate_limited: "O Last.fm está recebendo muitas consultas. Tente novamente em instantes.",
+      snapshot_unavailable: "O catálogo de créditos está indisponível agora.",
+      unsupported_snapshot_schema: "A versão do catálogo não é compatível com esta análise.",
+      database_unavailable: "O catálogo de evidências está indisponível.",
+      example_data_unavailable: "O exemplo do catálogo não está disponível.",
+      catalog_unavailable: "O catálogo está indisponível no momento.",
+      instrument_not_found: "Esse instrumento não foi encontrado no catálogo.",
+      invalid_slug: "O identificador do instrumento é inválido.",
+    };
+    return localized[error.code] ?? error.message;
+  }
   if (error instanceof DOMException && error.name === "AbortError") return "";
   if (isRecord(error) && typeof error.message === "string") {
     return error.message;
   }
   return "Não foi possível concluir a análise.";
-}
-
-export function apiBaseUrl(): string {
-  return API_BASE_URL;
 }

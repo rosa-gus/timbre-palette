@@ -1,5 +1,7 @@
 .dev.vars
 .env
+/.env.local
+/.env.*.local
 .pytest_cache/
 .venv/
 .venv-workers/
@@ -10,14 +12,16 @@ __pycache__/
 node_modules/
 python_modules/
 target/
-src/vendor/
-src/palette_api/_generated_image_catalog.json
+reference/server-assembly/src/vendor/
+reference/server-assembly/src/palette_api/_generated_image_catalog.json
 web/dist/
 editorial/dist/
 
 /CONCEPT.md
 /web/public/
 /public/instruments/
+/public/profile-analysis-catalog.json
+/public/profile-analysis-example.json
 /assets/*
 !/assets/CREDITS.md
 !/assets/treated/

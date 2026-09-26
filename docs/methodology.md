@@ -1,8 +1,8 @@
-# Analysis methodology — API v2
+# Profile analysis methodology — report schema v2
 
 Current direct-palette methodology version: `0.5.0`.
 
-The API v2 keeps two products independent and versioned:
+The browser assembles two independent products into the versioned Profile Analysis v2 report:
 
 - `track_palette` uses direct recording/track evidence and owns coverage,
   sound balance, discovery, and temperament;
@@ -15,13 +15,13 @@ Only mapped instrument or family facts with `recording` or `track` scope count
 as direct evidence. Release context, unresolved relationships, programming,
 samples, and pending hydration do not increase direct coverage.
 
-The Last.fm adapter reads up to 200 ranked candidates in one page. The catalog
-projection is queried in batches for the whole candidate page; the analysis
-does not discard undocumented candidates before calculating its denominator.
-This allows already-materialized evidence below rank 50 to be used without
-turning catalog discovery into an evidence-biased sample. Hydration remains a
-separate budget: at most 50 missing recording/track identities from a request
-are enqueued, preserving Last.fm rank order.
+The browser reads up to 200 ranked candidates as four pages of 50. Each page's
+identities are queried in one bounded evidence batch; undocumented candidates
+remain in the coverage denominator. This allows already-materialized evidence
+below rank 50 to be used without turning catalog discovery into an
+evidence-biased sample. Hydration is submitted separately after report
+assembly: at most 50 missing recording or track identities are enqueued, while
+artist identities have their own deduplicated limit of 200.
 
 ```text
 track coverage = covered tracks / total tracks
@@ -55,7 +55,7 @@ separate `hydration` object and does not downgrade a ready sample.
 ## Artist vocabulary candidate
 
 The candidate policy is deliberately configurable and is not frozen by the
-the initial research sample. An instrument qualifies for an artist when it
+initial research sample. An instrument qualifies for an artist when it
 appears in at least three distinct documented recordings. The initial vocabulary
 gate then requires:
 

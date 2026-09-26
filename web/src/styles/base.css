@@ -234,6 +234,19 @@ main {
   color: var(--muted);
   white-space: nowrap;
 }
+:is(.app-tooltip, .color-popover, .version-panel, .catalog-tooltip)[data-state="open"]:is([data-side="bottom"], [data-side="top"])::before {
+  animation: popover-stem-appear 130ms steps(3, end) both;
+}
+:is(.app-tooltip, .color-popover, .version-panel, .catalog-tooltip)[data-side="bottom"]::before {
+  transform-origin: center top;
+}
+:is(.app-tooltip, .color-popover, .version-panel, .catalog-tooltip)[data-side="top"]::before {
+  transform-origin: center bottom;
+}
+@keyframes popover-stem-appear {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
 @keyframes loading-indicator {
   0%, 24.99% { content: "* . . ."; }
   25%, 49.99% { content: ". * . ."; }
@@ -241,6 +254,9 @@ main {
   75%, 100% { content: ". . . *"; }
 }
 @media (prefers-reduced-motion: reduce) {
+  :is(.app-tooltip, .color-popover, .version-panel, .catalog-tooltip)::before {
+    animation: none;
+  }
   .loading-indicator::after {
     animation: none;
     content: "* . . .";

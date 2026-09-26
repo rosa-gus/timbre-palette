@@ -2,7 +2,7 @@ import json
 import sqlite3
 from pathlib import Path
 
-from palette_api.tools.publish_editorial import (
+from scripts.publish_editorial import (
     emit_sql,
     load_manifest,
     manifest_digest,

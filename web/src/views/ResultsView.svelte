@@ -32,6 +32,7 @@
   export let periods: { value: ListeningPeriod; label: string }[] = [];
   export let periodLoading = false;
   export let periodError = "";
+  export let periodRevealKey = 0;
   export let onPeriodChange: (value: ListeningPeriod) => void = () => undefined;
   export let activeView: AnalysisView;
   export let onSelectView: (view: AnalysisView) => void;
@@ -410,6 +411,11 @@
       {:else if periodError}
         <p class="period-error" role="alert">{periodError}</p>
       {/if}
+      {#if periodRevealKey > 0 && !periodLoading && !periodError}
+        <p class="visually-hidden" role="status">
+          Análise de {periodLabels[period]} atualizada.
+        </p>
+      {/if}
       {#if showLowCoverageNotice}
         <Tooltip
           frozen
@@ -428,6 +434,8 @@
     </div>
   </section>
 
+  {#key periodRevealKey}
+  <div class:period-reveal={periodRevealKey > 0} class="reading-content">
   <Tabs.Root
     value={activeView}
     onValueChange={handleTabChange}
@@ -764,14 +772,35 @@
       </Tabs.Content>
     {/if}
   </Tabs.Root>
+  </div>
+  {/key}
 </div>
 
 <style>
   .results-view {
+    position: relative;
+    isolation: isolate;
+    --dither-large: 128px 128px;
+    --dither-medium: 64px 64px;
+    --dither-small: 32px 32px;
+    --dither-fine: 16px 16px;
     width: 100%;
     max-width: 1320px;
     margin: 0 auto;
     padding: 54px 0 32px;
+  }
+  .results-view::after,
+  .period-reveal::after {
+    position: absolute;
+    z-index: 2;
+    inset: 0;
+    background: var(--panel);
+    content: "";
+    pointer-events: none;
+    mask-repeat: repeat;
+  }
+  .results-view::after {
+    animation: dither-resolve 560ms steps(1, end) forwards;
   }
   .back-link {
     display: inline-block;
@@ -923,6 +952,49 @@
   }
   .period-error {
     color: var(--accent-soft);
+  }
+  .reading-content {
+    position: relative;
+    isolation: isolate;
+  }
+  .period-reveal {
+    --dither-large: 96px 96px;
+    --dither-medium: 48px 48px;
+    --dither-small: 24px 24px;
+    --dither-fine: 12px 12px;
+  }
+  .period-reveal::after {
+    animation: dither-resolve 340ms steps(1, end) forwards;
+  }
+  @keyframes dither-resolve {
+    0%, 4% {
+      mask-image: none;
+    }
+    5%, 36% {
+      mask-image: url("../assets/bayer-mask-75.svg");
+      mask-size: var(--dither-large);
+    }
+    37%, 68% {
+      mask-image: url("../assets/bayer-mask-50.svg");
+      mask-size: var(--dither-medium);
+    }
+    69%, 85% {
+      mask-image: url("../assets/bayer-mask-25.svg");
+      mask-size: var(--dither-small);
+    }
+    86%, 99% {
+      mask-image: url("../assets/bayer-mask-25.svg");
+      mask-size: var(--dither-fine);
+    }
+    100% {
+      visibility: hidden;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .results-view::after,
+    .period-reveal::after {
+      display: none;
+    }
   }
   :global(.view-tabs) {
     width: 100%;

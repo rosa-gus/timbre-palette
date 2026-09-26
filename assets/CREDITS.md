@@ -54,6 +54,6 @@ compact profile and sharing layouts.
   version `20260912-002318`.
 - **License and attribution:** CC0; MusicBrainz, derived instrumental-credit
   index. The snapshot manifest hash is recorded in
-  `src/palette_api/_curated_example_history.json`.
+  `reference/server-assembly/src/palette_api/_curated_example_history.json`.
 - The example history also includes [Béradêro by Chico César](https://musicbrainz.org/recording/c49173b2-3901-4c45-b37a-2a716cdbefb2),
   listed on the MusicBrainz release [Aos Vivos](https://musicbrainz.org/release/8922a747-49ba-4e62-8bfc-615c128f52b1).
