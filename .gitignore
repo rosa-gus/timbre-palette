@@ -1,5 +1,7 @@
 .dev.vars
 .env
+/.env.local
+/.env.*.local
 .pytest_cache/
 .venv/
 .venv-workers/
@@ -18,6 +20,8 @@ editorial/dist/
 /CONCEPT.md
 /web/public/
 /public/instruments/
+/public/profile-analysis-catalog.json
+/public/profile-analysis-example.json
 /assets/*
 !/assets/CREDITS.md
 !/assets/treated/

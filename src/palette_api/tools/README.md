@@ -83,10 +83,13 @@ yarn prepare:images
 public/instruments/<asset-id>/<sha256-prefix>/detail.png
 ```
 
-It also generates `src/palette_api/_generated_image_catalog.json`, which is a
-build artifact and is ignored by Git. The content hash changes the public path
-when the treated PNG changes. The command does not alter source images or the
-editorial manifest.
+It generates `src/palette_api/_generated_image_catalog.json` and publishes
+`public/profile-analysis-catalog.json` plus
+`public/profile-analysis-example.json`. The generated catalog and example
+fixture are build artifacts and are ignored by Git. The content hash changes
+the public path when a treated PNG changes. The example file is copied from
+`src/palette_api/_curated_example_history.json` for browser-side example
+assembly. The command does not alter source images or the editorial manifest.
 
 `yarn dev:web` and `yarn build:web` run this publication step automatically.
 Run `prepare_images.py` first when a source photograph, treatment parameter, or

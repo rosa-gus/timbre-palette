@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 
 function sourceVersion(path: string): string {
   const source = readFileSync(new URL(path, import.meta.url), "utf8");
-  const version = source.match(/\bversion(?:\s*:\s*str)?\s*=\s*"([^"]+)"/);
+  const version = source.match(/\b(?:version(?:\s*:\s*str)?|API_VERSION)\s*=\s*"([^"]+)"/);
   if (!version) throw new Error(`Version missing in ${path}`);
   return version[1];
 }
@@ -32,11 +32,12 @@ export default defineConfig({
       product: product.version,
       status: product.productStatus,
       method: sourceVersion("./src/palette_api/methodology.py"),
-      api: sourceVersion("./src/palette_api/api.py"),
+      api: sourceVersion("./workers/api/src/version.ts"),
     }),
   },
   plugins: [svelte({ configFile: "../svelte.config.js" })],
   root: "web",
+  envDir: "..",
   publicDir: "../public",
   base: "./",
   server: { port: 5173, strictPort: true },
