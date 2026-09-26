@@ -1,4 +1,4 @@
-import imageManifest from "../../../catalog/instrument-images.json";
+import imageManifest from "../../../public/profile-analysis-catalog.json";
 import { API_VERSION } from "./version";
 
 type Row = Record<string, unknown>;

@@ -91,6 +91,10 @@ the public path when a treated PNG changes. The example file is copied from
 `reference/server-assembly/src/palette_api/_curated_example_history.json` for browser-side example
 assembly. The command does not alter source images or the editorial manifest.
 
+The active API Worker also imports this generated catalog. Wrangler runs the
+publication step before local development and deployment, so instrument
+images use the same resolved URLs in the API and browser.
+
 `yarn dev:web` and `yarn build:web` run this publication step automatically.
 Run `prepare_images.py` first when a source photograph, treatment parameter, or
 manifest output changes.

@@ -2,6 +2,10 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "timbre-palette-api",
   "main": "workers/api/src/index.ts",
+  "build": {
+    "command": "yarn prepare:images",
+    "watch_dir": ["catalog", "assets/treated", "scripts"]
+  },
   "compatibility_date": "2026-09-18",
   "observability": {
     "enabled": true,
