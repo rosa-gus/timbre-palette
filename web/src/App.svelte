@@ -149,6 +149,7 @@
   let loadingDetail = "Consultando o Last.fm";
   let periodLoading = false;
   let periodError = "";
+  let periodRevealKey = 0;
   let shareFeedback = "";
   let sharePreviewUrl = "";
   let shareBlob: Blob | null = null;
@@ -253,6 +254,7 @@
       periodLoading = true;
       periodError = "";
     } else {
+      periodRevealKey = 0;
       view = "loading";
       formError = "";
     }
@@ -261,6 +263,7 @@
         ? await getExampleAnalysis(period, signal, exampleId || undefined)
         : await getAnalysis(username, period, signal);
       result = next;
+      if (preserveReport) periodRevealKey += 1;
       isExample = next.is_example;
       exampleId = next.example_id ?? "";
       username = next.profile.username;
@@ -561,6 +564,7 @@
         {canShareImage}
         {periodLoading}
         {periodError}
+        {periodRevealKey}
         {periods}
         onPeriodChange={changePeriod}
         onDownloadShare={downloadShare}
