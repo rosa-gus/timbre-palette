@@ -7,7 +7,8 @@
   import Tooltip from "../components/Tooltip.svelte";
   import { normalizePathname } from "../navigation";
   import { getPortraitCopy } from "../portrait";
-  import { createAsciiArtwork } from "../sharing/ascii";
+  import { createAsciiArtwork, getFamilyTexture } from "../sharing/ascii";
+  import { fitFamilyTexture } from "../sharing/texture";
   import type {
     AnalysisStatus,
     Confidence,
@@ -284,7 +285,14 @@
             <div
               class="share-bar"
               aria-label={`${family.name}: ${percent(family.share)}`}
+              style={`--family-texture-tone:${toneText(family.tone?.highlight ?? fallbackTone)};--family-tone:${family.tone?.highlight ?? fallbackTone}`}
             >
+              <span
+                class="family-texture"
+                style={`width:${family.share * 100}%;`}
+                aria-hidden="true"
+                use:fitFamilyTexture={getFamilyTexture(family.slug)}
+              ></span>
               <ColorSwatch
                 color={family.tone?.highlight ?? fallbackTone}
                 label={`${family.name} (${percent(family.share)})`}
@@ -739,8 +747,33 @@
     font-size: 17px;
   }
   .share-bar {
-    height: 16px;
-    background: var(--panel);
+    position: relative;
+    min-width: 0;
+    height: 28px;
+    border-bottom: 1px solid var(--line);
+  }
+  .family-texture {
+    display: block;
+    color: var(--family-texture-tone);
+    font: 14px/22px var(--meta);
+    letter-spacing: 0;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  :global(:root[data-theme="dark"]) .family-texture {
+    color: var(--family-tone);
+  }
+  .share-bar :global(.share-swatch) {
+    position: absolute;
+    inset: 0 auto 0 0;
+    height: 100%;
+    background: transparent;
+    border-bottom: 3px solid var(--swatch-color);
+  }
+  .share-bar :global(.share-swatch:hover),
+  .share-bar :global(.share-swatch:focus-visible),
+  .share-bar :global(.share-swatch[data-state="open"]) {
+    outline-offset: 2px;
   }
   .family-row > strong {
     font-family: var(--meta);

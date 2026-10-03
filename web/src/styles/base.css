@@ -104,6 +104,12 @@ main {
   max-width: 1320px;
   margin: 24px auto 0;
 }
+.site-shell:is([data-view="entry"], [data-view="loading"]) :is(.site-header, .site-footer) {
+  max-width: 1120px;
+}
+.site-shell:is([data-view="entry"], [data-view="loading"]) .footer-colophon {
+  margin-top: 0;
+}
 .footer-explainers {
   display: flex;
   justify-content: space-between;
@@ -126,6 +132,17 @@ main {
   margin-top: 18px;
   padding-top: 24px;
   border-top: 1px solid var(--line-strong);
+}
+.footer-brand {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.footer-signature {
+  color: var(--accent);
+  font: 14px/1 var(--meta);
+  white-space: nowrap;
 }
 .footer-wordmark {
   display: block;
@@ -303,24 +320,27 @@ main {
     margin-top: 8px;
   }
   .site-shell[data-view="entry"] .footer-colophon {
-    grid-template-columns: minmax(0, 1fr) auto auto;
-    gap: 8px 14px;
-    margin-top: 8px;
-    padding-top: 10px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px 24px;
+    margin-top: 0;
+    padding-top: 20px;
+  }
+  .site-shell[data-view="entry"] .footer-identity {
+    grid-column: 1 / -1;
   }
   .site-shell[data-view="entry"] .footer-wordmark {
-    font-size: 14px;
+    font-size: 16px;
   }
   .site-shell[data-view="entry"] .footer-byline {
-    margin-top: 3px;
-    font-size: 10px;
-    line-height: 1.35;
+    margin-top: 6px;
+    font-size: 12px;
+    line-height: 1.5;
   }
   .site-shell[data-view="entry"] .footer-source {
     gap: 2px;
   }
   .site-shell[data-view="entry"] .footer-source a {
-    font-size: 12px;
+    font-size: 14px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

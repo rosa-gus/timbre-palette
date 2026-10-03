@@ -248,6 +248,24 @@ export function hasAsciiDrawing(slug: string): boolean {
   return Object.hasOwn(figures, slug);
 }
 
+const familyPatterns: Record<string, string> = {
+  "plucked-strings": "+##+",
+  percussion: "[_]",
+  synthesizers: ":*+#",
+  "acoustic-keys": "|#|",
+  "bowed-strings": "((()))",
+  "sampled-sounds": ":.+*",
+  woodwinds: "|o|",
+  brass: "o|o|",
+  voice: "@@",
+  "electric-keys": "|#|#|",
+};
+
+export function getFamilyTexture(slug: string): string {
+  const pattern = familyPatterns[slug] ?? "#+:*";
+  return pattern.repeat(Math.ceil(160 / pattern.length)).slice(0, 160);
+}
+
 /** Independent specimens, ordered to match their family labels. */
 export function createAsciiArtwork(
   families: FamilyPresence[],

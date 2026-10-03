@@ -2,7 +2,8 @@
   import { Tabs } from "bits-ui";
   import { tick } from "svelte";
   import { normalizePathname } from "../navigation";
-  import { getAsciiLines, hasAsciiDrawing } from "../sharing/ascii";
+  import { getAsciiLines, getFamilyTexture, hasAsciiDrawing } from "../sharing/ascii";
+  import { fitFamilyTexture } from "../sharing/texture";
   import { HERCULES_BEETLE_ASCII } from "../sharing/beetle";
   import Arrow from "../components/Arrow.svelte";
   import Badge from "../components/Badge.svelte";
@@ -677,7 +678,12 @@
                     role="img"
                     aria-label={`${family.name}: ${percent(family.share)} de participação no modelo`}
                   >
-                    <span style={`width:${family.share * 100}%`}></span>
+                    <span
+                      class="vocabulary-texture"
+                      style={`width:${family.share * 100}%`}
+                      aria-hidden="true"
+                      use:fitFamilyTexture={getFamilyTexture(family.slug)}
+                    ></span>
                   </div>
                   <p>
                     {count(family.supporting_artists)}
@@ -1303,14 +1309,23 @@
     color: var(--accent-soft);
   }
   .vocabulary-bar {
-    height: 11px;
+    min-width: 0;
+    height: 28px;
     margin: 20px 0 14px 58px;
-    background: var(--panel);
+    border-bottom: 1px solid var(--line);
   }
-  .vocabulary-bar span {
+  .vocabulary-texture {
     display: block;
     height: 100%;
-    background: var(--family-accent);
+    border-bottom: 3px solid var(--family-accent);
+    color: color-mix(in srgb, var(--family-accent) 40%, black);
+    font: 14px/22px var(--meta);
+    letter-spacing: 0;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  :global(:root[data-theme="dark"]) .vocabulary-texture {
+    color: var(--family-accent);
   }
   .vocabulary-family > p {
     margin: 0 0 0 58px;
