@@ -167,7 +167,10 @@
   }}
 >
   <Dialog.Portal>
-    <Dialog.Overlay class="ui-dialog-overlay" />
+    <Dialog.Overlay
+      class="ui-dialog-overlay"
+      style={`--instrument-tone:${resource?.tone?.highlight ?? "var(--accent)"}`}
+    />
     <Dialog.Content
       class="ui-dialog-content"
       style={`--instrument-tone:${resource?.tone?.highlight ?? "#F29191"};--instrument-tone-text:${toneText(resource?.tone?.highlight ?? "#F29191")};--instrument-shadow:${resource?.tone?.shadow ?? "#100e0e"}`}

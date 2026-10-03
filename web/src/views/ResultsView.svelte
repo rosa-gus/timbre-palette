@@ -227,16 +227,17 @@
   }
   function artistInstruments(
     artist: VocabularyFeaturedArtist,
-  ): { name: string; slug: string | null }[] {
+  ): { name: string; slug: string | null; tone: string }[] {
     const seen = new Set<string>();
     return artist.families
       .flatMap((family) => {
         const listed = vocabulary.families.find(
           (item) => item.slug === family.slug,
-        )?.instruments;
+        );
         return family.instruments.map((name) => ({
           name,
-          slug: listed?.find((item) => item.name === name)?.slug ?? null,
+          slug: listed?.instruments.find((item) => item.name === name)?.slug ?? null,
+          tone: listed?.tone?.highlight ?? "#F29191",
         }));
       })
       .filter((instrument) => {
@@ -604,6 +605,7 @@
                               {#if instrument.slug}<button
                                   type="button"
                                   class="instrument-link"
+                                  style={`--family-accent:${instrument.tone}`}
                                   on:click={() =>
                                     instrument.slug &&
                                     onOpenInstrumentSlug(instrument.slug)}
@@ -658,19 +660,20 @@
                   class="vocabulary-family"
                   style={`--family-accent:${family.tone?.highlight ?? "#F29191"}`}
                 >
-                  <div class="family-top">
+                  <div class="family-meta">
                     <span class="family-index"
                       >{String(index + 1).padStart(2, "0")}</span
                     >
-                    <h3>
-                      <button
-                        type="button"
-                        class="family-link"
-                        aria-label={`Abrir ficha de ${family.name}`}
-                        on:click={() => onOpenInstrumentSlug(family.slug)}
-                        >{family.name}</button
-                      >
-                    </h3>
+                    <span class="family-index" aria-hidden="true">/</span>
+                    <button
+                      type="button"
+                      class="family-ficha"
+                      aria-label={`Abrir ficha de ${family.name}`}
+                      on:click={() => onOpenInstrumentSlug(family.slug)}
+                    >[abrir]</button>
+                  </div>
+                  <div class="family-top">
+                    <h3>{family.name}</h3>
                     <strong>{percent(family.share)}</strong>
                   </div>
                   <div
@@ -1020,10 +1023,10 @@
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    min-height: 76px;
-    padding: 20px 24px;
+    min-height: 56px;
+    padding: 14px 20px;
     border: 0;
-    border-bottom: 3px solid transparent;
+    border-bottom: 2px solid transparent;
     border-radius: 0;
     background: transparent;
     color: var(--muted);
@@ -1032,7 +1035,6 @@
     font: 13px var(--meta);
     letter-spacing: 0.04em;
     transition:
-      background-color 150ms ease,
       border-color 150ms ease,
       color 150ms ease;
   }
@@ -1046,8 +1048,7 @@
   :global(.view-tab[data-state="active"]) {
     z-index: 1;
     border-top: 0;
-    border-bottom: 3px solid var(--accent);
-    background: var(--panel);
+    border-bottom-color: var(--accent-soft);
     color: var(--ink);
   }
   :global(.view-tab small) {
@@ -1274,9 +1275,15 @@
     padding: 24px 0 26px;
     border-top: 1px solid var(--line);
   }
+  .family-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
   .family-top {
     display: grid;
-    grid-template-columns: 40px 1fr auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: baseline;
     gap: 18px;
   }
@@ -1284,24 +1291,20 @@
     margin: 0;
     font-size: clamp(1.5rem, 2.3vw, 2.4rem);
   }
-  .family-top .family-link {
+  .family-ficha {
     padding: 0;
     border: 0;
     background: transparent;
-    color: inherit;
+    color: var(--muted);
     cursor: pointer;
-    font: inherit;
+    font: 12px/1.5 var(--meta);
     text-align: left;
-    text-decoration: underline;
-    text-decoration-color: transparent;
-    text-underline-offset: 5px;
-    transition:
-      color 150ms ease,
-      text-decoration-color 150ms ease;
+    text-decoration: none;
+    transition: color 150ms ease;
   }
-  .family-top .family-link:hover,
-  .family-top .family-link:focus-visible {
-    color: var(--accent-soft);
+  .vocabulary-family .family-ficha:hover,
+  .vocabulary-family .family-ficha:focus-visible {
+    color: color-mix(in srgb, var(--family-accent) 40%, black);
     text-decoration-color: currentColor;
   }
   .family-top strong {
@@ -1311,7 +1314,7 @@
   .vocabulary-bar {
     min-width: 0;
     height: 28px;
-    margin: 20px 0 14px 58px;
+    margin: 20px 0 14px;
     border-bottom: 1px solid var(--line);
   }
   .vocabulary-texture {
@@ -1328,12 +1331,12 @@
     color: var(--family-accent);
   }
   .vocabulary-family > p {
-    margin: 0 0 0 58px;
+    margin: 0;
     color: var(--muted);
     font-size: 14px;
   }
   .family-evidence {
-    margin: 16px 0 0 58px;
+    margin: 16px 0 0;
   }
   .family-evidence p {
     max-width: 650px;
@@ -1366,7 +1369,8 @@
     font: inherit;
     text-align: left;
     text-decoration: underline;
-    text-decoration-color: transparent;
+    text-decoration-color: var(--muted);
+    text-decoration-thickness: 1px;
     text-underline-offset: 4px;
     transition:
       color 150ms ease,
@@ -1374,8 +1378,12 @@
   }
   .instrument-link:hover,
   .instrument-link:focus-visible {
-    color: var(--accent-soft);
+    color: color-mix(in srgb, var(--family-accent) 40%, black);
     text-decoration-color: currentColor;
+  }
+  :global(:root[data-theme="dark"]) .family-ficha:is(:hover, :focus-visible),
+  :global(:root[data-theme="dark"]) .instrument-link:is(:hover, :focus-visible) {
+    color: var(--family-accent);
   }
   .vocabulary-state {
     max-width: 700px;
@@ -1424,16 +1432,15 @@
     .period-controls {
       padding-top: 16px;
     }
-    :global(.view-switch) {
-      grid-template-columns: 1fr;
-    }
     :global(.view-tab) {
-      min-height: 60px;
-      padding: 14px 10px;
-    }
-    :global(.view-tab + .view-tab) {
-      border-top: 1px solid var(--line-strong);
-      border-left: 0;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 8px;
+      min-height: 80px;
+      padding: 12px 10px;
+      font-size: 12px;
+      line-height: 1.5;
     }
     .vocabulary-reading {
       padding-top: 34px;
@@ -1491,7 +1498,7 @@
       margin-left: 0;
     }
     .family-top {
-      grid-template-columns: 26px 1fr auto;
+      grid-template-columns: minmax(0, 1fr) auto;
       gap: 10px;
     }
     .vocabulary-family li {

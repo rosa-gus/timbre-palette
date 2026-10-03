@@ -211,19 +211,19 @@
           style={`--family-tone:${family.tone?.highlight ?? fallbackTone};--family-tone-text:${toneText(family.tone?.highlight ?? fallbackTone)}`}
         >
           <figcaption>
-            <span class="eyebrow"
-              >{String(index + 1).padStart(2, "0")} / PRESENÇA DOMINANTE</span
-            >
+            <div class="instrument-heading">
+              <span class="eyebrow"
+                >{String(index + 1).padStart(2, "0")} / PRESENÇA DOMINANTE</span
+              >
+              <button
+                type="button"
+                class="family-card-link"
+                aria-label={`Abrir ficha de ${family.name}`}
+                on:click={() => onOpenInstrumentSlug(family.slug)}
+              >[abrir]</button>
+            </div>
             <div class="instrument-name">
-              <h2>
-                <button
-                  type="button"
-                  class="family-card-link"
-                  aria-label={`Abrir ficha de ${family.name}`}
-                  on:click={() => onOpenInstrumentSlug(family.slug)}
-                  >{family.name}</button
-                >
-              </h2>
+              <h2>{family.name}</h2>
               <strong>{percent(family.share)}</strong>
             </div>
           </figcaption>
@@ -270,7 +270,10 @@
     </div>
     <div class="palette-layout">
       <div class="family-list" aria-label="Famílias instrumentais">
-        {#each report.families as family}<div class="family-row">
+        {#each report.families as family}<div
+            class="family-row"
+            style={`--family-tone:${family.tone?.highlight ?? fallbackTone};--family-tone-text:${toneText(family.tone?.highlight ?? fallbackTone)}`}
+          >
             <div class="family-label">
               <button
                 type="button"
@@ -622,6 +625,12 @@
     font-size: 11px;
     color: var(--muted);
   }
+  .instrument-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
   .instrument-name {
     display: flex;
     align-items: baseline;
@@ -642,7 +651,8 @@
     font: inherit;
     text-align: left;
     text-decoration: underline;
-    text-decoration-color: transparent;
+    text-decoration-color: var(--muted);
+    text-decoration-thickness: 1px;
     text-underline-offset: 5px;
     transition:
       color 150ms ease,
@@ -652,8 +662,18 @@
   .family-card-link:focus-visible,
   .family-link:hover,
   .family-link:focus-visible {
-    color: var(--accent-soft);
+    color: var(--family-tone-text);
     text-decoration-color: currentColor;
+  }
+  .family-card-link {
+    color: var(--muted);
+    font: 12px/1.5 var(--meta);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  :global(:root[data-theme="dark"]) .family-card-link:is(:hover, :focus-visible),
+  :global(:root[data-theme="dark"]) .family-link:is(:hover, :focus-visible) {
+    color: var(--family-tone);
   }
   .instrument-name strong {
     font-family: var(--meta);

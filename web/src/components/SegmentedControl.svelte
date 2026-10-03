@@ -64,7 +64,7 @@
   .segment-button {
     min-height: 30px;
     padding: 0 9px;
-    border: 1px solid var(--line);
+    border: 1px solid var(--line-strong);
     border-radius: 0;
     background: transparent;
     color: var(--muted);
@@ -74,10 +74,19 @@
     letter-spacing: 0.04em;
     text-transform: uppercase;
   }
-  .segment-button:hover,
+  .segment-button:hover:not(:disabled):not([data-state="checked"]) {
+    border-color: var(--accent-soft);
+    background: var(--panel);
+    color: var(--ink);
+  }
   .segment-button[data-state="checked"] {
     border-color: var(--accent-soft);
-    color: var(--accent-pale);
+    background: var(--accent-soft);
+    color: var(--on-accent-soft);
+  }
+  .segment-button:focus-visible {
+    outline: 2px solid var(--accent-soft);
+    outline-offset: 4px;
   }
   .segment-button:disabled {
     cursor: wait;

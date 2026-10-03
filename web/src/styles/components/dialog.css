@@ -7,12 +7,13 @@
 .ui-dialog-overlay::before {
   position: absolute;
   inset: 0;
-  background: var(--accent);
-  opacity: 0.12;
+  background: var(--instrument-tone, var(--accent));
+  transition: background-color 350ms ease;
+  opacity: 0.3;
   content: "";
   pointer-events: none;
   mask-image: url("../../assets/bayer-mask-50.svg");
-  mask-size: 12px 12px;
+  mask-size: 8px 8px;
   mask-repeat: repeat;
 }
 .ui-dialog-overlay[data-state="open"] {
@@ -42,6 +43,17 @@
 }
 .ui-dialog-content[data-state="closed"] {
   animation: dialog-disappear 130ms ease-in forwards;
+}
+.ui-dialog-content .ui-scroll-area {
+  scrollbar-color: var(--instrument-tone, var(--accent)) transparent;
+}
+@supports selector(::-webkit-scrollbar) {
+  .ui-dialog-content .ui-scroll-area {
+    scrollbar-color: auto;
+  }
+  .ui-dialog-content .ui-scroll-area::-webkit-scrollbar-thumb {
+    background: var(--instrument-tone, var(--accent));
+  }
 }
 @keyframes dialog-appear {
   from {
@@ -319,6 +331,10 @@
   gap: 8px;
 }
 @media (max-width: 800px) {
+  .ui-dialog-overlay::before {
+    mask-image: url("../../assets/bayer-mask-25.svg");
+    mask-size: 4px 4px;
+  }
   .ui-dialog-content {
     width: calc(100vw - 24px);
     height: calc(100dvh - 24px);
@@ -348,6 +364,9 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  .ui-dialog-overlay::before {
+    transition: none;
+  }
   .ui-dialog-overlay[data-state="open"],
   .ui-dialog-overlay[data-state="closed"],
   .ui-dialog-content[data-state="open"],
