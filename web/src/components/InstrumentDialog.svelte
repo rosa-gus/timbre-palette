@@ -495,11 +495,11 @@
                       </div>
                       <div>
                         <dt>Catálogo</dt>
-                        <dd>{resource.catalog_version}</dd>
+                        <dd><code class="source-value">{resource.catalog_version}</code></dd>
                       </div>
                       <div>
                         <dt>Catálogo de imagens</dt>
-                        <dd>{resource.image_catalog_version}</dd>
+                        <dd><code class="source-value">{resource.image_catalog_version}</code></dd>
                       </div>
                     </dl>
                   </div>

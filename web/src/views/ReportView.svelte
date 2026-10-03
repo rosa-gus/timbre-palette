@@ -323,21 +323,21 @@
       <Dropdown title="Sobre os dados desta leitura">
         <p>{report.analysis.notice}</p>
         <p>
-          Cobertura: {percent(report.analysis.coverage_tracks)} das faixas / {percent(
+          Cobertura: <span class="source-value">{percent(report.analysis.coverage_tracks)}</span> das faixas / <span class="source-value">{percent(
             report.analysis.coverage_plays,
-          )} das reproduções.
+          )}</span> das reproduções.
         </p>
         <p>
-          Voz documentada: {report.analysis.vocal_presence.documented_tracks} faixas,
-          {report.analysis.vocal_presence.documented_artists} artistas e
-          {report.analysis.vocal_presence.documented_plays} reproduções ({percent(
+          Voz documentada: <span class="source-value">{report.analysis.vocal_presence.documented_tracks}</span> faixas,
+          <span class="source-value">{report.analysis.vocal_presence.documented_artists}</span> artistas e
+          <span class="source-value">{report.analysis.vocal_presence.documented_plays}</span> reproduções (<span class="source-value">{percent(
             report.analysis.vocal_presence.play_ratio,
-          )} das reproduções).
+          )}</span> das reproduções).
         </p>
         <p>
-          Catálogo {report.analysis.catalog_version ?? "não publicado"}
+          Catálogo {#if report.analysis.catalog_version}<code class="source-value">{report.analysis.catalog_version}</code>{:else}não publicado{/if}
           <span class="separator-indicator" aria-hidden="true">·</span>
-          Método {report.analysis.methodology_version}
+          Método <code class="source-value">{report.analysis.methodology_version}</code>
         </p>
       </Dropdown>
     </div>

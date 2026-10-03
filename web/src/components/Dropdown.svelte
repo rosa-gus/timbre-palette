@@ -69,6 +69,15 @@
   .dropdown-content :global(p:last-child) {
     margin-bottom: 0;
   }
+  .dropdown-content :global(.source-value) {
+    padding: 2px 5px;
+    background: var(--panel);
+    color: var(--ink);
+    font: 0.95em/1.6 var(--meta);
+    overflow-wrap: anywhere;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
   @media (max-width: 800px) {
     .ui-dropdown--mobile-start > summary {
       margin-left: 0;

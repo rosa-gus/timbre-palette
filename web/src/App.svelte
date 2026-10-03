@@ -714,15 +714,3 @@
   onOpenRelated={(slug) => void loadInstrument(slug)}
   onClose={() => instrumentController?.abort()}
 />
-
-<style>
-  .source-value {
-    padding: 2px 5px;
-    background: var(--panel);
-    color: var(--ink);
-    font: 0.95em/1.6 var(--meta);
-    overflow-wrap: anywhere;
-    -webkit-box-decoration-break: clone;
-    box-decoration-break: clone;
-  }
-</style>
