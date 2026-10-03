@@ -32,11 +32,11 @@ Browser storage keys are registered in `web/src/utils/storage-keys.ts` using `ap
 
 Returns the Last.fm `user.gettoptracks` history data for one page. Supported query parameters:
 
-| Parameter | Values | Default |
-| --- | --- | --- |
-| `period` | `7day`, `1month`, `3month`, `6month`, `12month`, `overall` | `7day` |
-| `page` | Integer from 1 to 4 | `1` |
-| `limit` | Exactly `50` | `50` |
+| Parameter | Values                                                     | Default |
+| --------- | ---------------------------------------------------------- | ------- |
+| `period`  | `7day`, `1month`, `3month`, `6month`, `12month`, `overall` | `7day`  |
+| `page`    | Integer from 1 to 4                                        | `1`     |
+| `limit`   | Exactly `50`                                               | `50`    |
 
 The Worker reads at most 1 MiB of upstream JSON with a ten-second timeout, validates it, and returns the Last.fm payload. Provider errors are normalized: a missing profile returns `404`; HTTP `429` or provider error `29` returns `503` with `Retry-After` and opens a shared cooldown. Error `29` inside upstream HTTP `200` is never logged as a successful history page.
 

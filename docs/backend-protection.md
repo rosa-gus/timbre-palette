@@ -4,20 +4,20 @@ The production TypeScript API protects Last.fm and hydration using local visitor
 
 ## Defaults
 
-| Protection | Default | Configuration |
-| --- | --- | --- |
-| Last.fm requests per IP and Cloudflare location | 60/minute, tracks and metadata combined | `LASTFM_VISITOR_LIMITER` binding |
-| Hydration requests per IP and location | 6/minute | `HYDRATION_VISITOR_LIMITER` binding |
-| Evidence/catalog requests per IP and location | 120/minute per resource group | `D1_VISITOR_LIMITER` binding |
-| Global Last.fm refill rate | 120/minute, initial burst of 10 | `LASTFM_GLOBAL_PER_MINUTE`, `LASTFM_GLOBAL_BURST` |
-| Simultaneous Last.fm calls | 8 | `LASTFM_MAX_CONCURRENT` |
-| Last.fm calls per UTC day | 5,000 | `LASTFM_DAILY_CALL_LIMIT` |
-| Shared D1 rows read per UTC day | 4,000,000 | `D1_DAILY_READ_BUDGET` |
-| Shared D1 rows written per UTC day | 70,000 | `D1_DAILY_WRITE_BUDGET` |
-| Shared D1 execution reservations per UTC day | 5,000 | Fixed safety cap |
-| New hydration work units per UTC day | 360 | `HYDRATION_DAILY_NEW_UNITS` |
-| Outstanding hydration work units in active snapshot | 720 | `HYDRATION_MAX_PENDING_UNITS` |
-| Hydration admission requests per UTC day | 1,000 | Fixed safety cap |
+| Protection                                          | Default                                 | Configuration                                     |
+| --------------------------------------------------- | --------------------------------------- | ------------------------------------------------- |
+| Last.fm requests per IP and Cloudflare location     | 60/minute, tracks and metadata combined | `LASTFM_VISITOR_LIMITER` binding                  |
+| Hydration requests per IP and location              | 6/minute                                | `HYDRATION_VISITOR_LIMITER` binding               |
+| Evidence/catalog requests per IP and location       | 120/minute per resource group           | `D1_VISITOR_LIMITER` binding                      |
+| Global Last.fm refill rate                          | 120/minute, initial burst of 10         | `LASTFM_GLOBAL_PER_MINUTE`, `LASTFM_GLOBAL_BURST` |
+| Simultaneous Last.fm calls                          | 8                                       | `LASTFM_MAX_CONCURRENT`                           |
+| Last.fm calls per UTC day                           | 5,000                                   | `LASTFM_DAILY_CALL_LIMIT`                         |
+| Shared D1 rows read per UTC day                     | 4,000,000                               | `D1_DAILY_READ_BUDGET`                            |
+| Shared D1 rows written per UTC day                  | 70,000                                  | `D1_DAILY_WRITE_BUDGET`                           |
+| Shared D1 execution reservations per UTC day        | 5,000                                   | Fixed safety cap                                  |
+| New hydration work units per UTC day                | 360                                     | `HYDRATION_DAILY_NEW_UNITS`                       |
+| Outstanding hydration work units in active snapshot | 720                                     | `HYDRATION_MAX_PENDING_UNITS`                     |
+| Hydration admission requests per UTC day            | 1,000                                   | Fixed safety cap                                  |
 
 The visitor limits are approximate and local; shared IPs, such as mobile networks, share their allowance. Only Cloudflare's trusted `CF-Connecting-IP` is used; missing addresses use a shared fallback. Global limits are enforced by Durable Objects, not the local rate-limit binding. Without retries, a full analysis uses at most five Last.fm requests and four evidence batches. None of the defaults represents a Last.fm capacity guarantee.
 
