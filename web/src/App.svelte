@@ -25,6 +25,7 @@
   import InstrumentDialog from "./components/InstrumentDialog.svelte";
   import ProductVersion from "./components/ProductVersion.svelte";
   import Dropdown from "./components/Dropdown.svelte";
+  import AnalysisLimits from "./components/AnalysisLimits.svelte";
   import { normalizePathname } from "./navigation";
   import CatalogGrowth from "./components/CatalogGrowth.svelte";
   import ResultsView from "./views/ResultsView.svelte";
@@ -594,71 +595,41 @@
   </main>
 
   <footer class="site-footer">
-    <div class="footer-explainers">
-      <div class="footer-explainer">
-        <Dropdown title="Limites da análise">
-          <p class="limits-intro">Uma leitura aproximada da sua escuta.</p>
-          <p>
-            A paleta combina seu histórico público do Last.fm com créditos
-            instrumentais publicados. Não analisa o áudio das músicas nem mede o
-            volume dos instrumentos.
-          </p>
-          <p>
-            Um instrumento pode estar presente na música sem estar documentado
-            nos créditos da gravação no MusicBrainz. Encontrar a gravação nessa
-            base não garante encontrar seus instrumentos. Essa documentação
-            varia entre repertórios, por isso uma ausência na paleta não
-            significa ausência na música.
-          </p>
-          <p>
-            Faixas sem créditos instrumentais suficientes ficam fora do cálculo
-            da paleta. Artistas pouco conhecidos e parte da música atual,
-            sobretudo a produzida com software, podem ter menos créditos
-            publicados: sons programados, sintetizados ou sampleados nem sempre
-            são registrados como instrumentos.
-          </p>
-          <p>
-            O catálogo pode receber novos dados, então uma consulta futura pode
-            trazer outro resultado, sem garantia de identificar mais
-            instrumentos.
-          </p>
-          <p>
-            O vocabulário dos artistas reúne instrumentos documentados em
-            gravações desses artistas; não confirma que estejam nas músicas que
-            você ouviu.
-          </p>
-          <p>
-            O temperamento da escuta é uma interpretação editorial e lúdica. Não
-            é uma avaliação psicológica ou científica da sua personalidade.
-          </p>
-        </Dropdown>
-      </div>
-      {#if view === "report" && result}
-        <div class="footer-explainer footer-explainer--source">
-          <Dropdown
-            title="Fonte dos créditos e versões"
-            align="end"
-            mobileStart
-          >
-            <p>
-              Os instrumentos vêm de créditos publicados no MusicBrainz. Usamos
-              o snapshot {result.snapshot.snapshot_version}, uma cópia desses
-              dados. O projeto ainda pode consultar mais gravações dessa cópia;
-              por isso, uma próxima visita pode trazer novos créditos.
-            </p>
-            <p>
-              Esta leitura usa as regras da versão {result.track_palette
-                .analysis.methodology_version} para a paleta das faixas e {result
-                .artist_vocabulary.methodology_version} para o vocabulário dos artistas.
-              Se o snapshot ou essas regras mudarem, o resultado também pode mudar.
-            </p>
-          </Dropdown>
+    {#if view === "report"}
+      <div class="footer-explainers">
+        <div class="footer-explainer">
+          <AnalysisLimits />
         </div>
-      {/if}
-    </div>
+        {#if result}
+          <div class="footer-explainer footer-explainer--source">
+            <Dropdown
+              title="Fonte dos créditos e versões"
+              align="end"
+              mobileStart
+            >
+              <p>
+                Os instrumentos vêm de créditos publicados no MusicBrainz. Usamos
+                o snapshot {result.snapshot.snapshot_version}, uma cópia desses
+                dados. O projeto ainda pode consultar mais gravações dessa cópia;
+                por isso, uma próxima visita pode trazer novos créditos.
+              </p>
+              <p>
+                Esta leitura usa as regras da versão {result.track_palette
+                  .analysis.methodology_version} para a paleta das faixas e {result
+                  .artist_vocabulary.methodology_version} para o vocabulário dos artistas.
+                Se o snapshot ou essas regras mudarem, o resultado também pode mudar.
+              </p>
+            </Dropdown>
+          </div>
+        {/if}
+      </div>
+    {/if}
     <div class="footer-colophon">
       <div class="footer-identity">
-        <span class="footer-wordmark">TIMBRE PALETTE</span>
+        <div class="footer-brand">
+          <span class="footer-wordmark">TIMBRE PALETTE</span>
+          <span class="footer-signature" aria-hidden="true"># + : *</span>
+        </div>
         <p class="footer-byline">
           por <a
             href="https://rosa-gus.github.io/portfolio"
@@ -698,9 +669,3 @@
   onOpenRelated={(slug) => void loadInstrument(slug)}
   onClose={() => instrumentController?.abort()}
 />
-
-<style>
-  .limits-intro {
-    color: var(--ink);
-  }
-</style>

@@ -5,6 +5,7 @@
   import Button from "../components/Button.svelte";
   import Arrow from "../components/Arrow.svelte";
   import ColorSwatch from "../components/ColorSwatch.svelte";
+  import AnalysisLimits from "../components/AnalysisLimits.svelte";
   import SegmentedControl from "../components/SegmentedControl.svelte";
   import type { ListeningPeriod } from "../api/types";
 
@@ -81,9 +82,9 @@
   aria-busy={loading}
 >
   <div class="entry-intro">
-    <p id="entry-title" class="entry-tagline">
-      Descubra do que sua escuta é feita.
-    </p>
+    <h1 id="entry-title" class="entry-tagline">
+      Descubra do que <span>sua escuta é feita.</span>
+    </h1>
     <p class="entry-description">
       Uma paleta de cores para os instrumentos documentados nas músicas que você
       ouviu.
@@ -134,9 +135,9 @@
         on:click={toggleHero}
       >
         {#if videoPlaying}
-          Reproduzindo <span aria-hidden="true">Ⅱ</span>
+          Reproduzindo <span aria-hidden="true">||</span>
         {:else}
-          Reproduzir <span aria-hidden="true">▷</span>
+          Reproduzir <span aria-hidden="true">&gt;</span>
         {/if}
       </button>
     </div>
@@ -159,12 +160,12 @@
             aria-label="Ver uma escuta de exemplo"
             on:click={onExample}
           >
-            Ver exemplo<Arrow direction="up-right" />
+            Ver exemplo<Arrow direction="right" />
           </button>
         </div>
         <div class="username-field">
           <span id="username-prefix" class="username-prefix"
-            >www.last.fm/user/</span
+            >last.fm/user/</span
           >
           <input
             id="username"
@@ -174,6 +175,8 @@
             autocomplete="username"
             spellcheck="false"
             placeholder="nome de usuário"
+            aria-invalid={formError ? "true" : undefined}
+            aria-errormessage={formError ? "profile-error" : undefined}
             required
             maxlength="64"
           />
@@ -191,7 +194,7 @@
         </div>
         <Button variant="primary" type="submit" terminalHover>Buscar</Button>
       </div>
-      {#if formError}<p class="form-error" role="alert">{formError}</p>{/if}
+      {#if formError}<p id="profile-error" class="form-error" role="alert">{formError}</p>{/if}
     </form>
     {#if loading}
       <LoadingView
@@ -201,40 +204,55 @@
       />
     {/if}
   </div>
+
+  <div class="entry-limits"><AnalysisLimits /></div>
 </section>
 
 <style>
   .entry-view {
+    --entry-width: 520px;
     display: grid;
     align-content: center;
     justify-items: center;
-    gap: clamp(12px, 2.4svh, 24px);
+    gap: 20px;
     min-height: 0;
-    padding: 32px 4px 12px;
-    overflow: visible;
+    padding: 28px 0 16px;
+  }
+  .entry-intro,
+  .entry-stage,
+  .entry-action-area,
+  .entry-limits {
+    width: min(100%, var(--entry-width));
   }
   .entry-intro {
     display: grid;
-    gap: 4px;
-    width: min(100%, 680px);
+    justify-items: center;
+    gap: 12px;
     text-align: center;
   }
+  .entry-tagline {
+    margin: 0;
+    color: var(--ink);
+    font-size: clamp(1.75rem, 2.4vw, 2rem);
+    font-weight: 500;
+    letter-spacing: -0.035em;
+    line-height: 1.12;
+  }
+  .entry-tagline span { display: block; }
   .entry-description {
+    max-width: 46ch;
     margin: 0;
     color: var(--muted);
-    font-size: clamp(13px, 1.2vw, 15px);
-    line-height: 1.45;
+    font-size: 15px;
+    line-height: 1.5;
+    text-wrap: pretty;
   }
-  .entry-stage {
-    position: relative;
-    display: grid;
-    justify-items: center;
-    width: min(100%, 680px);
-  }
+  .entry-stage,
+  .entry-action-area { position: relative; }
   .hero-frame {
     position: relative;
     width: 100%;
-    aspect-ratio: 16/9;
+    aspect-ratio: 16 / 9;
     overflow: hidden;
     border: 1px solid var(--line-strong);
     background: var(--paper);
@@ -251,15 +269,14 @@
     opacity: 0;
     transition: opacity 260ms ease;
   }
-  .hero-frame video.visible {
-    opacity: 1;
-  }
+  .hero-frame video.visible { opacity: 1; }
   .hero-controls {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    width: 100%;
+    gap: 12px;
     margin-top: 8px;
+    min-height: 24px;
   }
   .hero-palette {
     display: flex;
@@ -277,53 +294,25 @@
     outline-offset: 2px;
   }
   .hero-play {
-    justify-self: end;
-    padding: 2px 0;
+    font-family: var(--meta);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+  .hero-play {
+    padding: 4px 0;
     border: 0;
     background: transparent;
     color: var(--muted);
     cursor: pointer;
-    font-family: var(--meta);
-    font-size: 12px;
-    letter-spacing: 0.065em;
     text-transform: uppercase;
   }
-  .hero-play span {
-    margin-left: 5px;
-    color: var(--accent-soft);
-  }
+  .hero-play span { margin-left: 6px; }
   .hero-play:hover:not(:disabled),
-  .hero-play:focus-visible {
-    color: var(--accent-soft);
-  }
-  .hero-play.playing {
-    color: var(--accent-soft);
-  }
-  .hero-play:disabled {
-    color: var(--quiet);
-    cursor: default;
-    opacity: 0.75;
-  }
-  .entry-tagline {
-    margin: 0;
-    color: var(--ink);
-    font-size: 1rem;
-    line-height: 1.5;
-  }
-  .entry-action-area {
-    position: relative;
-    width: min(100%, 680px);
-  }
-  .profile-form {
-    width: 100%;
-  }
-  .loading .profile-form {
-    visibility: hidden;
-  }
-  .field-block {
-    display: grid;
-    gap: 8px;
-  }
+  .hero-play:focus-visible { color: var(--ink); }
+  .hero-play:disabled { cursor: default; opacity: 0.6; }
+  .profile-form { width: 100%; }
+  .loading .profile-form { visibility: hidden; }
+  .field-block { display: grid; gap: 8px; }
   .field-heading {
     display: flex;
     align-items: center;
@@ -334,11 +323,12 @@
   .field-label {
     color: var(--muted);
     font-family: var(--meta);
-    font-size: 13px;
-    letter-spacing: 0.08em;
+    font-size: 12px;
+    letter-spacing: 0.065em;
     text-transform: uppercase;
   }
   .example-button {
+    min-height: 24px;
     padding: 0;
     border: 0;
     background: transparent;
@@ -346,58 +336,81 @@
     cursor: pointer;
     font-family: var(--meta);
     font-size: 12px;
-    letter-spacing: 0.04em;
     white-space: nowrap;
   }
   .example-button:hover:not(:disabled),
   .example-button:focus-visible {
-    color: var(--accent-soft);
+    color: var(--ink);
     text-decoration: underline;
-    text-underline-offset: 3px;
+    text-underline-offset: 4px;
   }
-  .example-button:disabled {
-    cursor: not-allowed;
-    opacity: 0.62;
-  }
+  .example-button:disabled { cursor: not-allowed; opacity: 0.6; }
   .username-field {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
     align-items: center;
+    min-height: 52px;
     border: 1px solid var(--line-strong);
   }
   .username-field:focus-within {
     border-color: var(--accent-soft);
+    outline: 1px solid var(--accent-soft);
+    outline-offset: 2px;
   }
   .username-prefix {
-    padding: 12px 14px 13px;
+    padding: 12px 14px;
     border-right: 1px solid var(--line);
     color: var(--muted);
     font-family: var(--meta);
-    font-size: 13px;
+    font-size: 12px;
     white-space: nowrap;
   }
   input {
+    min-width: 0;
     width: 100%;
-    padding: 12px 14px 13px;
+    padding: 12px 14px;
     border: 0;
     border-radius: 0;
     background: transparent;
     color: var(--ink);
     font-size: 1rem;
   }
-  input::placeholder {
-    color: var(--quiet);
-    opacity: 1;
-  }
-  input:focus {
-    outline: 0;
-  }
+  input::placeholder { color: var(--quiet); opacity: 1; }
+  input:focus { outline: 0; }
   .form-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 24px;
-    align-items: end;
-    margin-top: 25px;
+    gap: 20px;
+    margin-top: 20px;
+  }
+  .period-field :global(.segmented-control) {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .period-field :global(.segment-button) {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    min-height: 36px;
+    border-color: var(--line-strong);
+  }
+  .period-field :global(.segment-button[data-state="checked"]) {
+    border-color: var(--accent-soft);
+    background: var(--accent-soft);
+    color: var(--on-accent-soft);
+  }
+  .period-field :global(.segment-button:hover:not([data-state="checked"])) {
+    border-color: var(--accent-soft);
+    color: var(--ink);
+    background: var(--panel);
+  }
+  .form-row :global(.ui-button) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 44px;
   }
   .form-error {
     margin: 16px 0 0;
@@ -406,123 +419,19 @@
     font-size: 13px;
     line-height: 1.5;
   }
-  @media (min-width: 801px) {
-    .entry-stage,
-    .entry-action-area {
-      width: min(100%, 680px, max(320px, calc((100svh - 640px) * 16 / 9)));
-    }
-  }
+  .entry-limits { margin-top: -8px; }
   @media (max-width: 800px) {
-    .entry-view {
-      gap: clamp(12px, 2svh, 18px);
-      padding: 28px 0 20px;
-    }
-    .entry-stage,
-    .profile-form {
-      width: 100%;
-    }
-    .entry-description {
-      max-width: 40ch;
-      margin-inline: auto;
-      font-size: 13px;
-    }
-    .username-field {
-      grid-template-columns: 1fr;
-      border: 0;
-      border-bottom: 1px solid var(--line-strong);
-    }
-    .username-prefix {
-      padding: 0 0 2px;
-      border: 0;
-    }
-    .username-field input {
-      padding: 4px 0 13px;
-    }
-    .form-row {
-      grid-template-columns: 1fr;
-      gap: 20px;
-    }
-    .form-row :global(.ui-button) {
-      width: 100%;
-    }
+    .entry-view { gap: 24px; padding: 32px 0 16px; }
+    .entry-description { font-size: 14px; }
   }
-  @media (max-height: 700px) {
-    .entry-view {
-      gap: 8px;
-      padding: 18px 0 6px;
-    }
-    .entry-intro {
-      gap: 2px;
-    }
-    .entry-tagline {
-      font-size: 14px;
-      line-height: 1.3;
-    }
-    .entry-description {
-      font-size: 12px;
-      line-height: 1.3;
-    }
-    .entry-stage,
-    .entry-action-area {
-      width: min(100%, 680px);
-    }
-    .hero-controls {
-      margin-top: 4px;
-    }
-    .field-block {
-      gap: 4px;
-    }
-    .form-row {
-      margin-top: 12px;
-    }
-  }
-  @media (max-width: 800px) and (max-height: 700px) {
-    .entry-view {
-      padding-top: 14px;
-      padding-bottom: 4px;
-    }
-    .username-field {
-      grid-template-columns: auto minmax(0, 1fr);
-      border: 1px solid var(--line-strong);
-    }
-    .username-prefix {
-      padding: 8px 9px;
-      border-right: 1px solid var(--line);
-      white-space: nowrap;
-    }
-    .username-field input {
-      min-width: 0;
-      padding: 8px 9px;
-    }
-    .form-row {
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 12px;
-      align-items: end;
-    }
-    .form-row :global(.ui-button) {
-      width: auto;
-    }
-    .period-field {
-      min-width: 0;
-    }
-    .period-field :global(.segmented-control) {
-      gap: 4px;
-    }
-    .period-field :global(.segment-button) {
-      min-height: 28px;
-      padding-inline: 6px;
-      font-size: 11px;
-    }
-  }
-  @media (min-width: 801px) and (max-height: 700px) {
-    .hero-frame {
-      height: clamp(72px, 15svh, 108px);
-      aspect-ratio: auto;
-    }
+  @media (max-width: 380px) {
+    .field-heading { align-items: flex-start; gap: 8px; }
+    .field-block label { max-width: 17ch; }
+    .username-prefix { padding-inline: 10px; font-size: 11px; }
+    input { padding-inline: 10px; font-size: 14px; }
+    .period-field :global(.segment-button) { padding-inline: 4px; font-size: 11px; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .hero-frame video {
-      transition: none;
-    }
+    .hero-frame video { transition: none; }
   }
 </style>
