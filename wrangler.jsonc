@@ -22,8 +22,25 @@
     "cross_version_cache": false
   },
   "vars": {
-    "IMAGE_ASSET_BASE_URL": "https://rosa-gus.github.io/timbre-palette/"
+    "IMAGE_ASSET_BASE_URL": "https://rosa-gus.github.io/timbre-palette/",
+    "LASTFM_GLOBAL_PER_MINUTE": "120",
+    "LASTFM_GLOBAL_BURST": "10",
+    "LASTFM_MAX_CONCURRENT": "8",
+    "LASTFM_DAILY_CALL_LIMIT": "5000",
+    "D1_DAILY_READ_BUDGET": "4000000",
+    "D1_DAILY_WRITE_BUDGET": "70000",
+    "HYDRATION_MAX_PENDING_UNITS": "720",
+    "HYDRATION_DAILY_NEW_UNITS": "360"
   },
+  "ratelimits": [
+    { "name": "LASTFM_VISITOR_LIMITER", "namespace_id": "3001", "simple": { "limit": 60, "period": 60 } },
+    { "name": "HYDRATION_VISITOR_LIMITER", "namespace_id": "3002", "simple": { "limit": 6, "period": 60 } },
+    { "name": "D1_VISITOR_LIMITER", "namespace_id": "3003", "simple": { "limit": 120, "period": 60 } }
+  ],
+  "durable_objects": {
+    "bindings": [{ "name": "RESOURCE_GUARD", "class_name": "ResourceGuard" }]
+  },
+  "migrations": [{ "tag": "resource-guard-v1", "new_sqlite_classes": ["ResourceGuard"] }],
   "d1_databases": [
     {
       "binding": "DB",

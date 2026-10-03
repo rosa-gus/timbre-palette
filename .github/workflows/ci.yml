@@ -63,5 +63,11 @@ jobs:
       - name: Type-check API Worker
         run: yarn typecheck:api
 
+      - name: Type-check snapshot hydrator
+        run: yarn typecheck:hydrator
+
+      - name: Test API protection in Workers runtime
+        run: yarn test:api
+
       - name: Type-check browser assembly
         run: yarn typecheck:web

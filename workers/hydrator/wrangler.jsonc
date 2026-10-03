@@ -13,10 +13,12 @@
     }
   },
   "vars": {
-    "R2_USAGE_PERIOD": "2026-09",
     "R2_READ_LIMIT": "9000000",
     "R2_DAILY_READ_LIMIT": "720",
     "D1_DAILY_WRITE_LIMIT": "50000"
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "RESOURCE_GUARD", "class_name": "ResourceGuard", "script_name": "timbre-palette-api" }]
   },
   "d1_databases": [
     {

@@ -1,5 +1,6 @@
 import imageManifest from "../../../public/profile-analysis-catalog.json";
 import { API_VERSION } from "./version";
+import { ProtectionError } from "../../shared/protection";
 
 type Row = Record<string, unknown>;
 type Env = Cloudflare.Env;
@@ -35,6 +36,7 @@ export async function catalogStats(env: Env): Promise<Response> {
       },
     );
   } catch (error) {
+    if (error instanceof ProtectionError) throw error;
     console.error({
       event: "catalog_stats_failed",
       error_type: errorType(error),
@@ -178,6 +180,7 @@ export async function getInstrument(
       "Cache-Control": "public, max-age=300, s-maxage=300",
     });
   } catch (error) {
+    if (error instanceof ProtectionError) throw error;
     console.error({
       event: "instrument_catalog_failed",
       slug,
@@ -480,7 +483,7 @@ export function openApiDocument(): Response {
         get: {
           summary: "Read one page of a public Last.fm listening history",
           description:
-            "Returns the upstream Last.fm top-tracks JSON for one page. The API key remains server-side. Pages contain exactly 50 tracks and page numbers are limited to 1–4.",
+            "Returns validated Last.fm top-tracks JSON for one page. The API key remains server-side. Pages contain at most 50 tracks and page numbers are limited to 1–4. Provider errors are normalized; visitor and global admission limits apply.",
           parameters: [
             pathParameter("username", "Last.fm username"),
             queryParameter("period", "Listening period", {
@@ -512,7 +515,7 @@ export function openApiDocument(): Response {
               type: "object",
               description: "The Last.fm user.gettoptracks response.",
             }),
-            ...errorResponses(["422", "502", "503"]),
+            ...errorResponses(["404", "422", "429", "502", "503"]),
           },
         },
       },
@@ -536,7 +539,7 @@ export function openApiDocument(): Response {
                 },
               },
             }),
-            ...errorResponses(["404", "422", "502", "503"]),
+            ...errorResponses(["404", "422", "429", "502", "503"]),
           },
         },
       },
@@ -573,7 +576,7 @@ export function openApiDocument(): Response {
                 wall_ms: { type: "integer" },
               },
             }),
-            ...errorResponses(["400", "413", "422", "503"]),
+            ...errorResponses(["400", "413", "422", "429", "503"]),
           },
         },
       },
@@ -589,7 +592,7 @@ export function openApiDocument(): Response {
             "202": response("Targets accepted for asynchronous processing", {
               $ref: "#/components/schemas/HydrationAccepted",
             }),
-            ...errorResponses(["400", "413", "422", "503"]),
+            ...errorResponses(["400", "413", "422", "429", "503"]),
           },
         },
       },
@@ -601,7 +604,7 @@ export function openApiDocument(): Response {
           ],
           responses: {
             "200": response("Editorial resource", { type: "object" }),
-            ...errorResponses(["404", "422", "503"]),
+            ...errorResponses(["404", "422", "429", "503"]),
           },
         },
       },
@@ -616,7 +619,7 @@ export function openApiDocument(): Response {
                 recordings_with_evidence: { type: "integer", minimum: 0 },
               },
             }),
-            ...errorResponses(["503"]),
+            ...errorResponses(["429", "503"]),
           },
         },
       },
@@ -705,6 +708,7 @@ export function openApiDocument(): Response {
           required: ["accepted", "snapshot_version"],
           properties: {
             accepted: { type: "integer", minimum: 0 },
+            inserted: { type: "integer", minimum: 0, description: "New jobs inserted; repeated targets do not consume new-job budget." },
             snapshot_version: { type: "string" },
           },
         },
@@ -748,7 +752,9 @@ function errorResponses(
   return Object.fromEntries(
     statuses.map((status) => [
       status,
-      response("Request failed", { $ref: "#/components/schemas/ApiError" }),
+      { ...response("Request failed", { $ref: "#/components/schemas/ApiError" }),
+        ...(["429", "503"].includes(status) ? { headers: { "Retry-After": { description: "Seconds to wait when admission is refused.", schema: { type: "integer", minimum: 1 } } } } : {}),
+      },
     ]),
   );
 }

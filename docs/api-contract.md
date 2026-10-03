@@ -30,7 +30,7 @@ Returns the upstream Last.fm `user.gettoptracks` JSON for one page. Supported qu
 | `page` | Integer from 1 to 4 | `1` |
 | `limit` | Exactly `50` | `50` |
 
-The response is streamed from Last.fm. Last.fm error objects may therefore appear in an HTTP `200` response; the browser recognizes and translates those provider errors for the interface.
+The Worker reads at most 1 MiB of upstream JSON with a ten-second timeout, validates it, and returns the Last.fm payload. Provider errors are normalized: a missing profile returns `404`; HTTP `429` or provider error `29` returns `503` with `Retry-After` and opens a shared cooldown. Error `29` inside upstream HTTP `200` is never logged as a successful history page.
 
 ### `GET /v3/profiles/{username}/metadata`
 
@@ -78,7 +78,7 @@ Request body:
 }
 ```
 
-The request accepts at most 50 recording or track targets and 200 artist MBIDs. Targets are deduplicated before `INSERT OR IGNORE` writes to the snapshot hydration queue. A successful request returns HTTP `202` with the accepted target count and snapshot version. The snapshot hydrator claims those jobs, reads the corresponding R2 shard, and materializes D1 projections in the background.
+The request accepts at most 50 recording or track targets and 200 artist MBIDs, within a 16 KiB body limit measured while reading the stream. Only the active snapshot can receive new work. Targets are deduplicated before an atomic, budget-gated `INSERT OR IGNORE`. A successful request returns HTTP `202` with `accepted` (acknowledged unique targets), `inserted` (new jobs), and the snapshot version. Repeated jobs consume no new-target budget. The snapshot hydrator claims those jobs, reads the corresponding R2 shard, and materializes D1 projections in the background.
 
 The browser preserves pending state in the current report. A later profile request can use the newly materialized evidence.
 
@@ -113,7 +113,13 @@ API-generated failures use an English message and a stable machine-readable erro
 }
 ```
 
-Worker logs use structured English event names and field names. They include elapsed time and request counts where useful and omit raw exception text. Last.fm responses streamed by the tracks endpoint remain provider responses, not API-generated error envelopes.
+Worker logs use structured English event names and field names. They include elapsed time and request counts where useful and omit raw exception text. Successful Last.fm history responses retain the provider payload; failures use API-generated error envelopes.
+
+## Traffic and Free-tier budgets
+
+See [Backend protection](backend-protection.md) for defaults, quota assumptions, rollout order, and operating limits. Visitor refusals return `429`; resource saturation, circuit cooldowns, and daily budget refusals return `503`. These responses include `Retry-After` in seconds, expose it through CORS, and use `Cache-Control: no-store`. The browser translates these errors without automatically retrying. Optional metadata and hydration failures do not discard an otherwise valid report.
+
+All runtime D1 executions in the API and hydrator share daily accounting outside D1, including `first()`, writes, and batch operations. Accounting reserves conservative capacity before execution and reconciles D1's actual `rows_read` and `rows_written`; failed or ambiguous operations do not receive a refund. Exhaustion pauses new database work until midnight UTC. Cached catalog responses, health, OpenAPI, and the static example remain available without D1.
 
 ## Runtime assembly mode
 

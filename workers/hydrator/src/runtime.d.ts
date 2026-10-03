@@ -49,3 +49,7 @@ interface ExecutionContext {
   waitUntil(promise: Promise<unknown>): void;
   passThroughOnException(): void;
 }
+
+interface DurableObjectNamespace {
+  getByName(name: string): import("../../shared/protection").GuardRpc;
+}
