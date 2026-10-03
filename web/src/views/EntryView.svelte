@@ -4,7 +4,7 @@
   import LoadingView from "./LoadingView.svelte";
   import Button from "../components/Button.svelte";
   import Arrow from "../components/Arrow.svelte";
-  import ColorSwatch from "../components/ColorSwatch.svelte";
+  import Tooltip from "../components/Tooltip.svelte";
   import AnalysisLimits from "../components/AnalysisLimits.svelte";
   import SegmentedControl from "../components/SegmentedControl.svelte";
   import type { ListeningPeriod } from "../api/types";
@@ -21,12 +21,6 @@
   export let onPeriodChange: (value: ListeningPeriod) => void = () => undefined;
   export let onSubmit: () => void = () => undefined;
   export let onExample: () => void = () => undefined;
-
-  const accentSwatches = [
-    { color: "#D76F78", label: "Accent forte" },
-    { color: "#F29191", label: "Accent principal" },
-    { color: "#FFB8B8", label: "Accent suave" },
-  ];
 
   let heroVideo: HTMLVideoElement;
   let videoPlaying = false;
@@ -113,19 +107,13 @@
       </video>
     </div>
     <div class="hero-controls">
-      <div
-        class="hero-palette"
-        role="group"
-        aria-label="Variações do accent do projeto"
-      >
-        {#each accentSwatches as swatch}
-          <ColorSwatch
-            color={swatch.color}
-            label={swatch.label}
-            className="hero-swatch"
-          />
-        {/each}
-      </div>
+      <Tooltip ariaLabel="Sobre o experimento de Chladni" align="start">
+        <p>
+          No experimento de Chladni, a vibração de uma placa faz os grãos se
+          acumularem nas regiões que menos vibram, formando padrões. Uma maneira
+          de tornar o som visível.
+        </p>
+      </Tooltip>
       <button
         class:playing={videoPlaying}
         class="hero-play"
@@ -278,21 +266,6 @@
     margin-top: 8px;
     min-height: 24px;
   }
-  .hero-palette {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-  .hero-palette :global(.hero-swatch) {
-    width: 12px;
-    height: 12px;
-    min-height: 12px;
-    border: 1px solid var(--line-strong);
-  }
-  .hero-palette :global(.hero-swatch:hover),
-  .hero-palette :global(.hero-swatch:focus-visible) {
-    outline-offset: 2px;
-  }
   .hero-play {
     font-family: var(--meta);
     font-size: 11px;
@@ -393,17 +366,6 @@
     align-items: center;
     gap: 6px;
     min-height: 36px;
-    border-color: var(--line-strong);
-  }
-  .period-field :global(.segment-button[data-state="checked"]) {
-    border-color: var(--accent-soft);
-    background: var(--accent-soft);
-    color: var(--on-accent-soft);
-  }
-  .period-field :global(.segment-button:hover:not([data-state="checked"])) {
-    border-color: var(--accent-soft);
-    color: var(--ink);
-    background: var(--panel);
   }
   .form-row :global(.ui-button) {
     display: flex;

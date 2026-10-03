@@ -609,14 +609,14 @@
             >
               <p>
                 Os instrumentos vêm de créditos publicados no MusicBrainz. Usamos
-                o snapshot {result.snapshot.snapshot_version}, uma cópia desses
+                o snapshot <code class="source-value">{result.snapshot.snapshot_version}</code>, uma cópia desses
                 dados. O projeto ainda pode consultar mais gravações dessa cópia;
                 por isso, uma próxima visita pode trazer novos créditos.
               </p>
               <p>
-                Esta leitura usa as regras da versão {result.track_palette
-                  .analysis.methodology_version} para a paleta das faixas e {result
-                  .artist_vocabulary.methodology_version} para o vocabulário dos artistas.
+                Esta leitura usa as regras da versão <code class="source-value">{result.track_palette
+                  .analysis.methodology_version}</code> para a paleta das faixas e <code class="source-value">{result
+                  .artist_vocabulary.methodology_version}</code> para o vocabulário dos artistas.
                 Se o snapshot ou essas regras mudarem, o resultado também pode mudar.
               </p>
             </Dropdown>
@@ -669,3 +669,15 @@
   onOpenRelated={(slug) => void loadInstrument(slug)}
   onClose={() => instrumentController?.abort()}
 />
+
+<style>
+  .source-value {
+    padding: 2px 5px;
+    background: var(--panel);
+    color: var(--ink);
+    font: 0.95em/1.6 var(--meta);
+    overflow-wrap: anywhere;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+</style>
