@@ -1,8 +1,8 @@
 import type { FamilyPresence } from "../api/types";
 import { ASCII_COLUMNS, ASCII_ROWS, getAsciiLines, type AsciiDrawings } from "./ascii";
-import { getStorageItem, setStorageItem, storageKey } from "../storage";
+import { getStorageItem, setStorageItem } from "../storage";
 
-const asciiEditorStorageKey = storageKey("sharing", "ascii-editor");
+import { STORAGE_KEYS } from "../utils/storage-keys";
 const mirrored: Record<string, string> = {
   "/": "\\", "\\": "/", "(": ")", ")": "(", "[": "]", "]": "[", "{": "}", "}": "{",
 };
@@ -14,7 +14,7 @@ export function mountAsciiEditor(
 ): AsciiDrawings {
   const drawings: AsciiDrawings = {};
   try {
-    const saved = getStorageItem<unknown>(asciiEditorStorageKey);
+    const saved = getStorageItem<unknown>(STORAGE_KEYS.asciiEditor);
     if (saved && typeof saved === "object") {
       for (const family of families) {
         const lines = (saved as Record<string, unknown>)[family.slug];
@@ -93,7 +93,7 @@ export function mountAsciiEditor(
 
   function save(): void {
     drawings[select.value] = [...lines];
-    if (setStorageItem(asciiEditorStorageKey, drawings)) {
+    if (setStorageItem(STORAGE_KEYS.asciiEditor, drawings)) {
       status.textContent = "Edição salva neste navegador. Prévia atualizada abaixo.";
     } else {
       status.textContent = "Prévia atualizada. Copie o desenho para guardá-lo; o armazenamento local está indisponível.";

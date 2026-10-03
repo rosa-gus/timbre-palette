@@ -36,7 +36,7 @@ The public API is the TypeScript Cloudflare Worker in `workers/api/`. It provide
 
 The API exposes these resources:
 
-- `GET /v3/profiles/{username}/tracks` — streams one 50-track Last.fm page. Pages 1–4 are available.
+- `GET /v3/profiles/{username}/tracks` — returns one validated Last.fm page of up to 50 tracks. Pages 1–4 are available.
 - `GET /v3/profiles/{username}/metadata` — returns public Last.fm profile metadata.
 - `POST /v3/evidence` — reads evidence for up to 50 track MBIDs and 50 artist MBIDs from one pinned snapshot.
 - `POST /v3/hydration` — queues up to 50 recording or track targets and 200 artist targets for background processing.
@@ -47,6 +47,7 @@ The canonical OpenAPI document is available at `GET /openapi.json`. It describes
 Detailed catalog behavior, persistence, and business rules are maintained in the API documentation:
 
 - [Public API contract](docs/api-contract.md)
+- [Backend protection and budgets](docs/backend-protection.md)
 - [Catalog architecture](docs/catalog-architecture.md)
 - [Editorial publication](docs/editorial-publishing.md)
 - [Versioned analysis methodology](docs/methodology.md)

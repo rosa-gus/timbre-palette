@@ -1,3 +1,5 @@
+import { findCandidate, claimCandidate } from "./jobs";
+import { budgetedDatabase, ProtectionError } from "../../shared/protection";
 import {
   mapArtistEntries,
   mapRecordingClaims,
@@ -7,7 +9,6 @@ import {
 import { readShard, ShardError, shardKey } from "./shards";
 import {
   MAX_ATTEMPTS,
-  PROCESSING_LEASE_MINUTES,
   type AliasShard,
   type JobRow,
   type RecordingShard,
@@ -28,7 +29,7 @@ export default {
   ): Promise<void> {
     const started = performance.now();
     try {
-      const result = await runOnce(env);
+      const result = await runOnce({ ...env, DB: budgetedDatabase(env.DB, env.RESOURCE_GUARD) });
       console.log({
         event: "hydrator_run",
         cron: controller.cron,
@@ -36,6 +37,10 @@ export default {
         duration_ms: Math.round(performance.now() - started),
       });
     } catch (error) {
+      if (error instanceof ProtectionError) {
+        console.warn({ event: "hydrator_paused", code: error.code, retry_after: error.retryAfter });
+        return;
+      }
       console.error({
         event: "hydrator_run_failed",
         cron: controller.cron,
@@ -101,6 +106,7 @@ async function runOnce(env: Env): Promise<RunResult> {
       ...result,
     };
   } catch (error) {
+    if (error instanceof ProtectionError) throw error;
     if (error instanceof BudgetDeferredError) {
       return {
         status: "deferred",
@@ -176,93 +182,13 @@ async function hydrateTarget(
   };
 }
 
-async function findCandidate(db: D1Database): Promise<JobRow | null> {
-  return db
-    .prepare(
-      `
-      SELECT jobs.id, jobs.target_kind, jobs.target_mbid, jobs.shard_key,
-             jobs.status, jobs.attempts,
-             snapshots.snapshot_version, snapshots.index_schema_version,
-             snapshots.manifest_hash, snapshots.object_prefix,
-             snapshots.methodology_version
-      FROM snapshot_hydration_jobs AS jobs
-      JOIN musicbrainz_credit_index_snapshots AS snapshots
-        ON snapshots.snapshot_version = jobs.snapshot_version
-      WHERE snapshots.status = 'active'
-        -- Keep this predicate aligned with idx_snapshot_hydration_open_order.
-        -- Without it, SQLite cannot use the partial index and scans completed
-        -- jobs before applying the eligibility branches below.
-        AND jobs.status != 'complete'
-        AND (
-          (
-            jobs.status IN ('pending', 'failed')
-            AND jobs.attempts < ?
-            AND (jobs.next_attempt_at IS NULL OR jobs.next_attempt_at <= datetime('now'))
-          )
-          OR (
-            jobs.status = 'processing'
-            AND jobs.attempts < ?
-            AND jobs.updated_at <= datetime('now', ?)
-          )
-        )
-      ORDER BY jobs.created_at, jobs.id
-      LIMIT 1
-      `,
-    )
-    .bind(
-      MAX_ATTEMPTS,
-      MAX_ATTEMPTS,
-      `-${PROCESSING_LEASE_MINUTES} minutes`,
-    )
-    .first<JobRow>();
-}
-
-async function claimCandidate(db: D1Database, candidate: JobRow): Promise<JobRow | null> {
-  return db
-    .prepare(
-      `
-      UPDATE snapshot_hydration_jobs
-      SET status = 'processing',
-          attempts = attempts + 1,
-          last_error = NULL,
-          next_attempt_at = NULL,
-          updated_at = datetime('now')
-      WHERE id = ?
-        AND (
-          (
-            status IN ('pending', 'failed')
-            AND attempts < ?
-            AND (next_attempt_at IS NULL OR next_attempt_at <= datetime('now'))
-          )
-          OR (
-            status = 'processing'
-            AND attempts < ?
-            AND updated_at <= datetime('now', ?)
-          )
-        )
-      RETURNING id, target_kind, target_mbid, shard_key, status, attempts
-      `,
-    )
-    .bind(
-      candidate.id,
-      MAX_ATTEMPTS,
-      MAX_ATTEMPTS,
-      `-${PROCESSING_LEASE_MINUTES} minutes`,
-    )
-    .first<JobRow>()
-    .then((claimed) => (claimed ? { ...candidate, ...claimed } : null));
-}
-
 async function reserveR2Read(env: Env, dayKey: string): Promise<boolean> {
   const monthlyLimit = positiveEnv(env.R2_READ_LIMIT, DEFAULT_R2_READ_LIMIT);
   const dailyLimit = positiveEnv(
     env.R2_DAILY_READ_LIMIT,
     DEFAULT_R2_DAILY_READ_LIMIT,
   );
-  const periodKey = env.R2_USAGE_PERIOD.trim();
-  if (!periodKey) {
-    throw new Error("R2_USAGE_PERIOD is required");
-  }
+  const periodKey = new Date().toISOString().slice(0, 7);
   const results = await env.DB.batch([
     env.DB
       .prepare(

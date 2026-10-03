@@ -15,6 +15,8 @@ import type {
   VocabularyFeaturedArtist,
 } from "../api/types";
 import { apiBaseUrl, isProfileAnalysisV2, PaletteApiError } from "../api/client";
+import { retryAfterSeconds } from "../api/retry-after";
+import { loadHistory, finishHistory, recordHistoryFailure } from "./history";
 import {
   boundedText,
   readBoundedJson,
@@ -25,7 +27,6 @@ import {
   safeStaticImageUrl,
   sanitizeProfileAnalysis,
 } from "../api/input-validation";
-const MAX_TRACK_PAGES = 4;
 const PAGE_SIZE = 50;
 const SNAPSHOT_SCHEMA = "musicbrainz-instrument-credits-serving-v2";
 const VOCABULARY_METHODOLOGY = "artist-vocabulary-candidate-2";
@@ -200,6 +201,12 @@ function apiMessage(code: string): string {
     invalid_username_or_period: "O perfil ou período informado é inválido.",
     empty_history: "Não foram encontradas faixas nesse período.",
     lastfm_profile_not_found: "Esse perfil não foi encontrado no Last.fm.",
+    rate_limited: "Você fez muitas consultas. Aguarde um minuto antes de tentar novamente.",
+    lastfm_busy: "As consultas de histórico estão no limite agora. Aguarde um pouco e tente novamente.",
+    hydration_busy: "O registro de novas evidências está pausado temporariamente.",
+    hydration_daily_budget: "O limite diário de novas evidências foi atingido.",
+    d1_daily_budget: "O limite diário de consultas ao catálogo foi atingido. Tente novamente mais tarde.",
+    protection_unavailable: "O serviço de análise está temporariamente indisponível. Tente novamente em instantes.",
     lastfm_rate_limited: "O Last.fm está recebendo muitas consultas. Tente novamente em instantes.",
     lastfm_unavailable: "Não foi possível consultar o Last.fm agora.",
     lastfm_key_missing: "A consulta do histórico não está configurada.",
@@ -241,7 +248,7 @@ async function fetchJson(
     const code = isRecord(value) && typeof value.error === "string"
       ? value.error
       : isRecord(value) && typeof value.code === "string" ? value.code : "api_request_failed";
-    throw new PaletteApiError(apiMessage(code), response.status, code);
+    throw new PaletteApiError(apiMessage(code), response.status, code, retryAfterSeconds(response));
   }
   if (isRecord(value) && value.error !== undefined) {
     const code = Number(value.error) === 6 ? "lastfm_profile_not_found"
@@ -1414,68 +1421,63 @@ export async function getBrowserAnalysis(
   period: ListeningPeriod,
   signal: AbortSignal,
   onProgress: Progress,
+  resume = false,
 ): Promise<ProfileAnalysisV2> {
   const baseUrl = apiBaseUrl();
-  const encodedUsername = encodeURIComponent(username);
-  const trackPages: ListeningTrack[][] = [];
-  let canonicalUsername = username;
-  onProgress("tracks", 1, 1);
-  const firstUrl = `${baseUrl}/v3/profiles/${encodedUsername}/tracks?period=${encodeURIComponent(period)}&page=1&limit=${PAGE_SIZE}`;
-  const firstPage = parsePage(await fetchJson(firstUrl, signal), username);
-  canonicalUsername = firstPage.username;
-  trackPages.push(firstPage.tracks);
-  if (!firstPage.tracks.length) throw new PaletteApiError(apiMessage("empty_history"), 422, "empty_history");
-  const pageCount = Math.min(MAX_TRACK_PAGES, Math.max(1, firstPage.totalPages ?? (firstPage.tracks.length === PAGE_SIZE ? MAX_TRACK_PAGES : 1)));
-  onProgress("tracks", 1, pageCount);
-  const profilePromise = fetchJson(
-    `${baseUrl}/v3/profiles/${encodeURIComponent(canonicalUsername)}/metadata`,
-    signal,
-  ).then((value) => parseMetadata(value, canonicalUsername)).catch((error: unknown) => {
-    if (error instanceof DOMException && error.name === "AbortError") throw error;
-    return { username: canonicalUsername, profile_url: null, avatar_url: null, realname: null, registered: null };
-  });
-  for (let page = 2; page <= pageCount; page++) {
-    onProgress("tracks", page - 1, pageCount);
-    const pageUrl = `${baseUrl}/v3/profiles/${encodedUsername}/tracks?period=${encodeURIComponent(period)}&page=${page}&limit=${PAGE_SIZE}`;
-    const result = parsePage(await fetchJson(pageUrl, signal), canonicalUsername);
-    trackPages.push(result.tracks);
-    onProgress("tracks", page, pageCount);
-  }
+  const history = await loadHistory(baseUrl, username, period, signal,
+    async (page) => parsePage(await fetchJson(
+      `${baseUrl}/v3/profiles/${encodeURIComponent(username)}/tracks?period=${encodeURIComponent(period)}&page=${page}&limit=${PAGE_SIZE}`,
+      signal,
+    ), username),
+    async (canonicalUsername) => parseMetadata(await fetchJson(
+      `${baseUrl}/v3/profiles/${encodeURIComponent(canonicalUsername)}/metadata`, signal,
+    ), canonicalUsername),
+    (current, total) => onProgress("tracks", current, total),
+    resume,
+  );
+  const trackPages: ListeningTrack[][] = history.pages.map((page) => page.tracks.map((track) => ({
+    ...track, layers: [], recording_status: "pending_enrichment",
+  })));
   const rawTracks = trackPages.flat();
-  if (!rawTracks.length) throw new PaletteApiError(apiMessage("empty_history"), 422, "empty_history");
   onProgress("profile", 1, 1);
-  const metadata = await profilePromise;
-  canonicalUsername = metadata.username || canonicalUsername;
-
-  const evidence = emptyEvidence();
-  for (let index = 0; index < trackPages.length; index++) {
-    const pageTracks = trackPages[index];
-    const trackMbids = [...new Set(pageTracks.map((track) => validMbid(track.mbid)).filter((mbid): mbid is string => mbid !== null))];
-    const artistMbids = [...new Set(pageTracks.map((track) => validMbid(track.artist_mbid)).filter((mbid): mbid is string => mbid !== null))];
-    onProgress("evidence", index + 1, trackPages.length);
-    if (!trackMbids.length && !artistMbids.length && evidence.snapshot) continue;
-    const payload = await fetchJson(`${baseUrl}/v3/evidence`, signal, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({
-        track_mbids: trackMbids,
-        artist_mbids: artistMbids,
-        ...(evidence.snapshot ? { snapshot_version: evidence.snapshot.snapshot_version } : {}),
-      }),
-    });
-    mergeEvidence(evidence, payload);
-  }
-  onProgress("assembly", 1, 1);
-  const catalog = await loadImageCatalog(signal);
-  const report = assemble(canonicalUsername, period, rawTracks, metadata, evidence, catalog);
-  const enrichedTracks = enrichTracks(rawTracks, evidence);
-  const recordingTargets = pendingRecordingTargets(enrichedTracks, evidence).targets;
-  const artistTargets = pendingArtistTargets(enrichedTracks, evidence);
+  const metadata = history.metadata ?? { username: history.username, profile_url: null, avatar_url: null, realname: null, registered: null };
+  const canonicalUsername = metadata.username || history.username;
   try {
-    await queueHydration(baseUrl, evidence.snapshot!.snapshot_version, recordingTargets, artistTargets, signal);
+    const evidence = emptyEvidence();
+    for (let index = 0; index < trackPages.length; index++) {
+      const pageTracks = trackPages[index];
+      const trackMbids = [...new Set(pageTracks.map((track) => validMbid(track.mbid)).filter((mbid): mbid is string => mbid !== null))];
+      const artistMbids = [...new Set(pageTracks.map((track) => validMbid(track.artist_mbid)).filter((mbid): mbid is string => mbid !== null))];
+      onProgress("evidence", index + 1, trackPages.length);
+      if (!trackMbids.length && !artistMbids.length && evidence.snapshot) continue;
+      const payload = await fetchJson(`${baseUrl}/v3/evidence`, signal, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          track_mbids: trackMbids,
+          artist_mbids: artistMbids,
+          ...(evidence.snapshot ? { snapshot_version: evidence.snapshot.snapshot_version } : {}),
+        }),
+      });
+      mergeEvidence(evidence, payload);
+    }
+    onProgress("assembly", 1, 1);
+    const catalog = await loadImageCatalog(signal);
+    const report = assemble(canonicalUsername, period, rawTracks, metadata, evidence, catalog);
+    const enrichedTracks = enrichTracks(rawTracks, evidence);
+    const recordingTargets = pendingRecordingTargets(enrichedTracks, evidence).targets;
+    const artistTargets = pendingArtistTargets(enrichedTracks, evidence);
+    try {
+      await queueHydration(baseUrl, evidence.snapshot!.snapshot_version, recordingTargets, artistTargets, signal);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") throw error;
+      // The report is still valid when the background queue is temporarily unavailable.
+    }
+    signal.throwIfAborted();
+    finishHistory(history.id);
+    return report;
   } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") throw error;
-    // The report is still valid when the background queue is temporarily unavailable.
+    if (!signal.aborted) recordHistoryFailure(history.id, error);
+    throw error;
   }
-  return report;
 }

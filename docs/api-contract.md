@@ -2,6 +2,8 @@
 
 The active public API is the TypeScript Cloudflare Worker configured by the root `wrangler.jsonc`. Its OpenAPI 3.1 document is served at `GET /openapi.json`. The Worker provides profile inputs, snapshot evidence, catalog resources, and asynchronous hydration scheduling. The browser assembles the Profile Analysis v2 report.
 
+`GET /docs` (also `/docs/`) serves Swagger UI for that document. Its pinned JavaScript and CSS load from unpkg; viewing the documentation does not access D1 or R2. Executing operations through the UI uses the API's normal protections and budgets.
+
 The active API runtime version is `3.0.0`, reflecting the split v3 profile-input and evidence contract. The report schema remains v2. The local FastAPI server-assembly reference retains version `2.1.1`.
 
 The former FastAPI implementation remains in `reference/server-assembly/` for local comparison. It is not deployed as the public API or used by the default front-end runtime.
@@ -16,21 +18,27 @@ For a real profile, the browser performs these operations:
 4. Assemble the report from all returned history and evidence in the browser.
 5. Submit pending recording, track, and artist identities to the hydration endpoint. The browser waits for the queue's `202` acknowledgement, not for the hydrator to finish processing those targets.
 
-The browser reads no more than four Last.fm pages, for a maximum of 200 ranked tracks. Each history request contains exactly 50 tracks. The API key stays in the Worker secret and is never included in the response.
+The browser reads no more than four Last.fm pages, for a maximum of 200 ranked tracks. Each history request asks for up to 50 tracks. The API key stays in the Worker secret and is never included in the response.
+
+Successful history pages and optional metadata are checkpointed locally in the tab's session storage for ten minutes from the start of collection. After a failure, “Retomar consulta” fetches only missing pages for the same API, username, and period; reloading the tab preserves that option. Evidence is fetched again and pinned to one snapshot on each attempt. A completed report clears the checkpoint. Expired or incompatible progress starts a fresh collection; unavailable storage falls back to memory.
+
+A transient history-page failure may be retried once after one second. Overload and budget refusals require manual resumption; the action remains disabled until `Retry-After` expires, including after reload. The checkpoint introduces no database or object-storage writes.
+
+Browser storage keys are registered in `web/src/utils/storage-keys.ts` using `app:<version>:<identifier>:<sector>`. Application and editorial startup remove older versions of registered resources from local and session storage, preserving current versions, future versions, and unrelated keys.
 
 ## Profile input endpoints
 
 ### `GET /v3/profiles/{username}/tracks`
 
-Returns the upstream Last.fm `user.gettoptracks` JSON for one page. Supported query parameters:
+Returns the Last.fm `user.gettoptracks` history data for one page. Supported query parameters:
 
-| Parameter | Values | Default |
-| --- | --- | --- |
-| `period` | `7day`, `1month`, `3month`, `6month`, `12month`, `overall` | `7day` |
-| `page` | Integer from 1 to 4 | `1` |
-| `limit` | Exactly `50` | `50` |
+| Parameter | Values                                                     | Default |
+| --------- | ---------------------------------------------------------- | ------- |
+| `period`  | `7day`, `1month`, `3month`, `6month`, `12month`, `overall` | `7day`  |
+| `page`    | Integer from 1 to 4                                        | `1`     |
+| `limit`   | Exactly `50`                                               | `50`    |
 
-The response is streamed from Last.fm. Last.fm error objects may therefore appear in an HTTP `200` response; the browser recognizes and translates those provider errors for the interface.
+The Worker reads at most 1 MiB of upstream JSON with a ten-second timeout, validates it, and returns the Last.fm payload. Provider errors are normalized: a missing profile returns `404`; HTTP `429` or provider error `29` returns `503` with `Retry-After` and opens a shared cooldown. Error `29` inside upstream HTTP `200` is never logged as a successful history page.
 
 ### `GET /v3/profiles/{username}/metadata`
 
@@ -78,7 +86,7 @@ Request body:
 }
 ```
 
-The request accepts at most 50 recording or track targets and 200 artist MBIDs. Targets are deduplicated before `INSERT OR IGNORE` writes to the snapshot hydration queue. A successful request returns HTTP `202` with the accepted target count and snapshot version. The snapshot hydrator claims those jobs, reads the corresponding R2 shard, and materializes D1 projections in the background.
+The request accepts at most 50 recording or track targets and 200 artist MBIDs, within a 16 KiB body limit measured while reading the stream. Only the active snapshot can receive new work. Targets are deduplicated before an atomic, budget-gated `INSERT OR IGNORE`. A successful request returns HTTP `202` with `accepted` (acknowledged unique targets), `inserted` (new jobs), and the snapshot version. Repeated jobs consume no new-target budget. The snapshot hydrator claims those jobs, reads the corresponding R2 shard, and materializes D1 projections in the background.
 
 The browser preserves pending state in the current report. A later profile request can use the newly materialized evidence.
 
@@ -113,7 +121,13 @@ API-generated failures use an English message and a stable machine-readable erro
 }
 ```
 
-Worker logs use structured English event names and field names. They include elapsed time and request counts where useful and omit raw exception text. Last.fm responses streamed by the tracks endpoint remain provider responses, not API-generated error envelopes.
+Worker logs use structured English event names and field names. They include elapsed time and request counts where useful and omit raw exception text. Successful Last.fm history responses retain the provider payload; failures use API-generated error envelopes.
+
+## Traffic and resource budgets
+
+See [Backend protection](backend-protection.md) for defaults, quota assumptions, rollout order, and operating limits. Visitor refusals return `429`; resource saturation, circuit cooldowns, and daily budget refusals return `503`. These responses include `Retry-After` in seconds, expose it through CORS, and use `Cache-Control: no-store`. The browser translates these refusals and waits for manual resumption after the specified delay. Optional metadata and hydration failures do not discard an otherwise valid report.
+
+All runtime D1 executions in the API and hydrator share daily accounting outside D1, including `first()`, writes, and batch operations. Accounting reserves conservative capacity before execution and reconciles D1's actual `rows_read` and `rows_written`; failed or ambiguous operations do not receive a refund. Exhaustion pauses new database work until midnight UTC. Cached catalog responses, health, OpenAPI, and the static example remain available without D1.
 
 ## Runtime assembly mode
 

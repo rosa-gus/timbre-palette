@@ -5,7 +5,7 @@ import type {
   ProfileSummary,
   ProfileAnalysisV2,
 } from "./types";
-import { storageKey } from "../storage";
+import { retryAfterSeconds } from "./retry-after";
 import {
   boundedText,
   readBoundedJson,
@@ -19,10 +19,6 @@ import {
 } from "./runtime-config";
 
 export { loadRuntimeConfig };
-
-// v2 stats count the active snapshot projection; do not compare them with
-// values cached under the former catalog semantics.
-export const catalogStorageKey = storageKey("catalog", "last-seen", "v2");
 
 export function apiBaseUrl(): string { return configuredApiBaseUrl(); }
 function analysisApiBaseUrl(): string { return configuredAnalysisApiBaseUrl(); }
@@ -45,6 +41,7 @@ export class PaletteApiError extends Error {
     message: string,
     status: number,
     code: string,
+    readonly retryAfter?: number,
   ) {
     super(message);
     this.name = "PaletteApiError";
@@ -306,6 +303,7 @@ async function getJson<T>(
       problem.message,
       problem.status,
       problem.code,
+      retryAfterSeconds(response),
     );
   }
 
@@ -396,6 +394,13 @@ export function getApiErrorMessage(error: unknown): string {
       lastfm_key_missing: "A consulta do histórico não está configurada.",
       lastfm_unavailable: "Não foi possível consultar o Last.fm agora.",
       lastfm_profile_not_found: "Esse perfil não foi encontrado no Last.fm.",
+      rate_limited: "Você fez muitas consultas. Aguarde um minuto antes de tentar novamente.",
+      lastfm_busy: "As consultas de histórico estão no limite agora. Aguarde um pouco e tente novamente.",
+      hydration_busy: "O registro de novas evidências está pausado temporariamente.",
+      hydration_daily_budget: "O limite diário de novas evidências foi atingido.",
+      d1_busy: "O catálogo está ocupado no momento. Aguarde alguns segundos e retome a consulta.",
+      d1_daily_budget: "O limite diário de consultas ao catálogo foi atingido. Tente novamente mais tarde.",
+      protection_unavailable: "O serviço de análise está temporariamente indisponível. Tente novamente em instantes.",
       lastfm_rate_limited: "O Last.fm está recebendo muitas consultas. Tente novamente em instantes.",
       snapshot_unavailable: "O catálogo de créditos está indisponível agora.",
       unsupported_snapshot_schema: "A versão do catálogo não é compatível com esta análise.",

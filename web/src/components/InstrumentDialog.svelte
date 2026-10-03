@@ -5,6 +5,7 @@
   import type { InstrumentResource } from "../api/types";
   import ScrollArea from "./ScrollArea.svelte";
   import Arrow from "./Arrow.svelte";
+  import Badge from "./Badge.svelte";
   import ColorSwatch from "./ColorSwatch.svelte";
   import Dropdown from "./Dropdown.svelte";
 
@@ -177,11 +178,13 @@
     >
       <div class="ui-dialog-header">
         <div>
-          <p class="eyebrow">
-            {!loading && resource?.kind === "family"
-              ? "FAMÍLIA SONORA"
-              : "FICHA INSTRUMENTAL"}
-          </p>
+          <div class="ui-dialog-kind">
+            <Badge>
+              {!loading && resource?.kind === "family"
+                ? "FAMÍLIA SONORA"
+                : "FICHA INSTRUMENTAL"}
+            </Badge>
+          </div>
           <Dialog.Title class="ui-dialog-title"
             >{loading || error
               ? "Ficha instrumental"
