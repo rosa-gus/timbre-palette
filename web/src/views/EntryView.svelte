@@ -1,10 +1,12 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import chladniHeroImage from "../../../assets/treated/chladni-hero.png";
   import chladniHeroVideo from "../../../assets/treated/chladni-hero.webm";
   import HistoryResumeNotice from "../components/HistoryResume.svelte";
   import type { HistoryResume } from "../analysis/history";
   import LoadingView from "./LoadingView.svelte";
   import Button from "../components/Button.svelte";
+  import Kbd from "../components/Kbd.svelte";
   import Arrow from "../components/Arrow.svelte";
   import Tooltip from "../components/Tooltip.svelte";
   import AnalysisLimits from "../components/AnalysisLimits.svelte";
@@ -31,6 +33,13 @@
   let videoPlaying = false;
   let videoStarted = false;
   let videoFailed = false;
+  let submitKey = "Enter";
+
+  onMount(() => {
+    if (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints <= 1) {
+      submitKey = "Return";
+    }
+  });
 
   $: if (
     heroVideo &&
@@ -186,7 +195,11 @@
             onChange={(value) => onPeriodChange(value as ListeningPeriod)}
           />
         </div>
-        <Button variant="primary" type="submit" disabled={waitSeconds > 0} terminalHover>{resumeProgress?.pages ? "Retomar consulta" : "Buscar"}</Button>
+        <Button variant="primary" type="submit" disabled={waitSeconds > 0}>
+          <span>{resumeProgress?.pages ? "Retomar consulta" : "Buscar"}</span>
+          <Kbd hideOnMobile>{submitKey}</Kbd>
+          <span class="submit-arrow" aria-hidden="true"><Arrow direction="right" /></span>
+        </Button>
       </div>
       {#if formError}<p id="profile-error" class="form-error" role="alert">{formError}</p>{/if}
       {#if resumeProgress}
@@ -384,6 +397,14 @@
     justify-content: space-between;
     width: 100%;
     min-height: 44px;
+  }
+  .submit-arrow {
+    display: none;
+    flex-shrink: 0;
+  }
+  .submit-arrow :global(.icon-arrow) { margin: 0; }
+  @media (hover: none) and (pointer: coarse) {
+    .submit-arrow { display: inline-block; }
   }
   .form-error {
     margin: 16px 0 0;

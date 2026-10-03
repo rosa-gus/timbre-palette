@@ -7,7 +7,7 @@ export function apiDocs(): Response {
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Timbre Palette API · Documentation</title>
+    <title>Timbre Palette API / Documentation</title>
     <link rel="stylesheet" href="${SWAGGER_UI_ASSETS}/swagger-ui.css">
   </head>
   <body>

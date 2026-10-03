@@ -2,7 +2,7 @@
   export let direction: "left" | "right" | "up-right" = "right";
 </script>
 
-<span class={`icon-arrow icon-arrow--${direction}`} aria-hidden="true">↑</span>
+<span class={`icon-arrow icon-arrow--${direction}`} aria-hidden="true">&#x2191;&#xFE0E;</span>
 
 <style>
   .icon-arrow {
