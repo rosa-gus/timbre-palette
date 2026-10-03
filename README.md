@@ -47,7 +47,7 @@ The canonical OpenAPI document is available at `GET /openapi.json`. It describes
 Detailed catalog behavior, persistence, and business rules are maintained in the API documentation:
 
 - [Public API contract](docs/api-contract.md)
-- [Backend protection and Free-tier budgets](docs/backend-protection.md)
+- [Backend protection and budgets](docs/backend-protection.md)
 - [Catalog architecture](docs/catalog-architecture.md)
 - [Editorial publication](docs/editorial-publishing.md)
 - [Versioned analysis methodology](docs/methodology.md)

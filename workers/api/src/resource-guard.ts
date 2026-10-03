@@ -96,10 +96,31 @@ export class ResourceGuard extends DurableObject<Env> {
       // Expired reservations stay charged; only their bookkeeping is removed.
       if (reservation.expires <= now) delete state.reservations[id];
     }
-    if (state.stopped || state.operations >= 5_000 ||
-        state.reads + reads > setting(this.env.D1_DAILY_READ_BUDGET, 4_000_000, 4_000_000) ||
-        state.writes + writes > setting(this.env.D1_DAILY_WRITE_BUDGET, 70_000, 70_000)) {
-      return { ok: false, code: "d1_daily_budget", retryAfter: secondsUntilTomorrow(now) };
+    const pending = Object.values(state.reservations);
+    const pendingReads = pending.reduce((sum, reservation) => sum + reservation.reads, 0);
+    const pendingWrites = pending.reduce((sum, reservation) => sum + reservation.writes, 0);
+    // Charged usage includes settled rows and conservative charges retained
+    // after failed/expired executions. Only active reservations may be refunded.
+    const chargedReads = state.reads - pendingReads;
+    const chargedWrites = state.writes - pendingWrites;
+    const readBudget = setting(this.env.D1_DAILY_READ_BUDGET, 4_000_000, 4_000_000);
+    const writeBudget = setting(this.env.D1_DAILY_WRITE_BUDGET, 70_000, 70_000);
+    const reason = state.stopped ? "accounting_stopped"
+      : state.operations >= 5_000 ? "execution_budget"
+      : chargedReads + reads > readBudget ? "read_budget"
+      : chargedWrites + writes > writeBudget ? "write_budget"
+      : state.reads + reads > readBudget || state.writes + writes > writeBudget ? "pending_reservations"
+      : null;
+    if (reason) {
+      const temporary = reason === "pending_reservations";
+      const code = temporary ? "d1_busy" : "d1_daily_budget";
+      const retryAfter = temporary ? 5 : secondsUntilTomorrow(now);
+      console.warn({ event: "d1_admission_denied", code, reason, retry_after: retryAfter,
+        charged_reads: chargedReads, charged_writes: chargedWrites,
+        pending_reads: pendingReads, pending_writes: pendingWrites, pending_reservations: pending.length,
+        requested_reads: reads, requested_writes: writes, operations: state.operations,
+        read_budget: readBudget, write_budget: writeBudget });
+      return { ok: false, code, retryAfter };
     }
     const id = `${day}:${crypto.randomUUID()}`;
     state.reads += reads;

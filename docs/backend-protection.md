@@ -39,6 +39,8 @@ Every runtime D1 execution reserves 50,000 read rows per statement and 5,000 wri
 
 The application's planned daily D1 budget is 4 million rows read and 70 thousand rows written, shared by the API and hydrator. Reservations are conservative estimates, not a proven bound on arbitrary SQL execution: a full scan can exceed its reservation before metadata is returned.
 
+When pending reservations occupy the remaining capacity, responses use `503 d1_busy` with `Retry-After: 5`; the browser preserves history and permits manual resumption after that cooldown. Charged usage that cannot fit the next reservation, the execution cap, or stopped accounting uses `d1_daily_budget` until midnight UTC. Expired reservations remain charged. `d1_admission_denied` logs identify the reason, charged usage, pending reservations, requested headroom, and budgets. Reservation sizes remain conservative until measurements against a representative catalog justify query-specific estimates.
+
 Runtime accounting covers the API and hydrator, but not SQL executed through Wrangler, publication scripts, migrations, or the dashboard, nor usage before the guards were activated. These operations require separate usage accounting. The pending-queue cap does not bound the lifetime size of completed jobs or materialized catalog data.
 
 Admission controls reduce accepted work, but rejected traffic can still consume Worker and Durable Object requests and reads. Responses served from Workers Cache also consume requests. Infrastructure usage therefore remains relevant even when expensive application operations are refused.
@@ -51,8 +53,10 @@ R2 reads retain the existing daily/monthly limits. The hydrator now derives the 
 2. D1 migration `0020_hydration_admission_usage.sql` adds the admission-accounting index. Creating the index consumes D1 resources outside runtime accounting.
 3. The API is deployed first. Its `resource-guard-v1` Wrangler migration creates the SQLite-backed class and its binding.
 4. The hydrator is deployed next. Its `RESOURCE_GUARD` binding refers to the class in `timbre-palette-api`. Both runtimes use the same `d1-daily-v1` identity. Environments sharing a database also need shared accounting.
-5. The frontend messages are deployed with monitoring of `request_protected`, `lastfm_circuit_open`, `d1_usage`, `d1_reservation_exceeded`, `d1_accounting_uncertain`, and `hydrator_paused` events. Unexpected reservation overruns require query and index review.
+5. The frontend messages are deployed with monitoring of `request_protected`, `lastfm_circuit_open`, `d1_usage`, `d1_admission_denied`, `d1_reservation_exceeded`, `d1_accounting_uncertain`, and `hydrator_paused` events. Unexpected reservation overruns require query and index review.
 
 Tests run with `yarn test:api` in the Workers runtime, apply the real migrations to an isolated D1 database, and mock all external fetches. Browser checkpoint, retry, and storage-cleanup tests run with `yarn test:web`. CI also type-checks the API and hydrator.
+
+`yarn stress:api` runs an optional local stress suite and writes a metrics report. See [Local backend stress test](backend-stress.md) for parameters, scenarios, and interpretation limits.
 
 References: [Rate Limiting API](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/), [D1 metadata](https://developers.cloudflare.com/d1/worker-api/return-object/), [SQLite-backed Durable Object storage](https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/).

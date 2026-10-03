@@ -28,7 +28,8 @@
     "build:web": "yarn prepare:images && yarn typecheck:web && vite build",
     "build:editorial": "yarn typecheck:editorial && vite build --config vite.editorial.config.ts",
     "test:web": "yarn typecheck:web && vitest run --config vitest.web.config.ts",
-    "test:api": "tsc --noEmit -p workers/api/test/tsconfig.json && vitest run --config vitest.api.config.ts"
+    "test:api": "tsc --noEmit -p workers/api/test/tsconfig.json && vitest run --config vitest.api.config.ts",
+    "stress:api": "tsc --noEmit -p workers/api/test/tsconfig.json && vitest run --config vitest.stress.config.ts"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "1.3.6",

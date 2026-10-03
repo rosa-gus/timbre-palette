@@ -398,6 +398,7 @@ export function getApiErrorMessage(error: unknown): string {
       lastfm_busy: "As consultas de histórico estão no limite agora. Aguarde um pouco e tente novamente.",
       hydration_busy: "O registro de novas evidências está pausado temporariamente.",
       hydration_daily_budget: "O limite diário de novas evidências foi atingido.",
+      d1_busy: "O catálogo está ocupado no momento. Aguarde alguns segundos e retome a consulta.",
       d1_daily_budget: "O limite diário de consultas ao catálogo foi atingido. Tente novamente mais tarde.",
       protection_unavailable: "O serviço de análise está temporariamente indisponível. Tente novamente em instantes.",
       lastfm_rate_limited: "O Last.fm está recebendo muitas consultas. Tente novamente em instantes.",

@@ -202,10 +202,58 @@ describe("shared D1 budget", () => {
     const guard = env.RESOURCE_GUARD.getByName("d1-daily-v1");
     const permits = await Promise.all(Array.from({ length: 5 }, () => guard.reserveD1(1_000_000, 0)));
     expect(permits.filter((permit) => permit.ok)).toHaveLength(4);
+    expect(permits.find((permit) => !permit.ok)).toMatchObject({ code: "d1_busy", retryAfter: 5 });
     const first = permits.find((permit) => permit.ok)!;
     if (!first.ok) throw new Error("expected permit");
     await guard.settleD1(first.id, 100, 0, true);
     expect((await guard.reserveD1(50_000, 0)).ok).toBe(true);
+  });
+
+  it.each(["reads", "writes"])("uses a short cooldown for pending %s and recovers after settlement", async (resource) => {
+    const guard = env.RESOURCE_GUARD.getByName("d1-daily-v1");
+    const reads = resource === "reads" ? 4_000_000 : 0;
+    const writes = resource === "writes" ? 70_000 : 0;
+    const permit = await guard.reserveD1(reads, writes);
+    if (!permit.ok) throw new Error("expected permit");
+    expect(await guard.reserveD1(reads, writes)).toMatchObject({ code: "d1_busy", retryAfter: 5 });
+    await guard.settleD1(permit.id, 0, 0, true);
+    expect((await guard.reserveD1(reads, writes)).ok).toBe(true);
+  });
+
+  it("returns temporary pressure through HTTP and admits evidence after reservations settle", async () => {
+    const guard = env.RESOURCE_GUARD.getByName("d1-daily-v1");
+    const permit = await guard.reserveD1(4_000_000, 0);
+    if (!permit.ok) throw new Error("expected permit");
+    const evidence = () => new Request("https://api.test/v3/evidence", { method: "POST",
+      body: JSON.stringify({ track_mbids: [], artist_mbids: [] }) });
+    const response = await worker.fetch(evidence(), routeEnv());
+    expect(response.status).toBe(503);
+    expect(response.headers.get("Retry-After")).toBe("5");
+    expect(await response.json()).toMatchObject({ error: "d1_busy" });
+    await guard.settleD1(permit.id, 1, 0, true);
+    expect((await worker.fetch(evidence(), routeEnv())).status).toBe(200);
+  });
+
+  it("keeps an expired reservation charged instead of inviting short retries forever", async () => {
+    const guard = env.RESOURCE_GUARD.getByName("d1-daily-v1");
+    const permit = await guard.reserveD1(4_000_000, 0);
+    if (!permit.ok) throw new Error("expected permit");
+    await runInDurableObject(guard, (_instance, ctx) => {
+      const row = ctx.storage.sql.exec<{ key: string; value: string }>("SELECT key, value FROM guard_state WHERE key LIKE 'd1:%'").one();
+      const state = JSON.parse(row.value);
+      state.reservations[permit.id].expires = 0;
+      ctx.storage.sql.exec("UPDATE guard_state SET value = ? WHERE key = ?", JSON.stringify(state), row.key);
+    });
+    expect(await guard.reserveD1(1, 0)).toMatchObject({ code: "d1_daily_budget" });
+  });
+
+  it("keeps a daily refusal when settled usage cannot fit the next query despite pending reservations", async () => {
+    const guard = env.RESOURCE_GUARD.getByName("d1-daily-v1");
+    const permit = await guard.reserveD1(3_990_000, 0);
+    if (!permit.ok) throw new Error("expected permit");
+    await guard.settleD1(permit.id, 3_990_000, 0, true);
+    expect((await guard.reserveD1(1_000, 0)).ok).toBe(true);
+    expect(await guard.reserveD1(50_000, 0)).toMatchObject({ code: "d1_daily_budget" });
   });
 
   it("retains uncertain reservations and stops when a query exceeds its estimate", async () => {
@@ -218,7 +266,9 @@ describe("shared D1 budget", () => {
 
   it("keeps daily accounting across object handles and starts a new UTC day", async () => {
     const guard = env.RESOURCE_GUARD.getByName("d1-daily-v1");
-    expect((await guard.reserveD1(4_000_000, 0)).ok).toBe(true);
+    const permit = await guard.reserveD1(4_000_000, 0);
+    if (!permit.ok) throw new Error("expected permit");
+    await guard.settleD1(permit.id, 4_000_000, 0, true);
     expect((await env.RESOURCE_GUARD.getByName("d1-daily-v1").reserveD1(1, 0)).ok).toBe(false);
     await runInDurableObject(guard, async (_instance, ctx) => {
       const today = new Date().toISOString().slice(0, 10);
@@ -230,10 +280,13 @@ describe("shared D1 budget", () => {
 
   it("blocks both API and background queries when their shared budget is exhausted", async () => {
     const guard = env.RESOURCE_GUARD.getByName("d1-daily-v1");
-    expect((await guard.reserveD1(4_000_000, 70_000)).ok).toBe(true);
+    const permit = await guard.reserveD1(4_000_000, 70_000);
+    if (!permit.ok) throw new Error("expected permit");
+    await guard.settleD1(permit.id, 4_000_000, 70_000, true);
     const response = await worker.fetch(new Request("https://api.test/v3/evidence", { method: "POST",
       body: JSON.stringify({ track_mbids: [], artist_mbids: [] }) }), routeEnv());
     expect(response.status).toBe(503);
+    expect(Number(response.headers.get("Retry-After"))).toBeGreaterThan(5);
     expect(await response.json()).toMatchObject({ error: "d1_daily_budget" });
     const db = budgetedDatabase(env.DB, env.RESOURCE_GUARD);
     await expect(db.prepare("SELECT 1").first()).rejects.toBeInstanceOf(ProtectionError);

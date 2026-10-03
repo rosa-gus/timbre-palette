@@ -117,14 +117,17 @@ describe("local history resumption", () => {
   });
 
   it("retains all pages when evidence fails and clears only the completed attempt", async () => {
+    vi.useFakeTimers();
     const history = await import("../src/analysis/history");
     const first = await history.loadHistory(base, "alice", "1month", new AbortController().signal,
       async (number) => page(number), async () => metadata, vi.fn());
-    history.recordHistoryFailure(first.id, new PaletteApiError("busy", 503, "d1_daily_budget_exhausted", 1));
+    history.recordHistoryFailure(first.id, new PaletteApiError("busy", 503, "d1_busy", 5));
     expect(history.getHistoryResume(base)).toMatchObject({ pages: 4, tracks: 200 });
-    vi.useFakeTimers();
-    await vi.advanceTimersByTimeAsync(1001);
     const fetchPage = vi.fn();
+    await expect(history.loadHistory(base, "alice", "1month", new AbortController().signal,
+      fetchPage, async () => metadata, vi.fn(), true)).rejects.toMatchObject({ code: "d1_busy", retryAfter: 5 });
+    expect(fetchPage).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(5000);
     const second = await history.loadHistory(base, "alice", "1month", new AbortController().signal,
       fetchPage, async () => metadata, vi.fn(), true);
     expect(fetchPage).not.toHaveBeenCalled();

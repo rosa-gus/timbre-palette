@@ -40,6 +40,7 @@ export const PROTECTION_MESSAGES: Record<string, string> = {
   lastfm_rate_limited: "Last.fm is rate limiting requests.",
   hydration_busy: "New hydration jobs are temporarily paused.",
   hydration_daily_budget: "Today's new hydration target budget has been reached.",
+  d1_busy: "Database queries are temporarily at capacity. Please try again shortly.",
   d1_daily_budget: "Today's database budget has been reached.",
   protection_unavailable: "Request protection is temporarily unavailable.",
   snapshot_unavailable: "The requested evidence snapshot is unavailable.",
