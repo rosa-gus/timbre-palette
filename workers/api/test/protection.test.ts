@@ -56,6 +56,28 @@ describe("Last.fm protection", () => {
     expect((await env.RESOURCE_GUARD.getByName("lastfm-v1").acquireLastfm()).ok).toBe(true);
   });
 
+  it.each([true, false])("omits artist-image placeholders while preserving history and profile avatars (array: %s)", async (array) => {
+    const image = [{ size: "large", "#text": "https://example.test/placeholder.png" }];
+    const track = { name: "Example", playcount: "12", mbid: mbid(1),
+      artist: { name: "Artist", mbid: mbid(2), url: "https://www.last.fm/music/Artist", image }, image };
+    const expected = { name: track.name, playcount: track.playcount, mbid: track.mbid,
+      artist: { name: track.artist.name, mbid: track.artist.mbid, url: track.artist.url } };
+    vi.mocked(fetch).mockResolvedValueOnce(Response.json({ toptracks: {
+      track: array ? [track] : track, "@attr": { page: "1", totalPages: "4" },
+    } }));
+    const response = await worker.fetch(new Request("https://api.test/v3/profiles/alice/tracks"), routeEnv());
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ toptracks: {
+      track: array ? [expected] : expected, "@attr": { page: "1", totalPages: "4" },
+    } });
+
+    const profile = { name: "alice", image };
+    vi.mocked(fetch).mockResolvedValueOnce(Response.json({ user: profile }));
+    const metadata = await worker.fetch(new Request("https://api.test/v3/profiles/alice/metadata"), routeEnv());
+    expect(metadata.status).toBe(200);
+    expect(await metadata.json()).toMatchObject({ profile });
+  });
+
   it("shares the concurrency limit across callers and reclaims abandoned leases", async () => {
     const guard = env.RESOURCE_GUARD.getByName("lastfm-v1");
     const permits = await Promise.all(Array.from({ length: 12 }, () => guard.acquireLastfm()));

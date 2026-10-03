@@ -2,6 +2,8 @@
 
 The active public API is the TypeScript Cloudflare Worker configured by the root `wrangler.jsonc`. Its OpenAPI 3.1 document is served at `GET /openapi.json`. The Worker provides profile inputs, snapshot evidence, catalog resources, and asynchronous hydration scheduling. The browser assembles the Profile Analysis v2 report.
 
+`GET /docs` (also `/docs/`) serves Swagger UI for that document. Its pinned JavaScript and CSS load from unpkg; viewing the documentation does not access D1 or R2. Executing operations through the UI uses the API's normal protections and budgets.
+
 The active API runtime version is `3.0.0`, reflecting the split v3 profile-input and evidence contract. The report schema remains v2. The local FastAPI server-assembly reference retains version `2.1.1`.
 
 The former FastAPI implementation remains in `reference/server-assembly/` for local comparison. It is not deployed as the public API or used by the default front-end runtime.
@@ -28,7 +30,7 @@ Browser storage keys are registered in `web/src/utils/storage-keys.ts` using `ap
 
 ### `GET /v3/profiles/{username}/tracks`
 
-Returns the upstream Last.fm `user.gettoptracks` JSON for one page. Supported query parameters:
+Returns the Last.fm `user.gettoptracks` history data for one page. Supported query parameters:
 
 | Parameter | Values | Default |
 | --- | --- | --- |

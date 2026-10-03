@@ -1,4 +1,5 @@
 import { catalogStats, getInstrument, openApiDocument } from "./catalog";
+import { apiDocs } from "./docs";
 import { API_VERSION } from "./version";
 import { budgetedDatabase, boundedText, limitVisitor, ProtectionError, protectionResponse } from "../../shared/protection";
 export { ResourceGuard } from "./resource-guard";
@@ -104,6 +105,8 @@ async function routeRequest(request: Request, env: Env): Promise<Response> {
   }
   if (request.method === "GET" && url.pathname === "/openapi.json")
     return openApiDocument();
+  if (request.method === "GET" && (url.pathname === "/docs" || url.pathname === "/docs/"))
+    return apiDocs();
   if (request.method !== "GET") return failure("method_not_allowed", 405);
 
   const tracksMatch = /^\/v3\/profiles\/([^/]+)\/tracks$/.exec(url.pathname);
@@ -264,6 +267,15 @@ async function profileTracks(
   const started = performance.now();
   try {
     const payload = await lastFm(request, env, "user.gettoptracks", username, period, 50, page);
+    const tracks = record(payload.toptracks)?.track;
+    for (const item of Array.isArray(tracks) ? tracks : [tracks]) {
+      const track = record(item);
+      if (!track) continue;
+      // Last.fm's legacy artist-image placeholders are not useful profile inputs.
+      delete track.image;
+      const artist = record(track.artist);
+      if (artist) delete artist.image;
+    }
     console.log({
       event: "profile_tracks",
       period,

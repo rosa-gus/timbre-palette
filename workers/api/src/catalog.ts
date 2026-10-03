@@ -513,7 +513,7 @@ export function openApiDocument(): Response {
           responses: {
             "200": response("Last.fm top-tracks JSON", {
               type: "object",
-              description: "The Last.fm user.gettoptracks response.",
+              description: "Last.fm top-track history for the requested page.",
             }),
             ...errorResponses(["404", "422", "429", "502", "503"]),
           },
