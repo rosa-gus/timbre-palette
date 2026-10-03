@@ -5,7 +5,7 @@ import type {
   ProfileSummary,
   ProfileAnalysisV2,
 } from "./types";
-import { storageKey } from "../storage";
+import { retryAfterSeconds } from "./retry-after";
 import {
   boundedText,
   readBoundedJson,
@@ -19,10 +19,6 @@ import {
 } from "./runtime-config";
 
 export { loadRuntimeConfig };
-
-// v2 stats count the active snapshot projection; do not compare them with
-// values cached under the former catalog semantics.
-export const catalogStorageKey = storageKey("catalog", "last-seen", "v2");
 
 export function apiBaseUrl(): string { return configuredApiBaseUrl(); }
 function analysisApiBaseUrl(): string { return configuredAnalysisApiBaseUrl(); }
@@ -45,6 +41,7 @@ export class PaletteApiError extends Error {
     message: string,
     status: number,
     code: string,
+    readonly retryAfter?: number,
   ) {
     super(message);
     this.name = "PaletteApiError";
@@ -306,6 +303,7 @@ async function getJson<T>(
       problem.message,
       problem.status,
       problem.code,
+      retryAfterSeconds(response),
     );
   }
 

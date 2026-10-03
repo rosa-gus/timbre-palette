@@ -19,6 +19,8 @@
     SectionAvailability,
     VocabularyFeaturedArtist,
   } from "../api/types";
+  import HistoryResumeNotice from "../components/HistoryResume.svelte";
+  import type { HistoryResume } from "../analysis/history";
   import ReportView from "./ReportView.svelte";
 
   type SectionId = "portrait" | "palette" | "discovery" | "share";
@@ -33,6 +35,9 @@
   export let periods: { value: ListeningPeriod; label: string }[] = [];
   export let periodLoading = false;
   export let periodError = "";
+  export let resumeProgress: HistoryResume | null = null;
+  export let waitSeconds = 0;
+  export let onResume: () => void = () => undefined;
   export let periodRevealKey = 0;
   export let onPeriodChange: (value: ListeningPeriod) => void = () => undefined;
   export let activeView: AnalysisView;
@@ -412,6 +417,9 @@
         </p>
       {:else if periodError}
         <p class="period-error" role="alert">{periodError}</p>
+      {/if}
+      {#if resumeProgress && !periodLoading}
+        <HistoryResumeNotice progress={resumeProgress} {waitSeconds} periodLabel={periodLabels[resumeProgress.period]} {onResume} />
       {/if}
       {#if periodRevealKey > 0 && !periodLoading && !periodError}
         <p class="visually-hidden" role="status">

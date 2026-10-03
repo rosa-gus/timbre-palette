@@ -19,13 +19,13 @@ The production TypeScript API protects Last.fm and hydration using local visitor
 | Outstanding hydration work units in active snapshot | 720 | `HYDRATION_MAX_PENDING_UNITS` |
 | Hydration admission requests per UTC day | 1,000 | Fixed safety cap |
 
-The visitor limits are approximate and local; shared IPs, such as mobile networks, share their allowance. Only Cloudflare's trusted `CF-Connecting-IP` is used; missing addresses use a shared fallback. Global limits are enforced by Durable Objects, not the local rate-limit binding. A full analysis uses at most five Last.fm requests and four evidence batches. None of the defaults represents a Last.fm capacity guarantee.
+The visitor limits are approximate and local; shared IPs, such as mobile networks, share their allowance. Only Cloudflare's trusted `CF-Connecting-IP` is used; missing addresses use a shared fallback. Global limits are enforced by Durable Objects, not the local rate-limit binding. Without retries, a full analysis uses at most five Last.fm requests and four evidence batches. None of the defaults represents a Last.fm capacity guarantee.
 
 Numeric environment settings can reduce budgets. Code clamps D1 budgets to at most 4 million reads and 70 thousand writes, new hydration work to 360 units, and the queue to 720 units. Invalid settings fall back to defaults. Refill and burst follow token-bucket semantics, rather than a strict fixed minute window.
 
 ## Last.fm pressure and recovery
 
-Calls time out after ten seconds, including response-body reading, and upstream bodies are capped at 1 MiB. HTTP `429` or JSON error `29` opens a global sixty-second circuit cooldown. Five consecutive provider failures also open the circuit; a missing profile is not a provider failure. After cooldown, only one recovery probe is allowed. A failed probe extends cooldown; a successful probe restores admissions. Earlier successful requests cannot close a newer cooldown. Expiring, persisted fifteen-second permits prevent abandoned calls from occupying concurrency forever. There are no automatic upstream retries.
+Calls time out after ten seconds, including response-body reading, and upstream bodies are capped at 1 MiB. HTTP `429` or JSON error `29` opens a global sixty-second circuit cooldown. Five consecutive provider failures also open the circuit; a missing profile is not a provider failure. After cooldown, only one recovery probe is allowed. A failed probe extends cooldown; a successful probe restores admissions. Earlier successful requests cannot close a newer cooldown. Expiring, persisted fifteen-second permits prevent abandoned calls from occupying concurrency forever. There are no automatic upstream retries. The browser may retry a transient history-page failure once, but does not automatically retry overload refusals. Successful pages are retained locally for ten minutes; manual resumption requests only missing pages and respects `Retry-After`. See [Profile request flow](api-contract.md#profile-request-flow).
 
 ## Hydration admission
 
@@ -53,6 +53,6 @@ R2 reads retain the existing daily/monthly limits. The hydrator now derives the 
 4. The hydrator is deployed next. Its `RESOURCE_GUARD` binding refers to the class in `timbre-palette-api`. Both runtimes use the same `d1-daily-v1` identity. Environments sharing a database also need shared accounting.
 5. The frontend messages are deployed with monitoring of `request_protected`, `lastfm_circuit_open`, `d1_usage`, `d1_reservation_exceeded`, `d1_accounting_uncertain`, and `hydrator_paused` events. Unexpected reservation overruns require query and index review.
 
-Tests run with `yarn test:api` in the Workers runtime, apply the real migrations to an isolated D1 database, and mock all external fetches. CI also type-checks the API, hydrator, and browser.
+Tests run with `yarn test:api` in the Workers runtime, apply the real migrations to an isolated D1 database, and mock all external fetches. Browser checkpoint, retry, and storage-cleanup tests run with `yarn test:web`. CI also type-checks the API and hydrator.
 
 References: [Rate Limiting API](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/), [D1 metadata](https://developers.cloudflare.com/d1/worker-api/return-object/), [SQLite-backed Durable Object storage](https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/).

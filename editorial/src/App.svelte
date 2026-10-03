@@ -2,12 +2,14 @@
   import { onMount } from "svelte";
   import seedManifest from "./instruments.json";
   import type { InstrumentResource, EditorialReview, EditorialSection, FurtherReading } from "../../web/src/api/types";
-  import { getStorageItem, isStorageAvailable, setStorageItem, storageKey } from "../../web/src/storage";
+  import { getStorageItem, isStorageAvailable, setStorageItem } from "../../web/src/storage";
+
+  import { STORAGE_KEYS } from "../../web/src/utils/storage-keys";
+  import { cleanupStorageVersions } from "../../web/src/utils/storage-cleanup";
 
   type Reading = FurtherReading & { status: "draft" | "reviewed" | "published"; reviewer: string | null; reviewed_at: string | null };
   type Sheet = { resource: Omit<InstrumentResource, "further_reading"> & { further_reading: Reading[] }; review: EditorialReview; text_citations: { description: string[]; sound_production: string[] } };
   const seed = (Array.isArray(seedManifest) ? seedManifest : (seedManifest as { instruments: unknown[] }).instruments) as Sheet[];
-  const editorialStorageKey = storageKey("editorial", "instruments");
   let sheets: Sheet[] = structuredClone(seed) as Sheet[];
   let selectedSlug = sheets[0].resource.slug;
   let search = "";
@@ -19,9 +21,10 @@
   $: if (storageReady && storageAvailable) persist(sheets, selected);
 
   onMount(() => {
+    cleanupStorageVersions();
     try {
       if (!isStorageAvailable()) throw new Error("Armazenamento indisponível");
-      const saved = getStorageItem<unknown>(editorialStorageKey);
+      const saved = getStorageItem<unknown>(STORAGE_KEYS.editorialInstruments);
       if (saved && typeof saved === "object") {
         const parsed = saved as Record<string, unknown>;
         const savedInstruments = Array.isArray(parsed.instruments) ? parsed.instruments as Sheet[] : [];
@@ -45,7 +48,7 @@
   });
 
   function persist(instruments: Sheet[], _selected: Sheet) {
-    if (!setStorageItem(editorialStorageKey, { schema_version: 1, instruments })) {
+    if (!setStorageItem(STORAGE_KEYS.editorialInstruments, { schema_version: 1, instruments })) {
       storageAvailable = false;
       feedback = "Armazenamento local indisponível. Exporte a revisão para preservar as alterações.";
     }

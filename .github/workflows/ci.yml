@@ -69,5 +69,5 @@ jobs:
       - name: Test API protection in Workers runtime
         run: yarn test:api
 
-      - name: Type-check browser assembly
-        run: yarn typecheck:web
+      - name: Test browser assembly and local storage
+        run: yarn test:web

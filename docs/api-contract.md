@@ -16,7 +16,13 @@ For a real profile, the browser performs these operations:
 4. Assemble the report from all returned history and evidence in the browser.
 5. Submit pending recording, track, and artist identities to the hydration endpoint. The browser waits for the queue's `202` acknowledgement, not for the hydrator to finish processing those targets.
 
-The browser reads no more than four Last.fm pages, for a maximum of 200 ranked tracks. Each history request contains exactly 50 tracks. The API key stays in the Worker secret and is never included in the response.
+The browser reads no more than four Last.fm pages, for a maximum of 200 ranked tracks. Each history request asks for up to 50 tracks. The API key stays in the Worker secret and is never included in the response.
+
+Successful history pages and optional metadata are checkpointed locally in the tab's session storage for ten minutes from the start of collection. After a failure, “Retomar consulta” fetches only missing pages for the same API, username, and period; reloading the tab preserves that option. Evidence is fetched again and pinned to one snapshot on each attempt. A completed report clears the checkpoint. Expired or incompatible progress starts a fresh collection; unavailable storage falls back to memory.
+
+A transient history-page failure may be retried once after one second. Overload and budget refusals require manual resumption; the action remains disabled until `Retry-After` expires, including after reload. The checkpoint introduces no database or object-storage writes.
+
+Browser storage keys are registered in `web/src/utils/storage-keys.ts` using `app:<version>:<identifier>:<sector>`. Application and editorial startup remove older versions of registered resources from local and session storage, preserving current versions, future versions, and unrelated keys.
 
 ## Profile input endpoints
 
@@ -115,9 +121,9 @@ API-generated failures use an English message and a stable machine-readable erro
 
 Worker logs use structured English event names and field names. They include elapsed time and request counts where useful and omit raw exception text. Successful Last.fm history responses retain the provider payload; failures use API-generated error envelopes.
 
-## Traffic and Free-tier budgets
+## Traffic and resource budgets
 
-See [Backend protection](backend-protection.md) for defaults, quota assumptions, rollout order, and operating limits. Visitor refusals return `429`; resource saturation, circuit cooldowns, and daily budget refusals return `503`. These responses include `Retry-After` in seconds, expose it through CORS, and use `Cache-Control: no-store`. The browser translates these errors without automatically retrying. Optional metadata and hydration failures do not discard an otherwise valid report.
+See [Backend protection](backend-protection.md) for defaults, quota assumptions, rollout order, and operating limits. Visitor refusals return `429`; resource saturation, circuit cooldowns, and daily budget refusals return `503`. These responses include `Retry-After` in seconds, expose it through CORS, and use `Cache-Control: no-store`. The browser translates these refusals and waits for manual resumption after the specified delay. Optional metadata and hydration failures do not discard an otherwise valid report.
 
 All runtime D1 executions in the API and hydrator share daily accounting outside D1, including `first()`, writes, and batch operations. Accounting reserves conservative capacity before execution and reconciles D1's actual `rows_read` and `rows_written`; failed or ambiguous operations do not receive a refund. Exhaustion pauses new database work until midnight UTC. Cached catalog responses, health, OpenAPI, and the static example remain available without D1.
 

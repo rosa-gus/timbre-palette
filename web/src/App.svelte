@@ -7,10 +7,12 @@
     getExampleAnalysis,
     normalizeUsername,
     getCatalogSize,
-    catalogStorageKey,
     apiBaseUrl,
   } from "./api/client";
-  import { getStorageItem, setStorageItem, storageKey } from "./storage";
+  import { getStorageItem, setStorageItem } from "./storage";
+  import { cleanupStorageVersions } from "./utils/storage-cleanup";
+  import { STORAGE_KEYS } from "./utils/storage-keys";
+  import { getHistoryResume, type HistoryResume } from "./analysis/history";
   import type {
     AnalysisStatus,
     Confidence,
@@ -79,7 +81,6 @@
   };
   type Theme = "dark" | "light" | "system";
   type ResolvedTheme = Exclude<Theme, "system">;
-  const themeStorageKey = storageKey("ui", "theme");
   const themeLabels: Record<Theme, string> = {
     dark: "ESCURO",
     light: "CLARO",
@@ -106,7 +107,7 @@
       const current = await getCatalogSize(signal);
       // Only consume the saved comparison when the indicator can be shown.
       if (signal.aborted || view !== "entry") return;
-      const saved = getStorageItem<unknown>(catalogStorageKey);
+      const saved = getStorageItem<unknown>(STORAGE_KEYS.catalogLastSeen);
       if (
         saved &&
         typeof saved === "object" &&
@@ -126,7 +127,7 @@
           added,
         };
       }
-      setStorageItem(catalogStorageKey, {
+      setStorageItem(STORAGE_KEYS.catalogLastSeen, {
         schemaVersion: 1,
         apiBaseUrl: apiBaseUrl(),
         recordingsWithEvidence: current,
@@ -151,6 +152,25 @@
   let loadingDetail = "Consultando o Last.fm";
   let periodLoading = false;
   let periodError = "";
+  let savedHistory: HistoryResume | null = null;
+  let now = Date.now();
+  $: matchingHistory = !isExample && savedHistory &&
+    savedHistory.username.toLowerCase() === normalizeUsername(username).toLowerCase() ? savedHistory : null;
+  $: entryHistory = matchingHistory?.period === period ? matchingHistory : null;
+  $: waitSeconds = savedHistory ? Math.max(0, Math.ceil((savedHistory.retryAt - now) / 1000)) : 0;
+
+  function refreshHistory(): void {
+    now = Date.now();
+    savedHistory = profileAnalysisMode() === "browser" ? getHistoryResume(apiBaseUrl()) : null;
+  }
+  function resumeReport(): void {
+    refreshHistory();
+    const saved = savedHistory;
+    if (!saved || saved.username.toLowerCase() !== normalizeUsername(username).toLowerCase() ||
+        saved.retryAt > Date.now() || view === "loading" || periodLoading || isExample) return;
+    period = saved.period;
+    void loadReport(view === "report", true);
+  }
   let periodRevealKey = 0;
   let shareFeedback = "";
   let sharePreviewUrl = "";
@@ -243,7 +263,7 @@
     return "track_palette";
   }
 
-  async function loadReport(preserveReport = false): Promise<void> {
+  async function loadReport(preserveReport = false, resume = false): Promise<void> {
     controller?.abort();
     const request = new AbortController();
     controller = request;
@@ -262,6 +282,7 @@
     }
     try {
       await loadRuntimeConfig();
+      signal.throwIfAborted();
       const useBrowserAssembly = profileAnalysisMode() === "browser";
       const next = isExample
         ? useBrowserAssembly
@@ -277,8 +298,10 @@
                   : phase === "evidence"
                     ? `Consultando evidências (${current}/${total})`
                     : "Montando resultado...";
-            })
+            }, resume)
           : await getAnalysis(username, period, signal);
+      signal.throwIfAborted();
+      if (controller !== request) return;
       result = next;
       if (preserveReport) periodRevealKey += 1;
       isExample = next.is_example;
@@ -299,7 +322,7 @@
       updateUrl();
       return;
     } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") return;
+      if (signal.aborted || controller !== request) return;
       if (preserveReport) {
         periodLoading = false;
         periodError = getApiErrorMessage(error);
@@ -309,6 +332,8 @@
         view = "entry";
         formError = getApiErrorMessage(error);
       }
+    } finally {
+      if (controller === request) refreshHistory();
     }
   }
   function changePeriod(next: ListeningPeriod): void {
@@ -469,7 +494,7 @@
     if (next === "system") watchSystemTheme();
     else unwatchSystemTheme();
     applyTheme();
-    setStorageItem(themeStorageKey, next);
+    setStorageItem(STORAGE_KEYS.theme, next);
   }
   function toggleTheme(): void {
     const next: Record<Theme, Theme> = {
@@ -480,6 +505,7 @@
     setTheme(next[theme]);
   }
   onMount(() => {
+    cleanupStorageVersions();
     const catalogController = new AbortController();
     try {
       if (
@@ -492,8 +518,21 @@
     } catch {
       canShareImage = false;
     }
-    void loadRuntimeConfig().then(() => checkCatalog(catalogController.signal));
-    const savedTheme = getStorageItem<unknown>(themeStorageKey);
+    const historyTimer = window.setInterval(refreshHistory, 1000);
+    void loadRuntimeConfig().then(() => {
+      if (catalogController.signal.aborted) return;
+      refreshHistory();
+      if (view === "entry" && !username && !isExample && savedHistory) {
+        username = savedHistory.username;
+        period = savedHistory.period;
+      }
+      if (profile && !isExample && view === "entry") {
+        const matches = savedHistory && savedHistory.username.toLowerCase() === username.toLowerCase() && savedHistory.period === period;
+        if (!matches) void loadReport();
+      }
+      void checkCatalog(catalogController.signal);
+    });
+    const savedTheme = getStorageItem<unknown>(STORAGE_KEYS.theme);
     setTheme(isTheme(savedTheme) ? savedTheme : "system");
     const params = new URL(window.location.href).searchParams;
     const profile = params.get("profile");
@@ -506,9 +545,9 @@
       void loadReport();
     } else if (profile) {
       username = normalizeUsername(profile);
-      void loadReport();
     }
     return () => {
+      window.clearInterval(historyTimer);
       catalogController.abort();
       unwatchSystemTheme();
     };
@@ -552,6 +591,9 @@
         {period}
         {periods}
         {formError}
+        resumeProgress={entryHistory}
+        {waitSeconds}
+        onResume={() => resumeReport()}
         loading={view === "loading"}
         {loadingTitle}
         {loadingDescription}
@@ -581,6 +623,9 @@
         {canShareImage}
         {periodLoading}
         {periodError}
+        resumeProgress={matchingHistory}
+        {waitSeconds}
+        onResume={() => resumeReport()}
         {periodRevealKey}
         {periods}
         onPeriodChange={changePeriod}
