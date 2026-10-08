@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
+  import { onMount, onDestroy, tick } from "svelte";
+  import bayer75 from "./assets/bayer-mask-75.svg";
+  import bayer50 from "./assets/bayer-mask-50.svg";
+  import bayer25 from "./assets/bayer-mask-25.svg";
   import {
     getApiErrorMessage,
     getInstrument,
@@ -100,6 +103,26 @@
   };
   const homePath = normalizePathname();
   let view: "entry" | "loading" | "report" = "entry";
+  let preparingReport = false;
+  let revealAssets: Promise<unknown> | null = null;
+
+  async function prepareReport(signal: AbortSignal): Promise<void> {
+    // Decode the reveal masks before starting the animation on cold visits.
+    revealAssets ??= Promise.all([bayer75, bayer50, bayer25].map((src) => {
+      const image = new Image();
+      image.src = src;
+      return image.decode().catch(() => undefined);
+    }));
+    await tick();
+    await Promise.all([revealAssets, document.fonts.ready]);
+    signal.throwIfAborted();
+    // Keep the loading composition visible while the mounted report settles.
+    await new Promise<void>((resolve) => window.setTimeout(resolve, 180));
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+    });
+    signal.throwIfAborted();
+  }
   let catalogGrowth: { percent: number; added: number } | null = null;
 
   async function checkCatalog(signal: AbortSignal): Promise<void> {
@@ -267,6 +290,7 @@
     controller?.abort();
     const request = new AbortController();
     controller = request;
+    preparingReport = false;
     const signal = request.signal;
     if (sharePreviewUrl) URL.revokeObjectURL(sharePreviewUrl);
     sharePreviewUrl = "";
@@ -316,13 +340,21 @@
           ? requestedView
           : null;
       activeAnalysisView = resolveAnalysisView(next, requestedAnalysisView);
+      if (!preserveReport) {
+        preparingReport = true;
+        loadingDetail = "Preparando sua paleta…";
+        await prepareReport(signal);
+        if (controller !== request) return;
+      }
       view = "report";
+      preparingReport = false;
       periodLoading = false;
       periodError = "";
       updateUrl();
       return;
     } catch (error) {
       if (signal.aborted || controller !== request) return;
+      preparingReport = false;
       if (preserveReport) {
         periodLoading = false;
         periodError = getApiErrorMessage(error);
@@ -607,8 +639,11 @@
         onSubmit={submit}
         onExample={openExample}
       />
-    {:else if view === "report" && result}
+    {/if}
+    {#if (view === "report" || preparingReport) && result}
+      <div class="report-stage" class:preparing={preparingReport} inert={preparingReport} aria-hidden={preparingReport}>
       <ResultsView
+        revealReady={view === "report"}
         {result}
         {period}
         activeView={activeAnalysisView}
@@ -636,6 +671,7 @@
         onGenerateShare={generateShare}
         getAvailability={availability}
       />
+      </div>
     {/if}
   </main>
 
@@ -714,3 +750,22 @@
   onOpenRelated={(slug) => void loadInstrument(slug)}
   onClose={() => instrumentController?.abort()}
 />
+
+<style>
+  main {
+    position: relative;
+  }
+  .report-stage {
+    min-width: 0;
+  }
+  .report-stage.preparing {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: clip;
+    visibility: hidden;
+    pointer-events: none;
+  }
+</style>
