@@ -31,6 +31,7 @@
     note?: string;
   };
   export let result: ProfileAnalysisV2;
+  export let revealReady = true;
   export let period: ListeningPeriod = "1month";
   export let periods: { value: ListeningPeriod; label: string }[] = [];
   export let periodLoading = false;
@@ -121,6 +122,7 @@
   }));
   $: registeredLabel = formatRegisteredDate(result.profile.registered);
   $: showLowCoverageNotice =
+    revealReady &&
     !periodLoading &&
     !periodError &&
     result.profile.period === period &&
@@ -330,6 +332,7 @@
 </script>
 
 <div class="results-view">
+  <div class="results-opening" class:reveal-ready={revealReady}>
   <a class="back-link" href={homePath}><Arrow direction="left" />VOLTAR</a>
   <section
     class="profile-card"
@@ -443,6 +446,7 @@
       {/if}
     </div>
   </section>
+  </div>
 
   {#key periodRevealKey}
   <div class:period-reveal={periodRevealKey > 0} class="reading-content">
@@ -806,7 +810,7 @@
     margin: 0 auto;
     padding: 54px 0 32px;
   }
-  .results-view::after,
+  .results-opening::after,
   .period-reveal::after {
     position: absolute;
     z-index: 2;
@@ -816,7 +820,14 @@
     pointer-events: none;
     mask-repeat: repeat;
   }
-  .results-view::after {
+  .results-opening {
+    position: relative;
+    isolation: isolate;
+  }
+  .results-opening::after {
+    background: var(--paper);
+  }
+  .results-opening.reveal-ready::after {
     animation: dither-resolve 560ms steps(1, end) forwards;
   }
   .back-link {
@@ -1008,7 +1019,7 @@
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    .results-view::after,
+    .results-opening::after,
     .period-reveal::after {
       display: none;
     }

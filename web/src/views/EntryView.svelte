@@ -202,9 +202,9 @@
         </Button>
       </div>
       {#if formError}<p id="profile-error" class="form-error" role="alert">{formError}</p>{/if}
-      {#if resumeProgress}
+      {#if !loading && resumeProgress}
         <HistoryResumeNotice progress={resumeProgress} {waitSeconds} showResume={false} />
-      {:else if waitSeconds > 0}
+      {:else if !loading && waitSeconds > 0}
         <p class="form-error">Aguarde {waitSeconds >= 60 ? `${Math.ceil(waitSeconds / 60)} min` : `${waitSeconds} s`} para tentar novamente.</p>
       {/if}
     </form>
