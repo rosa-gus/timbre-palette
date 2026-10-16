@@ -137,8 +137,8 @@ Render a repeatable D1 publication file:
 yarn editorial:sql > /tmp/timbre-palette-editorial.sql
 ```
 
-`publish_editorial.py` accepts both the editor seed array and exported
-schema-v1 snapshots. It synchronizes resource text, source metadata, citations,
+`publish_editorial.py` accepts split schema-v2 content and editor exports, with
+legacy snapshot support. It synchronizes translations, source metadata, citations,
 curiosity blocks, further reading, and review metadata. It records a manifest
 hash and publication revision in `editorial_publications`; it does not perform
 network requests or run during an API request.

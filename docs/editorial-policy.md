@@ -150,3 +150,7 @@ Re-evaluate sources after a material correction, a relevant broken link, substan
 Referencing a source does not authorize copying it. Text should be original and limited to the material required for explanation and verification. Quotes, images, illustrations, diagrams, audio, and other third-party material require compatible permission or licensing, with attribution and usage conditions preserved.
 
 See the [instrument catalog](instrument-catalog.md) for current editorial records and [asset credits](../assets/CREDITS.md) for media attribution and licensing information.
+
+## Translation review
+
+Review each language independently for accuracy, context, and fidelity to the cited claim. Original approval never approves a translation. Retain source IDs, citations, bibliographic metadata, and image rights. Record the source revision and translation reviewer/date. Any source revision change makes the translation stale and excludes it from public projection until it is updated and reviewed again.

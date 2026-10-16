@@ -1,19 +1,19 @@
 # Localization architecture
 
-Status: accepted; phase 3 implemented. Public API and editorial publication behavior remain unchanged.
+Status: phase 4 implemented.
 
 ## Ownership and dependency boundaries
 
-| Owner | Localized content | Planned location |
-| --- | --- | --- |
-| Public web app | UI, accessibility, validation, report narratives, share images | `web/src/i18n/` |
-| Editorial app | Editor UI and validation messages | `editorial/src/i18n/` |
-| API | Technical diagnostics; English initially | `workers/api/src/errors/` |
+| Owner                 | Localized content                                                                     | Planned location                               |
+| --------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| Public web app        | UI, accessibility, validation, report narratives, share images                        | `web/src/i18n/`                                |
+| Editorial app         | Editor UI and validation messages                                                     | `editorial/src/i18n/`                          |
+| API                   | Technical diagnostics; English initially                                              | `workers/api/src/errors/`                      |
 | Editorial publication | Instrument and family names, descriptions, roles, blocks, image captions and alt text | `editorial/content/` with locale-specific data |
 
 Each application owns its locale registry, fallback policy, and release schedule. There is no root locale bundle. The API and hydrator must not import either application's UI dictionaries or localization runtime. Shared contracts may contain neutral identifiers and schemas, never UI translations. API consumers need no web dependencies or translation downloads.
 
-Editorial content is API resource data, not a web dictionary. The editorial app's UI language is independent of the language being edited. Moving the current `editorial/src/instruments.json` source requires a later publication migration.
+Editorial content is API resource data, not a web dictionary. The editorial app's UI language is independent of the language being edited. Canonical resources live in `editorial/content/`, separate from both UI dictionaries.
 
 ## Stable contracts
 
@@ -35,7 +35,7 @@ Changing UI language must not recollect listening history or recalculate analysi
 
 ## Editorial resources and fallback
 
-The planned catalog extension is `GET /v2/instruments/{slug}?locale=en`; it is not available yet. Omitted locale preserves the current Portuguese response. Explicit unsupported locales fall back to `pt-BR`; malformed tags use the API's validation error contract. Document the extension in OpenAPI when implemented.
+The catalog supports `GET /v2/instruments/{slug}?locale=en`. Omitted locale preserves the current Portuguese response. Explicit unsupported locales fall back to `pt-BR`; malformed tags use the API's validation error contract. OpenAPI documents the parameter and locale metadata.
 
 Separate neutral entities from translations keyed by entity/block ID and locale. Serve one publishable language version per resource. If the requested translation is unavailable, return the publishable `pt-BR` version and expose the effective locale in response metadata and `Content-Language`. If neither version is publishable, preserve existing resource availability rules. Do not silently mix translated fields from different languages.
 
@@ -48,7 +48,7 @@ Translations retain citations, source IDs, provenance, and original bibliographi
 1. Record ownership and contracts (complete).
 2. Extract current Portuguese UI copy without changing behavior (complete).
 3. Separate analysis data from rendered narratives, including cache and reference compatibility (complete).
-4. Add editorial translation storage, review, publication, and API support.
+4. Add editorial translation storage, review, publication, and API support (complete).
 5. Add another language and validate UI, accessibility, and exported images.
 
 Later implementation must verify:
@@ -65,7 +65,7 @@ Later implementation must verify:
 
 Public and editorial UI messages live in separate `src/i18n/locales/pt-BR/` directories, split into JSON files by responsibility. Their runtimes support only `pt-BR`; language selection and additional dictionaries are deferred. Public HTML metadata is resolved from its catalog during Vite development and builds.
 
-Each JSON file owns distinct top-level namespaces and uses nested objects. Nesting preserves existing full keys: `entry.profileLabel` resolves to `entry` → `profileLabel`. Web domains are common, entry, analysis, narratives, instruments, sharing, errors, and metadata. Editorial domains are common, catalog, sheet, sources, review, and images. Key renaming and copy cleanup are deferred.
+Each JSON file owns distinct top-level namespaces and uses nested objects. Nesting preserves existing full keys: `entry.profileLabel` resolves to `entry` → `profileLabel`. Web domains are common, entry, analysis, narratives, instruments, sharing, errors, and metadata. Editorial domains are common, catalog, sheet, sources, review, images, and translations. Key renaming and copy cleanup are deferred.
 
 Run `yarn locales:format` to apply natural key ordering and two-space indentation. After adding files or changing keys or `{parameters}`, run `yarn locales:generate`. Commit the generated import catalogs and parameter `.d.ts` files; neither duplicates message text. `yarn locales:check` rejects duplicate keys, namespace conflicts, malformed placeholders, unordered JSON, and stale artifacts. CI and application type checks enforce these rules. Development commands generate artifacts at startup.
 
@@ -75,4 +75,4 @@ Use `<upper>Sentence case</upper>` for uppercase presentation. Both runtimes app
 
 Report calculation and history collection do not import UI locales. `web/src/analysis/presentation.ts` renders structured narratives for screens and share images. Unknown API errors use local generic copy. The Python reference calculates the same neutral contract and isolates frozen v2 prose in `legacy_presentation.py`. See [report compatibility](api-contract.md#structured-reports-and-compatibility).
 
-Editorial resource translations remain phase 4 work. The development-only ASCII workspace remains outside UI extraction, but its report fixtures use the structured contract.
+Editorial resources use schema-v2 snapshots: neutral entities and bibliographic sources are separate from locale files. Each translation has independent review metadata and a source-content SHA-256 revision; changed source content makes it stale. Publication persists resource and block translations plus revision history. The Worker serves a complete eligible translation or the complete Portuguese fallback, with locale and publication metadata. Legacy taxonomy text columns remain compatibility projections for evidence consumers and the Python reference. The development-only ASCII workspace remains outside UI extraction, but its report fixtures use the structured contract.

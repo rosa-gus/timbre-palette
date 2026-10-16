@@ -10,15 +10,13 @@ from scripts.publish_editorial import (
 
 
 ROOT = Path(__file__).resolve().parent.parent
-MANIFEST = ROOT / "editorial/src/instruments.json"
+MANIFEST = ROOT / "editorial/content/catalog.json"
 
 
 def test_editorial_manifest_validates_and_has_stable_digest() -> None:
     resources = load_manifest(MANIFEST)
     assert len(resources) == 23
-    payload = json.loads(MANIFEST.read_text())
-    source_resources = payload["instruments"] if isinstance(payload, dict) else payload
-    assert manifest_digest(resources) == manifest_digest(source_resources)
+    assert manifest_digest(resources) == manifest_digest(load_manifest(MANIFEST))
 
 
 def test_editorial_sql_is_repeatable_and_persists_verified_review() -> None:
@@ -69,7 +67,7 @@ def test_editorial_sql_is_repeatable_and_persists_verified_review() -> None:
 
 
 def test_editorial_manifest_accepts_verified_text_without_citations(tmp_path: Path) -> None:
-    payload = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    payload = {"schema_version": 1, "instruments": load_manifest(MANIFEST)}
     payload["instruments"][0]["review"]["claim_support_verified"] = True
     payload["instruments"][0]["review"]["reviewer"] = "Editor"
     payload["instruments"][0]["review"]["reviewed_at"] = "2026-09-15"

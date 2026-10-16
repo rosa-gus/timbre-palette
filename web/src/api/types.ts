@@ -309,6 +309,11 @@ export interface FurtherReading {
 }
 
 export interface InstrumentResource {
+  locale?: string;
+  requested_locale?: string;
+  source_revision?: string | null;
+  content_revision?: string | null;
+  editorial_revision?: string | null;
   data_source: "mock" | "catalog";
   catalog_version: string;
   image_catalog_version: string;

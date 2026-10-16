@@ -1,0 +1,15 @@
+{
+  "translations": {
+    "hint": "Traduza os textos e revise cada idioma separadamente. Fontes, citações e créditos são preservados.",
+    "incomplete": "{label}: conclua os textos e a revisão da tradução em {locale}.",
+    "invalidLocale": "Informe um idioma válido diferente de pt-BR, como en ou es.",
+    "locale": "Idioma do conteúdo",
+    "rebase": "Revisar com o original atual",
+    "roles": "Funções musicais (uma por linha)",
+    "stale": "O original mudou. Confira a tradução e atualize a revisão antes de publicar.",
+    "staleStatus": "Desatualizada",
+    "start": "Iniciar tradução",
+    "title": "Traduções da ficha",
+    "verified": "Tradução fiel ao original e revisada"
+  }
+}

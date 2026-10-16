@@ -1,6 +1,6 @@
 {
   "name": "timbre-palette",
-  "version": "0.4.8",
+  "version": "0.5.9",
   "productStatus": "pilot",
   "private": true,
   "type": "module",
@@ -18,8 +18,8 @@
     "musicbrainz:etl:build": "cargo build --release --manifest-path etl/musicbrainz-etl/Cargo.toml",
     "musicbrainz:etl:test": "cargo test --manifest-path etl/musicbrainz-etl/Cargo.toml",
     "musicbrainz:publish": "python3 scripts/publish_snapshot.py",
-    "editorial:validate": "python3 scripts/publish_editorial.py editorial/src/instruments.json",
-    "editorial:sql": "python3 scripts/publish_editorial.py editorial/src/instruments.json --sql",
+    "editorial:validate": "python3 scripts/publish_editorial.py editorial/content/catalog.json",
+    "editorial:sql": "python3 scripts/publish_editorial.py editorial/content/catalog.json --sql",
     "typecheck:web": "node scripts/generate_locale_types.mjs --check web && tsc --noEmit -p web/tsconfig.json && svelte-check --tsconfig ./web/tsconfig.json",
     "typecheck:editorial": "node scripts/generate_locale_types.mjs --check editorial && tsc --noEmit -p tsconfig.editorial.json && svelte-check --tsconfig ./tsconfig.editorial.json",
     "typecheck:hydrator": "tsc --noEmit -p workers/hydrator/tsconfig.json",

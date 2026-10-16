@@ -97,7 +97,7 @@ The preview uses the production portrait generator but is excluded from the prod
 
 The separate application in `editorial/` manages instrument and sound-family records. Editors can review descriptions, sound-production notes, optional curiosities, citations, source metadata, further-reading links, images, rights information, and review status.
 
-Changes are stored in the editor's browser and can be exported as a validated JSON review. The exported snapshot is committed to `editorial/src/instruments.json`; the editorial publication workflow validates it, generates idempotent SQL, and synchronizes Cloudflare D1. See [Editorial publication](docs/editorial-publishing.md).
+Changes are stored in the editor's browser and can be exported as a validated JSON review. The schema-v2 export is split into `editorial/content/` with the publication script and committed; the editorial publication workflow validates it, generates idempotent SQL, and synchronizes Cloudflare D1. See [Editorial publication](docs/editorial-publishing.md).
 
 ## Local Installation
 

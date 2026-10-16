@@ -85,6 +85,17 @@ export type MessageParameters = {
   "sources.verified": never;
   "sources.verifiedAt": never;
   "storage.notice": never;
+  "translations.hint": never;
+  "translations.incomplete": "label" | "locale";
+  "translations.invalidLocale": never;
+  "translations.locale": never;
+  "translations.rebase": never;
+  "translations.roles": never;
+  "translations.stale": never;
+  "translations.staleStatus": never;
+  "translations.start": never;
+  "translations.title": never;
+  "translations.verified": never;
   "validation.curiosityCitation": "label";
   "validation.curiosityReference": "label";
   "validation.curiosityReview": "label";

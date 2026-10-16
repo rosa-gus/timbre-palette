@@ -5,5 +5,6 @@ import part2 from "./locales/pt-BR/images.json";
 import part3 from "./locales/pt-BR/review.json";
 import part4 from "./locales/pt-BR/sheet.json";
 import part5 from "./locales/pt-BR/sources.json";
+import part6 from "./locales/pt-BR/translations.json";
 
-export default { ...part0, ...part1, ...part2, ...part3, ...part4, ...part5 };
+export default { ...part0, ...part1, ...part2, ...part3, ...part4, ...part5, ...part6 };

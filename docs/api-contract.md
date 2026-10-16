@@ -104,7 +104,7 @@ The sample includes direct track evidence and a small artist-vocabulary fixture.
 
 ## Catalog endpoints
 
-- `GET /v2/instruments/{slug}` returns a reviewed instrument or sound-family resource, including eligible editorial sections, citations, image metadata, and further reading.
+- `GET /v2/instruments/{slug}?locale=en` returns a reviewed instrument or sound-family resource. Omitted locale defaults to `pt-BR`; malformed or repeated locale parameters return `422 invalid_locale`. An unavailable, withdrawn, incomplete, or stale translation falls back to the complete Portuguese resource. If neither version is publishable, the endpoint returns `404`. Bibliographic metadata and image attribution retain their original language. Responses include `locale`, canonical `requested_locale`, `source_revision`, `content_revision`, `editorial_revision`, and `Content-Language`; revisions are null before the first schema-v2 publication. Cache identity retains the query string and the publication/content/image revision ETag. This locale extension applies to the production TypeScript Worker; the retained Python reference serves the Portuguese compatibility projection.
 - `GET /v2/catalog/stats` returns `recordings_with_evidence` from the active snapshot projection.
 - `GET /health` returns the Worker service name and API version.
 

@@ -1,0 +1,9 @@
+{
+  "schema_version": 2,
+  "source_locale": "pt-BR",
+  "entities": "entities.json",
+  "sources": "sources.json",
+  "locales": {
+    "pt-BR": "locales/pt-BR.json"
+  }
+}

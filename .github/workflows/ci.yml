@@ -38,7 +38,7 @@ jobs:
         run: python scripts/publish_images.py
 
       - name: Validate editorial manifest
-        run: python scripts/publish_editorial.py editorial/src/instruments.json
+        run: python scripts/publish_editorial.py editorial/content/catalog.json
 
       - name: Run unit tests
         run: python -m pytest

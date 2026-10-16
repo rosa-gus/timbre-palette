@@ -1,0 +1,1411 @@
+[
+  {
+    "data_source": "catalog",
+    "catalog_version": "0.1.6",
+    "image_catalog_version": "images-0.1.0",
+    "slug": "acoustic-keys",
+    "kind": "family",
+    "family_slug": null,
+    "related_slugs": [
+      "piano"
+    ],
+    "tone": {
+      "shadow": "#000000",
+      "highlight": "#F29191"
+    },
+    "source_ids": [
+      "met-musical-terms"
+    ],
+    "text_citations": {
+      "description": [
+        "met-musical-terms"
+      ],
+      "sound_production": [
+        "met-musical-terms"
+      ]
+    },
+    "further_reading": [],
+    "sections": [
+      {
+        "id": "family-acoustic-keys-curiosity",
+        "kind": "curiosity",
+        "content_type": "editorial_summary",
+        "citations": [
+          {
+            "source_id": "met-musical-terms",
+            "locator": null,
+            "note": "Ação de teclas em cordas e tubos."
+          }
+        ]
+      }
+    ],
+    "image": {
+      "asset_id": "piano-alin-gavriliuc-01",
+      "resolution": "family",
+      "depicted_instrument_slug": "piano",
+      "variants": [
+        {
+          "name": "detail",
+          "url": "http://127.0.0.1:5173/instruments/piano-alin-gavriliuc-01/907486e78cad/detail.png",
+          "width": 1200,
+          "height": 675
+        }
+      ],
+      "tone": {
+        "shadow": "#000000",
+        "highlight": "#F29191"
+      },
+      "credit": {
+        "photographer": "Alin Gavriliuc",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/um-close-up-de-um-piano-com-teclas-preto-e-branco-_iS9ma5vLD8",
+        "photographer_url": "https://unsplash.com/@alingavriliuc",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license"
+      }
+    }
+  },
+  {
+    "data_source": "catalog",
+    "catalog_version": "0.1.6",
+    "image_catalog_version": "images-0.1.0",
+    "slug": "bowed-strings",
+    "kind": "family",
+    "family_slug": null,
+    "related_slugs": [
+      "cello"
+    ],
+    "tone": {
+      "shadow": "#000000",
+      "highlight": "#A9C4AE"
+    },
+    "source_ids": [
+      "met-cello"
+    ],
+    "text_citations": {
+      "description": [
+        "met-cello"
+      ],
+      "sound_production": [
+        "met-cello"
+      ]
+    },
+    "further_reading": [],
+    "sections": [
+      {
+        "id": "family-bowed-strings-curiosity",
+        "kind": "curiosity",
+        "content_type": "editorial_summary",
+        "citations": [
+          {
+            "source_id": "met-cello",
+            "locator": null,
+            "note": "Arco e pinçamento em cordas friccionadas."
+          }
+        ]
+      }
+    ],
+    "image": {
+      "asset_id": "cello-jon-tyson-01",
+      "resolution": "family",
+      "depicted_instrument_slug": "cello",
+      "variants": [
+        {
+          "name": "detail",
+          "url": "http://127.0.0.1:5173/instruments/cello-jon-tyson-01/324cd9e20607/detail.png",
+          "width": 1200,
+          "height": 800
+        }
+      ],
+      "tone": {
+        "shadow": "#000000",
+        "highlight": "#A9C4AE"
+      },
+      "credit": {
+        "photographer": "Jon Tyson",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/violino-marrom-no-textil-preto-VLJutLyscKw",
+        "photographer_url": "https://unsplash.com/@jontyson",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license"
+      }
+    }
+  },
+  {
+    "data_source": "catalog",
+    "catalog_version": "0.1.6",
+    "image_catalog_version": "images-0.1.0",
+    "slug": "cello",
+    "kind": "instrument",
+    "family_slug": "bowed-strings",
+    "related_slugs": [
+      "bowed-strings"
+    ],
+    "tone": {
+      "shadow": "#000000",
+      "highlight": "#A9C4AE"
+    },
+    "source_ids": [
+      "met-cello"
+    ],
+    "text_citations": {
+      "description": [
+        "met-cello"
+      ],
+      "sound_production": [
+        "met-cello"
+      ]
+    },
+    "further_reading": [],
+    "sections": [
+      {
+        "id": "instrument-cello-curiosity",
+        "kind": "curiosity",
+        "content_type": "editorial_summary",
+        "citations": [
+          {
+            "source_id": "met-cello",
+            "locator": null,
+            "note": "Variação histórica de cordas e tamanhos."
+          }
+        ]
+      }
+    ],
+    "image": {
+      "asset_id": "cello-jon-tyson-01",
+      "resolution": "exact",
+      "depicted_instrument_slug": "cello",
+      "variants": [
+        {
+          "name": "detail",
+          "url": "http://127.0.0.1:5173/instruments/cello-jon-tyson-01/324cd9e20607/detail.png",
+          "width": 1200,
+          "height": 800
+        }
+      ],
+      "tone": {
+        "shadow": "#000000",
+        "highlight": "#A9C4AE"
+      },
+      "credit": {
+        "photographer": "Jon Tyson",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/violino-marrom-no-textil-preto-VLJutLyscKw",
+        "photographer_url": "https://unsplash.com/@jontyson",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license"
+      }
+    }
+  },
+  {
+    "data_source": "catalog",
+    "catalog_version": "0.1.6",
+    "image_catalog_version": "images-0.1.0",
+    "slug": "drums",
+    "kind": "instrument",
+    "family_slug": "percussion",
+    "related_slugs": [
+      "percussion"
+    ],
+    "tone": {
+      "shadow": "#000000",
+      "highlight": "#D5C18D"
+    },
+    "source_ids": [
+      "smithsonian-drum-set"
+    ],
+    "text_citations": {
+      "description": [
+        "smithsonian-drum-set"
+      ],
+      "sound_production": []
+    },
+    "further_reading": [],
+    "sections": [
+      {
+        "id": "instrument-drums-curiosity",
+        "kind": "curiosity",
+        "content_type": "editorial_summary",
+        "citations": [
+          {
+            "source_id": "smithsonian-drum-set",
+            "locator": null,
+            "note": "Funções simultâneas de uma bateria."
+          }
+        ]
+      }
+    ],
+    "image": {
+      "asset_id": "drums-laura-rivera-01",
+      "resolution": "exact",
+      "depicted_instrument_slug": "drums",
+      "variants": [
+        {
+          "name": "detail",
+          "url": "http://127.0.0.1:5173/instruments/drums-laura-rivera-01/10848ed0b8e3/detail.png",
+          "width": 1200,
+          "height": 800
+        }
+      ],
+      "tone": {
+        "shadow": "#000000",
+        "highlight": "#D5C18D"
+      },
+      "credit": {
+        "photographer": "Laura Rivera",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/uma-pessoa-esta-tocando-bateria-em-uma-foto-em-preto-e-branco-YtZCf35EcZQ",
+        "photographer_url": "https://unsplash.com/@laurar1vera",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license"
+      }
+    }
+  },
+  {
+    "data_source": "catalog",
+    "catalog_version": "0.1.6",
+    "image_catalog_version": "images-0.1.0",
+    "slug": "electric-bass",
+    "kind": "instrument",
+    "family_slug": "plucked-strings",
+    "related_slugs": [
+      "plucked-strings",
+      "electric-guitar"
+    ],
+    "tone": {
+      "shadow": "#000000",
+      "highlight": "#E7AE86"
+    },
+    "source_ids": [
+      "smithsonian-precision-bass"
+    ],
+    "text_citations": {
+      "description": [],
+      "sound_production": []
+    },
+    "further_reading": [],
+    "sections": [
+      {
+        "id": "instrument-electric-bass-curiosity",
+        "kind": "curiosity",
+        "content_type": "editorial_summary",
+        "citations": [
+          {
+            "source_id": "smithsonian-precision-bass",
+            "locator": null,
+            "note": "Precision Bass de 1951."
+          }
+        ]
+      }
+    ],
+    "image": {
+      "asset_id": "electric-guitar-nikolas-mitsiggas-01",
+      "resolution": "family",
+      "depicted_instrument_slug": "electric-guitar",
+      "variants": [
+        {
+          "name": "detail",
+          "url": "http://127.0.0.1:5173/instruments/electric-guitar-nikolas-mitsiggas-01/b05745d5fad8/detail.png",
+          "width": 1200,
+          "height": 800
+        }
+      ],
+      "tone": {
+        "shadow": "#000000",
+        "highlight": "#E7AE86"
+      },
+      "credit": {
+        "photographer": "Nikolas Mitsiggas",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/uma-guitarra-eletrica-preto-e-azul-em-um-fundo-preto-Y2qugjxmw0g",
+        "photographer_url": "https://unsplash.com/@nikolasmitsiggas",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license"
+      }
+    }
+  },
+  {
+    "data_source": "catalog",
+    "catalog_version": "0.1.6",
+    "image_catalog_version": "images-0.1.0",
+    "slug": "electric-guitar",
+    "kind": "instrument",
+    "family_slug": "plucked-strings",
+    "related_slugs": [
+      "plucked-strings",
+      "electric-bass"
+    ],
+    "tone": {
+      "shadow": "#000000",
+      "highlight": "#E7AE86"
+    },
+    "source_ids": [
+      "smithsonian-electric-guitar"
+    ],
+    "text_citations": {
+      "description": [],
+      "sound_production": []
+    },
+    "further_reading": [],
+    "sections": [
+      {
+        "id": "instrument-electric-guitar-curiosity",
+        "kind": "curiosity",
+        "content_type": "editorial_summary",
+        "citations": [
+          {
+            "source_id": "smithsonian-electric-guitar",
+            "locator": null,
+            "note": "Conversão da vibração em sinal elétrico."
+          }
+        ]
+      }
+    ],
+    "image": {
+      "asset_id": "electric-guitar-nikolas-mitsiggas-01",
+      "resolution": "exact",
+      "depicted_instrument_slug": "electric-guitar",
+      "variants": [
+        {
+          "name": "detail",
+          "url": "http://127.0.0.1:5173/instruments/electric-guitar-nikolas-mitsiggas-01/b05745d5fad8/detail.png",
+          "width": 1200,
+          "height": 800
+        }
+      ],
+      "tone": {
+        "shadow": "#000000",
+        "highlight": "#E7AE86"
+      },
+      "credit": {
+        "photographer": "Nikolas Mitsiggas",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/uma-guitarra-eletrica-preto-e-azul-em-um-fundo-preto-Y2qugjxmw0g",
+        "photographer_url": "https://unsplash.com/@nikolasmitsiggas",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license"
+      }
+    }
+  },
+  {
+    "data_source": "catalog",
+    "catalog_version": "0.1.6",
+    "image_catalog_version": "images-0.1.0",
+    "slug": "percussion",
+    "kind": "family",
+    "family_slug": null,
+    "related_slugs": [
+      "drums",
+      "pandeiro",
+      "surdo",
+      "tamborim",
+      "cuica"
+    ],
+    "tone": {
+      "shadow": "#000000",
+      "highlight": "#D5C18D"
+    },
+    "source_ids": [
+      "met-teponaztli"
+    ],
+    "text_citations": {
+      "description": [],
+      "sound_production": []
+    },
+    "further_reading": [],
+    "sections": [
+      {
+        "id": "family-percussion-curiosity",
+        "kind": "curiosity",
+        "content_type": "editorial_summary",
+        "citations": [
+          {
+            "source_id": "met-teponaztli",
+            "locator": null,
+            "note": "Usos cerimoniais, militares e comunicacionais."
+          }
+        ]
+      }
+    ],
+    "image": {
+      "asset_id": "drums-laura-rivera-01",
+      "resolution": "family",
+      "depicted_instrument_slug": "drums",
+      "variants": [
+        {
+          "name": "detail",
+          "url": "http://127.0.0.1:5173/instruments/drums-laura-rivera-01/10848ed0b8e3/detail.png",
+          "width": 1200,
+          "height": 800
+        }
+      ],
+      "tone": {
+        "shadow": "#000000",
+        "highlight": "#D5C18D"
+      },
+      "credit": {
+        "photographer": "Laura Rivera",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/uma-pessoa-esta-tocando-bateria-em-uma-foto-em-preto-e-branco-YtZCf35EcZQ",
+        "photographer_url": "https://unsplash.com/@laurar1vera",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license"
+      }
+    }
+  },
+  {
+    "data_source": "catalog",
+    "catalog_version": "0.1.6",
+    "image_catalog_version": "images-0.1.0",
+    "slug": "piano",
+    "kind": "instrument",
+    "family_slug": "acoustic-keys",
+    "related_slugs": [
+      "acoustic-keys"
+    ],
+    "tone": {
+      "shadow": "#000000",
+      "highlight": "#F29191"
+    },
+    "source_ids": [
+      "met-cristofori-piano"
+    ],
+    "text_citations": {
+      "description": [],
+      "sound_production": [
+        "met-cristofori-piano"
+      ]
+    },
+    "further_reading": [],
+    "sections": [
+      {
+        "id": "instrument-piano-curiosity",
+        "kind": "curiosity",
+        "content_type": "editorial_summary",
+        "citations": [
+          {
+            "source_id": "met-cristofori-piano",
+            "locator": null,
+            "note": "Três pianos de Cristofori preservados."
+          }
+        ]
+      }
+    ],
+    "image": {
+      "asset_id": "piano-alin-gavriliuc-01",
+      "resolution": "exact",
+      "depicted_instrument_slug": "piano",
+      "variants": [
+        {
+          "name": "detail",
+          "url": "http://127.0.0.1:5173/instruments/piano-alin-gavriliuc-01/907486e78cad/detail.png",
+          "width": 1200,
+          "height": 675
+        }
+      ],
+      "tone": {
+        "shadow": "#000000",
+        "highlight": "#F29191"
+      },
+      "credit": {
+        "photographer": "Alin Gavriliuc",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/um-close-up-de-um-piano-com-teclas-preto-e-branco-_iS9ma5vLD8",
+        "photographer_url": "https://unsplash.com/@alingavriliuc",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license"
+      }
+    }
+  },
+  {
+    "data_source": "catalog",
+    "catalog_version": "0.1.6",
+    "image_catalog_version": "images-0.1.0",
+    "slug": "plucked-strings",
+    "kind": "family",
+    "family_slug": null,
+    "related_slugs": [
+      "electric-guitar",
+      "electric-bass",
+      "acoustic-guitar",
+      "cavaquinho"
+    ],
+    "tone": {
+      "shadow": "#000000",
+      "highlight": "#E7AE86"
+    },
+    "source_ids": [
+      "met-musical-terms"
+    ],
+    "text_citations": {
+      "description": [],
+      "sound_production": []
+    },
+    "further_reading": [],
+    "sections": [
+      {
+        "id": "family-plucked-strings-curiosity",
+        "kind": "curiosity",
+        "content_type": "editorial_summary",
+        "citations": [
+          {
+            "source_id": "met-musical-terms",
+            "locator": null,
+            "note": "Mecanismo de plectro do cravo."
+          }
+        ]
+      }
+    ],
+    "image": {
+      "asset_id": "electric-guitar-nikolas-mitsiggas-01",
+      "resolution": "family",
+      "depicted_instrument_slug": "electric-guitar",
+      "variants": [
+        {
+          "name": "detail",
+          "url": "http://127.0.0.1:5173/instruments/electric-guitar-nikolas-mitsiggas-01/b05745d5fad8/detail.png",
+          "width": 1200,
+          "height": 800
+        }
+      ],
+      "tone": {
+        "shadow": "#000000",
+        "highlight": "#E7AE86"
+      },
+      "credit": {
+        "photographer": "Nikolas Mitsiggas",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/uma-guitarra-eletrica-preto-e-azul-em-um-fundo-preto-Y2qugjxmw0g",
+        "photographer_url": "https://unsplash.com/@nikolasmitsiggas",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license"
+      }
+    }
+  },
+  {
+    "data_source": "catalog",
+    "catalog_version": "0.1.6",
+    "image_catalog_version": "images-0.1.0",
+    "slug": "sampled-sounds",
+    "kind": "family",
+    "family_slug": null,
+    "related_slugs": [
+      "sampler",
+      "synthesizers"
+    ],
+    "tone": {
+      "shadow": "#000000",
+      "highlight": "#9EBBD1"
+    },
+    "source_ids": [
+      "loc-citizen-dj"
+    ],
+    "text_citations": {
+      "description": [
+        "loc-citizen-dj"
+      ],
+      "sound_production": [
+        "loc-citizen-dj"
+      ]
+    },
+    "further_reading": [],
+    "sections": [
+      {
+        "id": "family-sampled-sounds-curiosity",
+        "kind": "curiosity",
+        "content_type": "editorial_summary",
+        "citations": [
+          {
+            "source_id": "loc-citizen-dj",
+            "locator": null,
+            "note": "Música, fala, campo e arquivos como material."
+          }
+        ]
+      }
+    ],
+    "image": {
+      "asset_id": "sampled-sounds-christian-agbede-01",
+      "resolution": "family",
+      "depicted_instrument_slug": "sampled-sounds-christian-agbede-01",
+      "variants": [
+        {
+          "name": "detail",
+          "url": "http://127.0.0.1:5173/instruments/sampled-sounds-christian-agbede-01/10bc7cbe5d7d/detail.png",
+          "width": 1200,
+          "height": 800
+        }
+      ],
+      "tone": {
+        "shadow": "#000000",
+        "highlight": "#9EBBD1"
+      },
+      "credit": {
+        "photographer": "Christian Agbede",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/jovem-mulher-navegando-discos-em-uma-loja-TxVYEUHd-2s",
+        "photographer_url": "https://unsplash.com/pt-br/@chriscreations__",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license"
+      }
+    }
+  },
+  {
+    "data_source": "catalog",
+    "catalog_version": "0.1.6",
+    "image_catalog_version": "images-0.1.0",
+    "slug": "sampler",
+    "kind": "instrument",
+    "family_slug": "sampled-sounds",
+    "related_slugs": [
+      "sampled-sounds",
+      "synthesizer"
+    ],
+    "tone": {
+      "shadow": "#000000",
+      "highlight": "#9EBBD1"
+    },
+    "source_ids": [
+      "nfsa-fairlight"
+    ],
+    "text_citations": {
+      "description": [],
+      "sound_production": []
+    },
+    "further_reading": [],
+    "sections": [
+      {
+        "id": "instrument-sampler-curiosity",
+        "kind": "curiosity",
+        "content_type": "editorial_summary",
+        "citations": [
+          {
+            "source_id": "nfsa-fairlight",
+            "locator": null,
+            "note": "Uso de vidro quebrando em “Babooshka”."
+          }
+        ]
+      }
+    ],
+    "image": {
+      "asset_id": "sampler-ricardo-abreu-01",
+      "resolution": "related",
+      "depicted_instrument_slug": "sampler",
+      "variants": [
+        {
+          "name": "detail",
+          "url": "http://127.0.0.1:5173/instruments/sampler-ricardo-abreu-01/09f355997477/detail.png",
+          "width": 1200,
+          "height": 800
+        }
+      ],
+      "tone": {
+        "shadow": "#000000",
+        "highlight": "#9EBBD1"
+      },
+      "credit": {
+        "photographer": "Ricardo Abreu",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/ativada-a-barra-de-lancamento-digital-dZPp5ZVMcN0",
+        "photographer_url": "https://unsplash.com/@txbrown",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license"
+      }
+    }
+  },
+  {
+    "data_source": "catalog",
+    "catalog_version": "0.1.6",
+    "image_catalog_version": "images-0.1.0",
+    "slug": "synthesizer",
+    "kind": "instrument",
+    "family_slug": "synthesizers",
+    "related_slugs": [
+      "synthesizers",
+      "sampler"
+    ],
+    "tone": {
+      "shadow": "#000000",
+      "highlight": "#B7A5CC"
+    },
+    "source_ids": [
+      "8694d43a-ab6e-4ce6-99b3-265933fcb716"
+    ],
+    "text_citations": {
+      "description": [],
+      "sound_production": []
+    },
+    "further_reading": [
+      {
+        "title": "History of the Synthesizer, Part 1",
+        "url": "https://hub.yamaha.com/keyboards/synthesizers/history-of-the-synthesizer-part-1/",
+        "publisher": "Jerry Kovarsky",
+        "status": "reviewed",
+        "reviewer": "Luis Gustavo R.C.",
+        "reviewed_at": "2026-09-15"
+      }
+    ],
+    "sections": [
+      {
+        "id": "instrument-synthesizer-curiosity",
+        "kind": "curiosity",
+        "content_type": "editorial_summary",
+        "citations": [
+          {
+            "source_id": "8694d43a-ab6e-4ce6-99b3-265933fcb716",
+            "locator": null,
+            "note": null
+          }
+        ]
+      }
+    ],
+    "image": {
+      "asset_id": "synthesizer-anton-shuvalov-01",
+      "resolution": "exact",
+      "depicted_instrument_slug": "synthesizer",
+      "variants": [
+        {
+          "name": "detail",
+          "url": "http://127.0.0.1:5173/instruments/synthesizer-anton-shuvalov-01/141d575021f1/detail.png",
+          "width": 1200,
+          "height": 750
+        }
+      ],
+      "tone": {
+        "shadow": "#000000",
+        "highlight": "#B7A5CC"
+      },
+      "credit": {
+        "photographer": "Anton Shuvalov",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/mixer-de-audio-preto-e-cinza-WFIoD6zWn98",
+        "photographer_url": "https://unsplash.com/@a8ka",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license"
+      }
+    }
+  },
+  {
+    "data_source": "catalog",
+    "catalog_version": "0.1.6",
+    "image_catalog_version": "images-0.1.0",
+    "slug": "synthesizers",
+    "kind": "family",
+    "family_slug": null,
+    "related_slugs": [
+      "synthesizer",
+      "sampled-sounds"
+    ],
+    "tone": {
+      "shadow": "#000000",
+      "highlight": "#B7A5CC"
+    },
+    "source_ids": [
+      "fa9cd164-a0c8-45e5-bec2-73eb997058ae"
+    ],
+    "text_citations": {
+      "description": [],
+      "sound_production": []
+    },
+    "further_reading": [],
+    "sections": [
+      {
+        "id": "family-synthesizers-curiosity",
+        "kind": "curiosity",
+        "content_type": "editorial_summary",
+        "citations": [
+          {
+            "source_id": "fa9cd164-a0c8-45e5-bec2-73eb997058ae",
+            "locator": null,
+            "note": null
+          }
+        ]
+      }
+    ],
+    "image": {
+      "asset_id": "synthesizer-anton-shuvalov-01",
+      "resolution": "family",
+      "depicted_instrument_slug": "synthesizer",
+      "variants": [
+        {
+          "name": "detail",
+          "url": "http://127.0.0.1:5173/instruments/synthesizer-anton-shuvalov-01/141d575021f1/detail.png",
+          "width": 1200,
+          "height": 750
+        }
+      ],
+      "tone": {
+        "shadow": "#000000",
+        "highlight": "#B7A5CC"
+      },
+      "credit": {
+        "photographer": "Anton Shuvalov",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/mixer-de-audio-preto-e-cinza-WFIoD6zWn98",
+        "photographer_url": "https://unsplash.com/@a8ka",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license"
+      }
+    }
+  },
+  {
+    "data_source": "catalog",
+    "catalog_version": "0.1.6",
+    "image_catalog_version": "images-0.1.0",
+    "slug": "woodwinds",
+    "kind": "family",
+    "family_slug": null,
+    "related_slugs": [],
+    "tone": {
+      "shadow": "#000000",
+      "highlight": "#9FC4B0"
+    },
+    "source_ids": [],
+    "text_citations": {
+      "description": [],
+      "sound_production": []
+    },
+    "further_reading": [],
+    "sections": [],
+    "image": {
+      "asset_id": "woodwinds-dorothee-kraemer-01",
+      "resolution": "family",
+      "depicted_instrument_slug": "woodwinds-dorothee-kraemer-01",
+      "variants": [
+        {
+          "name": "detail",
+          "url": "http://127.0.0.1:5173/instruments/woodwinds-dorothee-kraemer-01/a4436f2e0c29/detail.png",
+          "width": 1200,
+          "height": 800
+        }
+      ],
+      "tone": {
+        "shadow": "#000000",
+        "highlight": "#9FC4B0"
+      },
+      "credit": {
+        "photographer": "Dorothee Kraemer",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/flauta-de-madeira-marrom-na-mesa-branca-Y6Hn79vRcXU",
+        "photographer_url": "https://unsplash.com/@doro_t",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license"
+      }
+    }
+  },
+  {
+    "data_source": "catalog",
+    "catalog_version": "0.1.6",
+    "image_catalog_version": "images-0.1.0",
+    "slug": "brass",
+    "kind": "family",
+    "family_slug": null,
+    "related_slugs": [],
+    "tone": {
+      "shadow": "#000000",
+      "highlight": "#D9B56D"
+    },
+    "source_ids": [],
+    "text_citations": {
+      "description": [],
+      "sound_production": []
+    },
+    "further_reading": [],
+    "sections": [],
+    "image": {
+      "asset_id": "brass-miguel-alcantara-01",
+      "resolution": "family",
+      "depicted_instrument_slug": "brass-miguel-alcantara-01",
+      "variants": [
+        {
+          "name": "detail",
+          "url": "http://127.0.0.1:5173/instruments/brass-miguel-alcantara-01/da1397f607a4/detail.png",
+          "width": 1200,
+          "height": 800
+        }
+      ],
+      "tone": {
+        "shadow": "#000000",
+        "highlight": "#D9B56D"
+      },
+      "credit": {
+        "photographer": "Miguel Alcântara",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/um-close-up-de-um-trompete-de-latao-em-um-fundo-preto-OLyrzpirrds",
+        "photographer_url": "https://unsplash.com/@miguelalcantara",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license"
+      }
+    }
+  },
+  {
+    "data_source": "catalog",
+    "catalog_version": "0.1.6",
+    "image_catalog_version": "images-0.1.0",
+    "slug": "voice",
+    "kind": "family",
+    "family_slug": null,
+    "related_slugs": [],
+    "tone": {
+      "shadow": "#000000",
+      "highlight": "#D6A8C8"
+    },
+    "source_ids": [],
+    "text_citations": {
+      "description": [],
+      "sound_production": []
+    },
+    "further_reading": [],
+    "sections": [],
+    "image": {
+      "asset_id": "voice-josh-rocklage-01",
+      "resolution": "family",
+      "depicted_instrument_slug": "voice-josh-rocklage-01",
+      "variants": [
+        {
+          "name": "detail",
+          "url": "http://127.0.0.1:5173/instruments/voice-josh-rocklage-01/90342b45582d/detail.png",
+          "width": 1200,
+          "height": 800
+        }
+      ],
+      "tone": {
+        "shadow": "#000000",
+        "highlight": "#D6A8C8"
+      },
+      "credit": {
+        "photographer": "Josh Rocklage",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/mulher-se-apresentando-no-palco-HAAsKeZbHAc",
+        "photographer_url": "https://unsplash.com/@joshrocklage",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license"
+      }
+    }
+  },
+  {
+    "data_source": "catalog",
+    "catalog_version": "0.1.6",
+    "image_catalog_version": "images-0.1.0",
+    "slug": "electric-keys",
+    "kind": "family",
+    "family_slug": null,
+    "related_slugs": [],
+    "tone": {
+      "shadow": "#000000",
+      "highlight": "#9FB7D9"
+    },
+    "source_ids": [],
+    "text_citations": {
+      "description": [],
+      "sound_production": []
+    },
+    "further_reading": [],
+    "sections": [],
+    "image": {
+      "asset_id": "electric-keys-seth-gerak-01",
+      "resolution": "family",
+      "depicted_instrument_slug": "electric-keys-seth-gerak-01",
+      "variants": [
+        {
+          "name": "detail",
+          "url": "http://127.0.0.1:5173/instruments/electric-keys-seth-gerak-01/442fa2580518/detail.png",
+          "width": 1200,
+          "height": 675
+        }
+      ],
+      "tone": {
+        "shadow": "#000000",
+        "highlight": "#9FB7D9"
+      },
+      "credit": {
+        "photographer": "Seth Gerak",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/um-homem-esta-tocando-um-teclado-com-as-maos-PwT9HOd2JsA",
+        "photographer_url": "https://unsplash.com/@true_films",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license"
+      }
+    }
+  },
+  {
+    "data_source": "catalog",
+    "catalog_version": "0.1.6",
+    "image_catalog_version": "images-0.1.0",
+    "slug": "acoustic-guitar",
+    "kind": "instrument",
+    "family_slug": "plucked-strings",
+    "related_slugs": [
+      "plucked-strings"
+    ],
+    "tone": {
+      "shadow": "#000000",
+      "highlight": "#E7AE86"
+    },
+    "source_ids": [
+      "ufpb-labeet-reco-reco"
+    ],
+    "text_citations": {
+      "description": [],
+      "sound_production": []
+    },
+    "further_reading": [],
+    "sections": [
+      {
+        "id": "instrument-acoustic-guitar-curiosity",
+        "kind": "curiosity",
+        "content_type": "editorial_summary",
+        "citations": [
+          {
+            "source_id": "ufpb-labeet-reco-reco",
+            "locator": "",
+            "note": "Resumo editorial da passagem indicada; não implica revisão acadêmica ou endosso institucional."
+          }
+        ]
+      }
+    ],
+    "image": {
+      "asset_id": "acoustic-guitar-tom-analogicus-01",
+      "resolution": "exact",
+      "depicted_instrument_slug": "acoustic-guitar",
+      "variants": [
+        {
+          "name": "detail",
+          "url": "http://127.0.0.1:5173/instruments/acoustic-guitar-tom-analogicus-01/da8e04cde2ae/detail.png",
+          "width": 1200,
+          "height": 744
+        }
+      ],
+      "tone": {
+        "shadow": "#000000",
+        "highlight": "#E7AE86"
+      },
+      "credit": {
+        "photographer": "tom analogicus",
+        "provider": "Pexels",
+        "photo_url": "https://www.pexels.com/pt-br/foto/instrumento-musical-violao-cordas-instrumento-de-cordas-6145550/",
+        "photographer_url": "https://www.pexels.com/@analogicus/",
+        "license": "Pexels License",
+        "license_url": "https://www.pexels.com/license/"
+      }
+    }
+  },
+  {
+    "data_source": "catalog",
+    "catalog_version": "0.1.6",
+    "image_catalog_version": "images-0.1.0",
+    "slug": "cavaquinho",
+    "kind": "instrument",
+    "family_slug": "plucked-strings",
+    "related_slugs": [
+      "plucked-strings"
+    ],
+    "tone": {
+      "shadow": "#000000",
+      "highlight": "#E7AE86"
+    },
+    "source_ids": [
+      "ufpb-labeet-lapinha"
+    ],
+    "text_citations": {
+      "description": [],
+      "sound_production": []
+    },
+    "further_reading": [
+      {
+        "title": "Tradição e Inovação no Cavaquinho Brasileiro",
+        "url": "http://repositorio.unb.br/handle/10482/19765",
+        "publisher": "Luis Carlos Orione De Alencar Arraes",
+        "status": "reviewed",
+        "reviewer": "Luis Gustavo R.C.",
+        "reviewed_at": "2026-09-15"
+      }
+    ],
+    "sections": [
+      {
+        "id": "instrument-cavaquinho-curiosity",
+        "kind": "curiosity",
+        "content_type": "editorial_summary",
+        "citations": [
+          {
+            "source_id": "ufpb-labeet-lapinha",
+            "locator": "Audios: AFB 07; gravação 08/12/1972; UFPB/BC-FR7003; T42 T43.",
+            "note": "Resumo editorial da passagem indicada; não implica revisão acadêmica ou endosso institucional."
+          }
+        ]
+      }
+    ],
+    "image": {
+      "asset_id": "electric-guitar-nikolas-mitsiggas-01",
+      "resolution": "family",
+      "depicted_instrument_slug": "electric-guitar",
+      "variants": [
+        {
+          "name": "detail",
+          "url": "http://127.0.0.1:5173/instruments/electric-guitar-nikolas-mitsiggas-01/b05745d5fad8/detail.png",
+          "width": 1200,
+          "height": 800
+        }
+      ],
+      "tone": {
+        "shadow": "#000000",
+        "highlight": "#E7AE86"
+      },
+      "credit": {
+        "photographer": "Nikolas Mitsiggas",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/uma-guitarra-eletrica-preto-e-azul-em-um-fundo-preto-Y2qugjxmw0g",
+        "photographer_url": "https://unsplash.com/@nikolasmitsiggas",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license"
+      }
+    }
+  },
+  {
+    "data_source": "catalog",
+    "catalog_version": "0.1.6",
+    "image_catalog_version": "images-0.1.0",
+    "slug": "pandeiro",
+    "kind": "instrument",
+    "family_slug": "percussion",
+    "related_slugs": [
+      "percussion"
+    ],
+    "tone": {
+      "shadow": "#000000",
+      "highlight": "#D5C18D"
+    },
+    "source_ids": [
+      "a741b710-00a4-4826-9727-38944e8b8bc7"
+    ],
+    "text_citations": {
+      "description": [],
+      "sound_production": []
+    },
+    "further_reading": [],
+    "sections": [
+      {
+        "id": "instrument-pandeiro-curiosity",
+        "kind": "curiosity",
+        "content_type": "editorial_summary",
+        "citations": [
+          {
+            "source_id": "a741b710-00a4-4826-9727-38944e8b8bc7",
+            "locator": "Introdução, p. 13, 2º parágrafo",
+            "note": null
+          }
+        ]
+      }
+    ],
+    "image": {
+      "asset_id": "pandeiro-sebastian-brito-01",
+      "resolution": "exact",
+      "depicted_instrument_slug": "pandeiro",
+      "variants": [
+        {
+          "name": "detail",
+          "url": "http://127.0.0.1:5173/instruments/pandeiro-sebastian-brito-01/5a197806c593/detail.png",
+          "width": 1200,
+          "height": 758
+        }
+      ],
+      "tone": {
+        "shadow": "#000000",
+        "highlight": "#D5C18D"
+      },
+      "credit": {
+        "photographer": "Sebastián Brito",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/musico-tocando-pandeiro-na-luz-fraca-YVxbyvV2sWI",
+        "photographer_url": "https://unsplash.com/@britosebastian",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license"
+      }
+    }
+  },
+  {
+    "data_source": "catalog",
+    "catalog_version": "0.1.6",
+    "image_catalog_version": "images-0.1.0",
+    "slug": "surdo",
+    "kind": "instrument",
+    "family_slug": "percussion",
+    "related_slugs": [
+      "percussion"
+    ],
+    "tone": {
+      "shadow": "#000000",
+      "highlight": "#D5C18D"
+    },
+    "source_ids": [
+      "ufpb-labeet-reco-reco"
+    ],
+    "text_citations": {
+      "description": [],
+      "sound_production": []
+    },
+    "further_reading": [],
+    "sections": [
+      {
+        "id": "instrument-surdo-curiosity",
+        "kind": "curiosity",
+        "content_type": "editorial_summary",
+        "citations": [
+          {
+            "source_id": "ufpb-labeet-reco-reco",
+            "locator": "",
+            "note": "Resumo editorial da passagem indicada; não implica revisão acadêmica ou endosso institucional."
+          }
+        ]
+      }
+    ],
+    "image": {
+      "asset_id": "drums-laura-rivera-01",
+      "resolution": "family",
+      "depicted_instrument_slug": "drums",
+      "variants": [
+        {
+          "name": "detail",
+          "url": "http://127.0.0.1:5173/instruments/drums-laura-rivera-01/10848ed0b8e3/detail.png",
+          "width": 1200,
+          "height": 800
+        }
+      ],
+      "tone": {
+        "shadow": "#000000",
+        "highlight": "#D5C18D"
+      },
+      "credit": {
+        "photographer": "Laura Rivera",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/uma-pessoa-esta-tocando-bateria-em-uma-foto-em-preto-e-branco-YtZCf35EcZQ",
+        "photographer_url": "https://unsplash.com/@laurar1vera",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license"
+      }
+    }
+  },
+  {
+    "data_source": "catalog",
+    "catalog_version": "0.1.6",
+    "image_catalog_version": "images-0.1.0",
+    "slug": "tamborim",
+    "kind": "instrument",
+    "family_slug": "percussion",
+    "related_slugs": [
+      "percussion"
+    ],
+    "tone": {
+      "shadow": "#000000",
+      "highlight": "#D5C18D"
+    },
+    "source_ids": [
+      "ufpb-labeet-tamborim"
+    ],
+    "text_citations": {
+      "description": [],
+      "sound_production": []
+    },
+    "further_reading": [],
+    "sections": [
+      {
+        "id": "instrument-tamborim-curiosity",
+        "kind": "curiosity",
+        "content_type": "editorial_summary",
+        "citations": [
+          {
+            "source_id": "ufpb-labeet-tamborim",
+            "locator": "",
+            "note": "Resumo editorial da passagem indicada; não implica revisão acadêmica ou endosso institucional."
+          }
+        ]
+      }
+    ],
+    "image": {
+      "asset_id": "drums-laura-rivera-01",
+      "resolution": "family",
+      "depicted_instrument_slug": "drums",
+      "variants": [
+        {
+          "name": "detail",
+          "url": "http://127.0.0.1:5173/instruments/drums-laura-rivera-01/10848ed0b8e3/detail.png",
+          "width": 1200,
+          "height": 800
+        }
+      ],
+      "tone": {
+        "shadow": "#000000",
+        "highlight": "#D5C18D"
+      },
+      "credit": {
+        "photographer": "Laura Rivera",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/uma-pessoa-esta-tocando-bateria-em-uma-foto-em-preto-e-branco-YtZCf35EcZQ",
+        "photographer_url": "https://unsplash.com/@laurar1vera",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license"
+      }
+    }
+  },
+  {
+    "data_source": "catalog",
+    "catalog_version": "0.1.6",
+    "image_catalog_version": "images-0.1.0",
+    "slug": "cuica",
+    "kind": "instrument",
+    "family_slug": "percussion",
+    "related_slugs": [
+      "percussion"
+    ],
+    "tone": {
+      "shadow": "#000000",
+      "highlight": "#D5C18D"
+    },
+    "source_ids": [
+      "ufpb-labeet-reco-reco"
+    ],
+    "text_citations": {
+      "description": [],
+      "sound_production": []
+    },
+    "further_reading": [],
+    "sections": [
+      {
+        "id": "instrument-cuica-curiosity",
+        "kind": "curiosity",
+        "content_type": "editorial_summary",
+        "citations": [
+          {
+            "source_id": "ufpb-labeet-reco-reco",
+            "locator": "",
+            "note": "Resumo editorial da passagem indicada; não implica revisão acadêmica ou endosso institucional."
+          }
+        ]
+      }
+    ],
+    "image": {
+      "asset_id": "drums-laura-rivera-01",
+      "resolution": "family",
+      "depicted_instrument_slug": "drums",
+      "variants": [
+        {
+          "name": "detail",
+          "url": "http://127.0.0.1:5173/instruments/drums-laura-rivera-01/10848ed0b8e3/detail.png",
+          "width": 1200,
+          "height": 800
+        }
+      ],
+      "tone": {
+        "shadow": "#000000",
+        "highlight": "#D5C18D"
+      },
+      "credit": {
+        "photographer": "Laura Rivera",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/uma-pessoa-esta-tocando-bateria-em-uma-foto-em-preto-e-branco-YtZCf35EcZQ",
+        "photographer_url": "https://unsplash.com/@laurar1vera",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license"
+      }
+    }
+  }
+]

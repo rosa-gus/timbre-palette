@@ -9,6 +9,11 @@ import re
 from pathlib import Path
 from typing import Any
 
+try:
+    from .editorial_content import expand_snapshot, read_snapshot, public_content, source_revision, canonical, write_snapshot, split_snapshot
+except ImportError:
+    from editorial_content import expand_snapshot, read_snapshot, public_content, source_revision, canonical, write_snapshot, split_snapshot
+
 
 SCHEMA_VERSION = 1
 EDITORIAL_STATUSES = {"draft", "sourced", "reviewed", "published", "deprecated"}
@@ -34,21 +39,27 @@ SLUG = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
 
 def load_manifest(path: Path) -> list[dict[str, Any]]:
-    """Load either the editor seed array or an exported schema-v1 snapshot."""
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if isinstance(payload, list):
+    """Load split content, a schema-v2 export, or a legacy snapshot."""
+    payload = read_snapshot(path)
+    if isinstance(payload, dict) and payload.get("schema_version") == 2:
+        instruments = expand_snapshot(payload)
+    elif isinstance(payload, list):
         instruments = payload
     elif isinstance(payload, dict) and payload.get("schema_version") == SCHEMA_VERSION:
         instruments = payload.get("instruments")
     else:
         raise ValueError(
-            "The editorial manifest must be an array or an exported schema_version 1 object."
+            "The editorial manifest must use schema_version 2 or a supported legacy snapshot."
         )
     if not isinstance(instruments, list) or not instruments:
         raise ValueError("The editorial manifest must contain at least one resource.")
     if not all(isinstance(item, dict) for item in instruments):
         raise ValueError("Every editorial manifest entry must be an object.")
     validate_manifest(instruments)
+    for sheet in instruments:
+        for translation in sheet.get("translations", []):
+            if translation["status"] in {"reviewed", "published"}:
+                validate_manifest([translation])
     return instruments
 
 
@@ -179,12 +190,13 @@ def emit_sql(
         f"-- Manifest SHA-256: {manifest_hash}",
         "PRAGMA foreign_keys = ON;",
         "INSERT INTO editorial_publications "
-        "(revision, manifest_hash, commit_sha, published_by, status) VALUES "
+        "(revision, manifest_hash, commit_sha, published_by, status, content_schema_version) VALUES "
         f"({sql_literal(revision)}, {sql_literal(manifest_hash)}, {sql_literal(commit_sha)}, "
-        f"{sql_literal(published_by)}, 'staging') "
+        f"{sql_literal(published_by)}, 'staging', 2) "
         "ON CONFLICT(revision) DO UPDATE SET manifest_hash=excluded.manifest_hash, "
         "commit_sha=excluded.commit_sha, published_by=excluded.published_by, "
-        "status='staging', published_at=NULL;",
+        "status=CASE WHEN editorial_publications.status='active' THEN 'active' ELSE 'staging' END, "
+        "content_schema_version=2;",
     ]
     block_ids: list[str] = []
     resource_predicates: list[str] = []
@@ -313,6 +325,51 @@ def emit_sql(
         + (f" AND id NOT IN ({block_list})" if block_ids else "")
         + ";"
     )
+    for sheet in resources:
+        current_source_revision = source_revision(sheet)
+        for translation in [sheet, *sheet.get("translations", [])]:
+            resource = translation["resource"]
+            locale = translation.get("locale", "pt-BR")
+            status = translation.get("status", "published")
+            translated_from = translation.get("source_revision") or current_source_revision
+            if locale != "pt-BR" and translated_from != current_source_revision:
+                status = "stale"
+            review = translation["review"]
+            if not review.get("claim_support_verified") and status in {"reviewed", "published"}:
+                status = "draft"
+            content = canonical(public_content(translation))
+            content_revision = hashlib.sha256(content.encode()).hexdigest()
+            identity = f"{sql_literal(resource['kind'])}, {sql_literal(resource['slug'])}, {sql_literal(locale)}"
+            statements.append(
+                "INSERT INTO editorial_resource_translations "
+                "(resource_type, resource_slug, locale, source_revision, content_revision, status, reviewer, reviewed_at, content_json, publication_revision) VALUES "
+                f"({identity}, {sql_literal(translated_from)}, {sql_literal(content_revision)}, {sql_literal(status)}, "
+                f"{sql_literal(review.get('reviewer'))}, {sql_literal(review.get('reviewed_at'))}, {sql_literal(content)}, {sql_literal(revision)}) "
+                "ON CONFLICT(publication_revision, resource_type, resource_slug, locale) DO UPDATE SET "
+                "source_revision=excluded.source_revision, content_revision=excluded.content_revision, status=excluded.status, "
+                "reviewer=excluded.reviewer, reviewed_at=excluded.reviewed_at, content_json=excluded.content_json, publication_revision=excluded.publication_revision;"
+            )
+            statements.append(
+                "INSERT INTO editorial_translation_history "
+                "(publication_revision, resource_type, resource_slug, locale, source_revision, content_revision, snapshot_json) VALUES "
+                f"({sql_literal(revision)}, {identity}, {sql_literal(translated_from)}, {sql_literal(content_revision)}, {sql_literal(canonical(translation))}) "
+                "ON CONFLICT DO NOTHING;"
+            )
+            statements.append(f"DELETE FROM editorial_block_translations WHERE publication_revision={sql_literal(revision)} AND resource_type={sql_literal(resource['kind'])} AND resource_slug={sql_literal(resource['slug'])} AND locale={sql_literal(locale)};")
+            for block in resource["sections"]:
+                statements.append(
+                    "INSERT INTO editorial_block_translations (publication_revision, resource_type, resource_slug, locale, block_id, text, status, review_json) VALUES "
+                    f"({sql_literal(revision)}, {identity}, {sql_literal(block['id'])}, {sql_literal(block['text'])}, {sql_literal(block['status'])}, {sql_literal(canonical(block['review']))});"
+                )
+    statements.append(
+        "INSERT INTO editorial_resource_translations "
+        "(resource_type, resource_slug, locale, source_revision, content_revision, status, reviewer, reviewed_at, content_json, publication_revision) "
+        "SELECT t.resource_type, t.resource_slug, t.locale, t.source_revision, t.content_revision, 'deprecated', t.reviewer, t.reviewed_at, t.content_json, "
+        f"{sql_literal(revision)} FROM editorial_resource_translations t "
+        "JOIN editorial_publications p ON p.revision=t.publication_revision AND p.status='active' "
+        f"WHERE t.publication_revision <> {sql_literal(revision)} AND NOT EXISTS (SELECT 1 FROM editorial_resource_translations current "
+        f"WHERE current.publication_revision={sql_literal(revision)} AND current.resource_type=t.resource_type AND current.resource_slug=t.resource_slug AND current.locale=t.locale);"
+    )
     statements.extend(
         [
             "UPDATE editorial_publications SET status='superseded' "
@@ -413,8 +470,15 @@ def main() -> None:
     parser.add_argument("--commit-sha", default="local", help="source commit associated with the revision")
     parser.add_argument("--published-by", default="local", help="actor associated with the publication")
     parser.add_argument("--output", type=Path, help="write SQL to a file instead of stdout")
+    parser.add_argument("--write-content", type=Path, help="split a validated editor export into a content directory")
     args = parser.parse_args()
     resources = load_manifest(args.manifest)
+    if args.write_content:
+        if args.sql:
+            parser.error("--write-content and --sql are mutually exclusive")
+        payload = read_snapshot(args.manifest)
+        write_snapshot(payload if isinstance(payload, dict) and payload.get("schema_version") == 2 else split_snapshot(resources), args.write_content)
+        return
     if not args.sql:
         print(f"Editorial manifest valid: {len(resources)} resources.")
         print(f"Manifest SHA-256: {manifest_digest(resources)}")

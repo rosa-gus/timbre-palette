@@ -10,6 +10,7 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Access-Control-Allow-Headers": "Accept, Content-Type",
+  "Access-Control-Expose-Headers": "Content-Language, ETag",
 };
 
 export async function catalogStats(env: Env): Promise<Response> {
@@ -54,6 +55,14 @@ export async function getInstrument(
   env: Env,
   encodedSlug: string,
 ): Promise<Response> {
+  let requestedLocale = "pt-BR";
+  try {
+    const locales = url.searchParams.getAll("locale");
+    if (locales.length > 1 || (locales.length && (!locales[0] || locales[0].length > 80))) throw new RangeError();
+    if (locales.length) requestedLocale = Intl.getCanonicalLocales(locales[0])[0];
+  } catch {
+    return failure("invalid_locale", "The content locale must be a valid BCP 47 tag.", 422);
+  }
   let slug: string;
   try {
     slug = decodeURIComponent(encodedSlug).trim().toLowerCase();
@@ -176,8 +185,43 @@ export async function getInstrument(
       image,
       tone: familyTone,
     };
-    return json(resource, 200, {
+    const translations = await all(env.DB.prepare(`
+      SELECT t.locale, t.source_revision, t.content_revision, t.content_json, t.status,
+             t.publication_revision, t.reviewer, t.reviewed_at, p.content_schema_version
+      FROM editorial_publications p
+      LEFT JOIN editorial_resource_translations t ON t.publication_revision=p.revision
+        AND t.resource_type = ? AND t.resource_slug = ? AND t.locale IN (?, 'pt-BR')
+      WHERE p.status='active'
+    `).bind(kind, canonicalSlug, requestedLocale));
+    const source = translations.find((item) => item.locale === "pt-BR");
+    const eligible = (item: Row) => ["reviewed", "published"].includes(String(item.status)) &&
+      Boolean(item.reviewer) && Boolean(item.reviewed_at);
+    const requested = translations.find((item) => item.locale === requestedLocale && eligible(item) &&
+      item.source_revision === source?.source_revision);
+    const content = (item: Row): Row => JSON.parse(String(item.content_json));
+    const imageMatches = (item: Row) => !image || object(content(item).image).asset_id === image.asset_id;
+    const selected = requested && imageMatches(requested) ? requested : source && eligible(source) ? source : undefined;
+    if (translations.some((item) => item.content_schema_version === 2) && !selected) return failure("instrument_not_found", "No publishable resource is available.", 404);
+    let effectiveLocale = "pt-BR";
+    if (selected) {
+      const text = content(selected);
+      effectiveLocale = String(selected.locale);
+      for (const field of ["name", "description", "sound_production", "common_roles", "sections", "sources", "further_reading"] as const) {
+        Object.assign(resource, { [field]: text[field] });
+      }
+      if (image && object(text.image).asset_id === image.asset_id) {
+        image.alt = object(text.image).alt;
+        image.caption = object(text.image).caption;
+      }
+    }
+    return json({ ...resource, locale: effectiveLocale, requested_locale: requestedLocale,
+      source_revision: selected?.source_revision ?? null,
+      content_revision: selected?.content_revision ?? null,
+      editorial_revision: selected?.publication_revision ?? null,
+    }, 200, {
       "Cache-Control": "public, max-age=300, s-maxage=300",
+      "Content-Language": effectiveLocale,
+      ...(selected ? { ETag: `W/"${selected.publication_revision}-${selected.content_revision}-${imageManifest.catalog_version}-${requestedLocale}"` } : {}),
     });
   } catch (error) {
     if (error instanceof ProtectionError) throw error;
@@ -601,9 +645,20 @@ export function openApiDocument(): Response {
           summary: "Read a reviewed instrument or sound-family resource",
           parameters: [
             pathParameter("slug", "Instrument or sound-family slug"),
+            { name: "locale", in: "query", required: false,
+              description: "BCP 47 content locale. Defaults to pt-BR; unavailable or stale translations fall back to the complete pt-BR resource.",
+              schema: { type: "string", example: "en" } },
           ],
           responses: {
-            "200": response("Editorial resource", { type: "object" }),
+            "200": {
+              ...response("Editorial resource", { type: "object", properties: {
+                locale: { type: "string", description: "Effective content locale." },
+                requested_locale: { type: "string" }, source_revision: { type: ["string", "null"] },
+                content_revision: { type: ["string", "null"] }, editorial_revision: { type: ["string", "null"] },
+              } }),
+              headers: { "Content-Language": { schema: { type: "string" }, description: "Effective resource locale." },
+                ETag: { schema: { type: "string" }, description: "Publication, content, image catalog, and requested locale identity." } },
+            },
             ...errorResponses(["404", "422", "429", "503"]),
           },
         },

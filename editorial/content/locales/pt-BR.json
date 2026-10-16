@@ -1,0 +1,826 @@
+[
+  {
+    "slug": "acoustic-keys",
+    "name": "Teclas acústicas",
+    "description": "Instrumentos acústicos acionados por um sistema de teclas.",
+    "sound_production": "A tecla transmite o gesto a outro mecanismo ressonante.",
+    "common_roles": [
+      "harmonia",
+      "melodia",
+      "acompanhamento"
+    ],
+    "sections": [
+      {
+        "id": "family-acoustic-keys-curiosity",
+        "text": "A mesma tecla pode pinçar uma corda no cravo, lançar um martelo no piano ou abrir uma passagem de ar no órgão.",
+        "status": "sourced",
+        "review": {
+          "source_metadata_verified": true,
+          "claim_support_verified": true,
+          "reviewed_at": "2026-09-15",
+          "reviewer": "Luis Gustavo R.C.",
+          "editorial_note": null
+        }
+      }
+    ],
+    "image": {
+      "alt": "Detalhe de teclas brancas e pretas de um piano.",
+      "caption": "Imagem ilustrativa da família Teclas acústicas: piano.",
+      "asset_id": "piano-alin-gavriliuc-01"
+    },
+    "review": {
+      "source_metadata_verified": true,
+      "claim_support_verified": true,
+      "reviewed_at": "2026-09-15",
+      "reviewer": "Luis Gustavo R.C.",
+      "editorial_note": null
+    },
+    "status": "published"
+  },
+  {
+    "slug": "bowed-strings",
+    "name": "Cordas friccionadas",
+    "description": "Cordas mantidas em vibração principalmente pela fricção de um arco.",
+    "sound_production": "O arco adere e solta a corda repetidamente, sustentando o som.",
+    "common_roles": [
+      "melodia",
+      "sustentação",
+      "textura"
+    ],
+    "sections": [
+      {
+        "id": "family-bowed-strings-curiosity",
+        "text": "O arco sustenta a vibração e permite prolongar uma nota; os dedos também podem pinçar a corda, numa técnica chamada pizzicato.",
+        "status": "sourced",
+        "review": {
+          "source_metadata_verified": true,
+          "claim_support_verified": true,
+          "reviewed_at": "2026-09-15",
+          "reviewer": "Luis Gustavo R.C.",
+          "editorial_note": null
+        }
+      }
+    ],
+    "image": {
+      "alt": "Detalhe de um instrumento de cordas friccionadas sendo tocado com arco, em preto e branco.",
+      "caption": "Imagem ilustrativa da família Cordas friccionadas: Violoncelo.",
+      "asset_id": "cello-jon-tyson-01"
+    },
+    "review": {
+      "source_metadata_verified": true,
+      "claim_support_verified": true,
+      "reviewed_at": "2026-09-15",
+      "reviewer": "Luis Gustavo R.C.",
+      "editorial_note": null
+    },
+    "status": "published"
+  },
+  {
+    "slug": "cello",
+    "name": "Violoncelo",
+    "description": "Instrumento de cordas friccionadas de registro grave e médio.",
+    "sound_production": "O arco ou os dedos colocam suas cordas em vibração.",
+    "common_roles": [
+      "linha grave",
+      "melodia",
+      "sustentação"
+    ],
+    "sections": [
+      {
+        "id": "instrument-cello-curiosity",
+        "text": "Alguns dos primeiros violoncelos tinham três, quatro ou cinco cordas. Exemplares menores podiam ser sustentados por uma correia e tocados em pé ou em movimento.",
+        "status": "sourced",
+        "review": {
+          "source_metadata_verified": true,
+          "claim_support_verified": true,
+          "reviewed_at": "2026-09-15",
+          "reviewer": "Luis Gustavo R.C.",
+          "editorial_note": null
+        }
+      }
+    ],
+    "image": {
+      "alt": "Detalhe de um instrumento de cordas friccionadas sendo tocado com arco, em preto e branco.",
+      "caption": "Imagem do instrumento Violoncelo.",
+      "asset_id": "cello-jon-tyson-01"
+    },
+    "review": {
+      "source_metadata_verified": true,
+      "claim_support_verified": true,
+      "reviewed_at": "2026-09-15",
+      "reviewer": "Luis Gustavo R.C.",
+      "editorial_note": null
+    },
+    "status": "published"
+  },
+  {
+    "slug": "drums",
+    "name": "Bateria",
+    "description": "Conjunto de tambores e pratos organizado para um único intérprete.",
+    "sound_production": "Baquetas, pedais e mãos acionam superfícies de diferentes materiais.",
+    "common_roles": [
+      "pulso",
+      "dinâmica",
+      "articulação formal"
+    ],
+    "sections": [
+      {
+        "id": "instrument-drums-curiosity",
+        "text": "Um único corpo de bateria pode articular pulso, contratempo, síncope e textura em todo o conjunto.",
+        "status": "sourced",
+        "review": {
+          "source_metadata_verified": true,
+          "claim_support_verified": true,
+          "reviewed_at": "2026-09-15",
+          "reviewer": "Luis Gustavo R.C.",
+          "editorial_note": null
+        }
+      }
+    ],
+    "image": {
+      "alt": "Detalhe de mãos tocando tambores com baquetas, em uma fotografia em preto e branco.",
+      "caption": "Imagem do instrumento Bateria.",
+      "asset_id": "drums-laura-rivera-01"
+    },
+    "review": {
+      "source_metadata_verified": true,
+      "claim_support_verified": true,
+      "reviewed_at": "2026-09-15",
+      "reviewer": "Luis Gustavo R.C.",
+      "editorial_note": null
+    },
+    "status": "published"
+  },
+  {
+    "slug": "electric-bass",
+    "name": "Baixo elétrico",
+    "description": "Instrumento elétrico de registro grave ligado ao pulso e à harmonia.",
+    "sound_production": "Captadores transformam a vibração de cordas graves em sinal elétrico.",
+    "common_roles": [
+      "base rítmica",
+      "fundamento harmônico",
+      "contracanto"
+    ],
+    "sections": [
+      {
+        "id": "instrument-electric-bass-curiosity",
+        "text": "O Fender Precision Bass, lançado em 1951, ajudou a tornar o baixo com trastes uma peça central do pulso em bandas elétricas.",
+        "status": "sourced",
+        "review": {
+          "source_metadata_verified": true,
+          "claim_support_verified": true,
+          "reviewed_at": "2026-09-13",
+          "reviewer": "Luis Gustavo R.C.",
+          "editorial_note": null
+        }
+      }
+    ],
+    "image": {
+      "alt": "Guitarra elétrica escura com reflexos azulados sobre um fundo preto.",
+      "caption": "Imagem ilustrativa da família Cordas dedilhadas: Guitarra elétrica.",
+      "asset_id": "electric-guitar-nikolas-mitsiggas-01"
+    },
+    "review": {
+      "source_metadata_verified": false,
+      "claim_support_verified": true,
+      "reviewed_at": "2026-09-14",
+      "reviewer": "Luis Gustavo R.C.",
+      "editorial_note": null
+    },
+    "status": "published"
+  },
+  {
+    "slug": "electric-guitar",
+    "name": "Guitarra elétrica",
+    "description": "Instrumento de cordas amplificado e aberto a amplo processamento.",
+    "sound_production": "Captadores convertem a vibração das cordas em sinal elétrico.",
+    "common_roles": [
+      "harmonia",
+      "melodia",
+      "textura"
+    ],
+    "sections": [
+      {
+        "id": "instrument-electric-guitar-curiosity",
+        "text": "O captador não produz o som sozinho: ele converte a vibração da corda em sinal, que ainda pode ser filtrado, distorcido e espacializado.",
+        "status": "sourced",
+        "review": {
+          "source_metadata_verified": true,
+          "claim_support_verified": true,
+          "reviewed_at": "2026-09-14",
+          "reviewer": "Luis Gustavo R.C.",
+          "editorial_note": null
+        }
+      }
+    ],
+    "image": {
+      "alt": "Guitarra elétrica escura com reflexos azulados sobre um fundo preto.",
+      "caption": "Imagem do instrumento Guitarra elétrica.",
+      "asset_id": "electric-guitar-nikolas-mitsiggas-01"
+    },
+    "review": {
+      "source_metadata_verified": false,
+      "claim_support_verified": true,
+      "reviewed_at": "2026-09-15",
+      "reviewer": "Luis Gustavo R.C.",
+      "editorial_note": null
+    },
+    "status": "published"
+  },
+  {
+    "slug": "percussion",
+    "name": "Percussão",
+    "description": "Família de instrumentos acionados principalmente por impacto, agitação ou raspagem.",
+    "sound_production": "Uma superfície ou corpo ressoa depois de receber energia.",
+    "common_roles": [
+      "pulso",
+      "textura",
+      "acentuação"
+    ],
+    "sections": [
+      {
+        "id": "family-percussion-curiosity",
+        "text": "Instrumentos de percussão nem sempre servem apenas para marcar o tempo. Entre os Mexica, o teponaztli participava de cerimônias religiosas, eventos reais, atividades militares e formas de comunicação.",
+        "status": "sourced",
+        "review": {
+          "source_metadata_verified": true,
+          "claim_support_verified": true,
+          "reviewed_at": "2026-09-13",
+          "reviewer": "Luis Gustavo R.C.",
+          "editorial_note": null
+        }
+      }
+    ],
+    "image": {
+      "alt": "Detalhe de mãos tocando tambores com baquetas, em uma fotografia em preto e branco.",
+      "caption": "Imagem ilustrativa da família Percussão: Bateria.",
+      "asset_id": "drums-laura-rivera-01"
+    },
+    "review": {
+      "source_metadata_verified": false,
+      "claim_support_verified": true,
+      "reviewed_at": "2026-09-15",
+      "reviewer": "Luis Gustavo R.C.",
+      "editorial_note": null
+    },
+    "status": "published"
+  },
+  {
+    "slug": "piano",
+    "name": "Piano",
+    "description": "Instrumento de teclas em que martelos percutem cordas afinadas.",
+    "sound_production": "Cada tecla lança um martelo contra uma corda e libera seu abafador.",
+    "common_roles": [
+      "harmonia",
+      "melodia",
+      "acompanhamento"
+    ],
+    "sections": [
+      {
+        "id": "instrument-piano-curiosity",
+        "text": "Apenas três pianos construídos por Cristofori são conhecidos atualmente. O exemplar de 1720 preservado pelo Metropolitan Museum é o mais antigo deles.",
+        "status": "sourced",
+        "review": {
+          "source_metadata_verified": true,
+          "claim_support_verified": true,
+          "reviewed_at": "2026-09-15",
+          "reviewer": "Luis Gustavo R.C.",
+          "editorial_note": null
+        }
+      }
+    ],
+    "image": {
+      "alt": "Detalhe de teclas brancas e pretas de um piano.",
+      "caption": "Imagem do instrumento piano.",
+      "asset_id": "piano-alin-gavriliuc-01"
+    },
+    "review": {
+      "source_metadata_verified": true,
+      "claim_support_verified": true,
+      "reviewed_at": "2026-09-15",
+      "reviewer": "Luis Gustavo R.C.",
+      "editorial_note": null
+    },
+    "status": "published"
+  },
+  {
+    "slug": "plucked-strings",
+    "name": "Cordas dedilhadas",
+    "description": "Família em que a corda vibra depois de ser puxada com dedos, palheta ou mecanismo equivalente.",
+    "sound_production": "A corda é deslocada e solta, iniciando uma vibração livre.",
+    "common_roles": [
+      "harmonia",
+      "melodia",
+      "base rítmica"
+    ],
+    "sections": [
+      {
+        "id": "family-plucked-strings-curiosity",
+        "text": "Dedilhar uma corda não exige contato direto dos dedos: no cravo, pressionar uma tecla levanta um pequeno plectro que pinça a corda.",
+        "status": "sourced",
+        "review": {
+          "source_metadata_verified": true,
+          "claim_support_verified": true,
+          "reviewed_at": "2026-09-15",
+          "reviewer": "Luis Gustavo R.C.",
+          "editorial_note": null
+        }
+      }
+    ],
+    "image": {
+      "alt": "Guitarra elétrica escura com reflexos azulados sobre um fundo preto.",
+      "caption": "Imagem ilustrativa da família Cordas dedilhadas: Guitarra elétrica.",
+      "asset_id": "electric-guitar-nikolas-mitsiggas-01"
+    },
+    "review": {
+      "source_metadata_verified": false,
+      "claim_support_verified": true,
+      "reviewed_at": "2026-09-15",
+      "reviewer": "Luis Gustavo R.C.",
+      "editorial_note": null
+    },
+    "status": "published"
+  },
+  {
+    "slug": "sampled-sounds",
+    "name": "Sons sampleados",
+    "description": "Gravações reutilizadas como matéria para uma nova composição.",
+    "sound_production": "Um trecho gravado é recortado, disparado e transformado.",
+    "common_roles": [
+      "ritmo",
+      "textura",
+      "memória sonora"
+    ],
+    "sections": [
+      {
+        "id": "family-sampled-sounds-curiosity",
+        "text": "Um sample pode vir de música, fala, paisagem sonora, ruído ou arquivo público; a Biblioteca do Congresso reúne essas possibilidades no projeto Citizen DJ.",
+        "status": "sourced",
+        "review": {
+          "source_metadata_verified": true,
+          "claim_support_verified": true,
+          "reviewed_at": "2026-09-15",
+          "reviewer": "Luis Gustavo R.C.",
+          "editorial_note": null
+        }
+      }
+    ],
+    "image": {
+      "alt": "Mulher examinando um disco de vinil em uma loja com prateleiras de discos.",
+      "caption": "Imagem ilustrativa da família Sons sampleados: Discos de vinil em uma loja.",
+      "asset_id": "sampled-sounds-christian-agbede-01"
+    },
+    "review": {
+      "source_metadata_verified": true,
+      "claim_support_verified": true,
+      "reviewed_at": "2026-09-15",
+      "reviewer": "Luis Gustavo R.C.",
+      "editorial_note": null
+    },
+    "status": "published"
+  },
+  {
+    "slug": "sampler",
+    "name": "Sampler",
+    "description": "Instrumento que grava ou reproduz trechos sonoros controláveis.",
+    "sound_production": "Áudio armazenado é disparado, recortado, repetido ou transformado.",
+    "common_roles": [
+      "ritmo",
+      "textura",
+      "colagem"
+    ],
+    "sections": [
+      {
+        "id": "instrument-sampler-curiosity",
+        "text": "O som de vidro quebrando em “Babooshka”, de Kate Bush, veio de um Fairlight CMI e é citado como um dos primeiros usos marcantes do instrumento.",
+        "status": "sourced",
+        "review": {
+          "source_metadata_verified": true,
+          "claim_support_verified": true,
+          "reviewed_at": "2026-09-15",
+          "reviewer": "Luis Gustavo R.C.",
+          "editorial_note": null
+        }
+      }
+    ],
+    "image": {
+      "alt": "Controlador preto com uma grade de pads iluminados, visor, botões e cabos, visto de cima.",
+      "caption": "Imagem relacionada ao instrumento Controlador de pads.",
+      "asset_id": "sampler-ricardo-abreu-01"
+    },
+    "review": {
+      "source_metadata_verified": false,
+      "claim_support_verified": true,
+      "reviewed_at": "2026-09-15",
+      "reviewer": "Luis Gustavo R.C.",
+      "editorial_note": null
+    },
+    "status": "published"
+  },
+  {
+    "slug": "synthesizer",
+    "name": "Sintetizador",
+    "description": "Instrumento eletrônico voltado à criação e transformação de timbres.",
+    "sound_production": "Sinais são gerados ou reproduzidos e depois moldados por controles.",
+    "common_roles": [
+      "textura",
+      "harmonia",
+      "melodia",
+      "efeitos"
+    ],
+    "sections": [
+      {
+        "id": "instrument-synthesizer-curiosity",
+        "text": "O Minimoog popularizou a roda de pitch bend (pitch wheel), uma das invenções mais marcantes da música moderna. Ela foi criada especificamente para que os tecladistas pudessem dobrar a afinação das notas em tempo real e rivalizar com a expressividade e os solos das guitarras elétricas no palco.",
+        "status": "sourced",
+        "review": {
+          "source_metadata_verified": true,
+          "claim_support_verified": true,
+          "reviewed_at": "2026-09-15",
+          "reviewer": "Luis Gustavo R.C.",
+          "editorial_note": null
+        }
+      }
+    ],
+    "image": {
+      "alt": "Sintetizadores com controles giratórios, luzes e cabos sobre uma mesa.",
+      "caption": "Imagem do instrumento Sintetizadores.",
+      "asset_id": "synthesizer-anton-shuvalov-01"
+    },
+    "review": {
+      "source_metadata_verified": false,
+      "claim_support_verified": true,
+      "reviewed_at": "2026-09-15",
+      "reviewer": "Luis Gustavo R.C.",
+      "editorial_note": null
+    },
+    "status": "published"
+  },
+  {
+    "slug": "synthesizers",
+    "name": "Sintetizadores",
+    "description": "Instrumentos eletrônicos que constroem ou transformam sinais sonoros.",
+    "sound_production": "Osciladores, amostras ou outros sinais são moldados eletronicamente.",
+    "common_roles": [
+      "textura",
+      "harmonia",
+      "melodia",
+      "efeitos"
+    ],
+    "sections": [
+      {
+        "id": "family-synthesizers-curiosity",
+        "text": "Um sintetizador não precisa ter teclado. O theremin é controlado por gestos, e outros sistemas usam placas de toque, sequenciadores ou módulos conectados por cabos.",
+        "status": "reviewed",
+        "review": {
+          "source_metadata_verified": true,
+          "claim_support_verified": true,
+          "reviewed_at": "2026-09-15",
+          "reviewer": "Luis Gustavo R.C.",
+          "editorial_note": null
+        }
+      }
+    ],
+    "image": {
+      "alt": "Sintetizadores com controles giratórios, luzes e cabos sobre uma mesa.",
+      "caption": "Imagem ilustrativa da família Sintetizadores: Sintetizadores.",
+      "asset_id": "synthesizer-anton-shuvalov-01"
+    },
+    "review": {
+      "source_metadata_verified": false,
+      "claim_support_verified": true,
+      "reviewed_at": "2026-09-15",
+      "reviewer": "Luis Gustavo R.C.",
+      "editorial_note": null
+    },
+    "status": "published"
+  },
+  {
+    "slug": "woodwinds",
+    "name": "Madeiras",
+    "description": "Instrumentos em que uma coluna de ar vibra dentro de um tubo, com furos, chaves ou palheta.",
+    "sound_production": "O sopro põe o ar em vibração; a geometria do tubo e o modo de excitação definem a cor do som.",
+    "common_roles": [
+      "melodia",
+      "contracanto",
+      "textura"
+    ],
+    "sections": [],
+    "image": {
+      "alt": "Flautas doces de cores claras e escuras sobre uma superfície branca.",
+      "caption": "Imagem ilustrativa da família Madeiras: Flautas doces.",
+      "asset_id": "woodwinds-dorothee-kraemer-01"
+    },
+    "review": {
+      "source_metadata_verified": false,
+      "claim_support_verified": true,
+      "reviewed_at": "2026-09-15",
+      "reviewer": "Luis Gustavo R.C.",
+      "editorial_note": null
+    },
+    "status": "published"
+  },
+  {
+    "slug": "brass",
+    "name": "Metais",
+    "description": "Instrumentos de sopro em que os lábios do intérprete excitam a coluna de ar no tubo.",
+    "sound_production": "A vibração dos lábios é amplificada pelo tubo, e válvulas ou varas alteram o comprimento acústico.",
+    "common_roles": [
+      "melodia",
+      "ataque",
+      "sustentação"
+    ],
+    "sections": [],
+    "image": {
+      "alt": "Detalhe da campânula e dos tubos de um trompete dourado sobre fundo escuro.",
+      "caption": "Imagem ilustrativa da família Metais: Trompete.",
+      "asset_id": "brass-miguel-alcantara-01"
+    },
+    "review": {
+      "source_metadata_verified": false,
+      "claim_support_verified": true,
+      "reviewed_at": "2026-09-15",
+      "reviewer": "Luis Gustavo R.C.",
+      "editorial_note": null
+    },
+    "status": "published"
+  },
+  {
+    "slug": "voice",
+    "name": "Voz",
+    "description": "Presença vocal documentada em uma gravação, tratada como uma família própria do catálogo editorial.",
+    "sound_production": "A vibração das pregas vocais é moldada pelo trato vocal e articulada em fala, canto ou coro.",
+    "common_roles": [
+      "melodia",
+      "texto",
+      "camada"
+    ],
+    "sections": [],
+    "image": {
+      "alt": "Mulher cantando diante de um microfone no palco, com luzes ao fundo.",
+      "caption": "Imagem ilustrativa da família Voz: Cantora ao microfone.",
+      "asset_id": "voice-josh-rocklage-01"
+    },
+    "review": {
+      "source_metadata_verified": false,
+      "claim_support_verified": true,
+      "reviewed_at": "2026-09-15",
+      "reviewer": "Luis Gustavo R.C.",
+      "editorial_note": null
+    },
+    "status": "published"
+  },
+  {
+    "slug": "electric-keys",
+    "name": "Teclas elétricas e eletrônicas",
+    "description": "Instrumentos de teclas em que a captação, a amplificação ou a síntese participa da formação do som.",
+    "sound_production": "O gesto das teclas dispara, modula ou amplifica uma fonte elétrica ou eletrônica.",
+    "common_roles": [
+      "harmonia",
+      "melodia",
+      "camada"
+    ],
+    "sections": [],
+    "image": {
+      "alt": "Detalhe das mãos de uma pessoa tocando um teclado eletrônico com visor e controles.",
+      "caption": "Imagem ilustrativa da família Teclas elétricas e eletrônicas: Teclado eletrônico.",
+      "asset_id": "electric-keys-seth-gerak-01"
+    },
+    "review": {
+      "source_metadata_verified": false,
+      "claim_support_verified": true,
+      "reviewed_at": "2026-09-15",
+      "reviewer": "Luis Gustavo R.C.",
+      "editorial_note": null
+    },
+    "status": "published"
+  },
+  {
+    "slug": "acoustic-guitar",
+    "name": "Violão",
+    "description": "Instrumento de cordas dedilhadas com caixa de ressonância acústica.",
+    "sound_production": "As cordas vibram ao serem dedilhadas ou palhetadas; o tampo e a caixa de ressonância irradiam o som.",
+    "common_roles": [
+      "harmonia",
+      "melodia",
+      "acompanhamento"
+    ],
+    "sections": [
+      {
+        "id": "instrument-acoustic-guitar-curiosity",
+        "text": "O acervo do LABEET registra o violão no conjunto que acompanhava a lambada paraense entre 1975 e 1978, ao lado de tambor carimbó, pandeiro, reco-reco, marimba e banjo. Sua presença no acervo vai além do samba e da MPB.",
+        "status": "sourced",
+        "review": {
+          "source_metadata_verified": true,
+          "claim_support_verified": true,
+          "reviewed_at": "2026-09-14",
+          "reviewer": "Luis Gustavo R.C.",
+          "editorial_note": null
+        }
+      }
+    ],
+    "image": {
+      "alt": "Detalhe das cordas, da boca e do tampo de madeira de um violão.",
+      "caption": "Imagem do instrumento Violão.",
+      "asset_id": "acoustic-guitar-tom-analogicus-01"
+    },
+    "review": {
+      "source_metadata_verified": false,
+      "claim_support_verified": true,
+      "reviewed_at": "2026-09-15",
+      "reviewer": "Luis Gustavo R.C.",
+      "editorial_note": null
+    },
+    "status": "published"
+  },
+  {
+    "slug": "cavaquinho",
+    "name": "Cavaquinho",
+    "description": "Pequeno instrumento de cordas dedilhadas e caixa de ressonância acústica.",
+    "sound_production": "As cordas dedilhadas ou palhetadas transmitem a vibração ao tampo e à caixa de ressonância.",
+    "common_roles": [
+      "harmonia",
+      "ritmo",
+      "acompanhamento"
+    ],
+    "sections": [
+      {
+        "id": "instrument-cavaquinho-curiosity",
+        "text": "Na gravação da Lapinha de Valdemar de 8 de dezembro de 1972, catalogada pelo LABEET, o cavaquinho acompanha as pastoras junto de bandolim, violão e pandeiro. O registro documenta seu uso no pastoril, além dos contextos de samba e choro.",
+        "status": "sourced",
+        "review": {
+          "source_metadata_verified": true,
+          "claim_support_verified": false,
+          "reviewed_at": "2026-09-15",
+          "reviewer": "Luis Gustavo",
+          "editorial_note": null
+        }
+      }
+    ],
+    "image": {
+      "alt": "Guitarra elétrica escura com reflexos azulados sobre um fundo preto.",
+      "caption": "Imagem ilustrativa da família Cordas dedilhadas: Guitarra elétrica.",
+      "asset_id": "electric-guitar-nikolas-mitsiggas-01"
+    },
+    "review": {
+      "source_metadata_verified": false,
+      "claim_support_verified": true,
+      "reviewed_at": "2026-09-15",
+      "reviewer": "Luis Gustavo R.C.",
+      "editorial_note": null
+    },
+    "status": "published"
+  },
+  {
+    "slug": "pandeiro",
+    "name": "Pandeiro",
+    "description": "Tambor de aro com uma membrana e pequenas peças metálicas chamadas soalhas.",
+    "sound_production": "Golpes e fricção excitam a membrana; o movimento do aro também faz vibrar as soalhas.",
+    "common_roles": [
+      "ritmo",
+      "acentuação",
+      "textura"
+    ],
+    "sections": [
+      {
+        "id": "instrument-pandeiro-curiosity",
+        "text": "O pandeiro pode funcionar como membranofone quando sua pele é tocada, ou como idiofone quando apenas as soalhas soam ao ser sacudido. Um mesmo instrumento reúne duas formas de produzir som; um instrumento híbrido.",
+        "status": "sourced",
+        "review": {
+          "source_metadata_verified": false,
+          "claim_support_verified": true,
+          "reviewed_at": "2026-09-15",
+          "reviewer": "Luis Gustavo R.C.",
+          "editorial_note": null
+        }
+      }
+    ],
+    "image": {
+      "alt": "Músico tocando um pandeiro com as mãos sob luz fraca, em preto e branco.",
+      "caption": "Imagem do instrumento Pandeiro.",
+      "asset_id": "pandeiro-sebastian-brito-01"
+    },
+    "review": {
+      "source_metadata_verified": false,
+      "claim_support_verified": true,
+      "reviewed_at": "2026-09-15",
+      "reviewer": "Luis Gustavo R.C.",
+      "editorial_note": null
+    },
+    "status": "published"
+  },
+  {
+    "slug": "surdo",
+    "name": "Surdo",
+    "description": "Tambor de registro grave usado para marcação rítmica em conjuntos de percussão.",
+    "sound_production": "A percussão da membrana põe em vibração a pele e o ar do corpo ressonante; o abafamento controla a duração do som.",
+    "common_roles": [
+      "ritmo",
+      "marcação",
+      "linha grave"
+    ],
+    "sections": [
+      {
+        "id": "instrument-surdo-curiosity",
+        "text": "O surdo é situado em conjuntos de carnaval, sambas, marchinhas e samba de morro do Rio de Janeiro. Ele aparece ao lado de caixa, repique, tamborim, pandeiro e cuíca, compondo um conjunto de membranofones.",
+        "status": "sourced",
+        "review": {
+          "source_metadata_verified": true,
+          "claim_support_verified": true,
+          "reviewed_at": "2026-09-13",
+          "reviewer": "Luis Gustavo R.C.",
+          "editorial_note": null
+        }
+      }
+    ],
+    "image": {
+      "alt": "Detalhe de mãos tocando tambores com baquetas, em uma fotografia em preto e branco.",
+      "caption": "Imagem ilustrativa da família Percussão: Bateria.",
+      "asset_id": "drums-laura-rivera-01"
+    },
+    "review": {
+      "source_metadata_verified": false,
+      "claim_support_verified": true,
+      "reviewed_at": "2026-09-15",
+      "reviewer": "Luis Gustavo R.C.",
+      "editorial_note": null
+    },
+    "status": "published"
+  },
+  {
+    "slug": "tamborim",
+    "name": "Tamborim",
+    "description": "Pequeno tambor de aro e uma membrana, tocado com baqueta.",
+    "sound_production": "A baqueta percute a membrana esticada sobre o aro, produzindo ataques curtos e definidos.",
+    "common_roles": [
+      "ritmo",
+      "acentuação",
+      "contracanto"
+    ],
+    "sections": [
+      {
+        "id": "instrument-tamborim-curiosity",
+        "text": "O tamborim é distinguido entre dois tipos: um artesanal, de corpo de madeira mais profundo, usado em congada e moçambique, e outro comercial, de aro baixo de metal ou acrílico, comum nas baterias de escolas de samba.",
+        "status": "sourced",
+        "review": {
+          "source_metadata_verified": true,
+          "claim_support_verified": true,
+          "reviewed_at": "2026-09-15",
+          "reviewer": "Luis Gustavo R.C.",
+          "editorial_note": null
+        }
+      }
+    ],
+    "image": {
+      "alt": "Detalhe de mãos tocando tambores com baquetas, em uma fotografia em preto e branco.",
+      "caption": "Imagem ilustrativa da família Percussão: Bateria.",
+      "asset_id": "drums-laura-rivera-01"
+    },
+    "review": {
+      "source_metadata_verified": false,
+      "claim_support_verified": true,
+      "reviewed_at": "2026-09-15",
+      "reviewer": "Luis Gustavo R.C.",
+      "editorial_note": null
+    },
+    "status": "published"
+  },
+  {
+    "slug": "cuica",
+    "name": "Cuíca",
+    "description": "Tambor de fricção com uma haste presa à membrana pelo lado interno.",
+    "sound_production": "A fricção da haste transmite vibração à membrana; a pressão dos dedos sobre a pele modifica o som.",
+    "common_roles": [
+      "ritmo",
+      "fraseado",
+      "textura"
+    ],
+    "sections": [
+      {
+        "id": "instrument-cuica-curiosity",
+        "text": "A cuíca aparece entre os membranofones que acompanham o reco-reco industrial no carnaval, no samba, nas marchinhas e no samba de morro carioca. O registro evidencia seu lugar em conjuntos, junto de surdo, caixa e repique.",
+        "status": "sourced",
+        "review": {
+          "source_metadata_verified": true,
+          "claim_support_verified": true,
+          "reviewed_at": "2026-09-15",
+          "reviewer": "Luis Gustavo",
+          "editorial_note": null
+        }
+      }
+    ],
+    "image": {
+      "alt": "Detalhe de mãos tocando tambores com baquetas, em uma fotografia em preto e branco.",
+      "caption": "Imagem ilustrativa da família Percussão: Bateria.",
+      "asset_id": "drums-laura-rivera-01"
+    },
+    "review": {
+      "source_metadata_verified": false,
+      "claim_support_verified": true,
+      "reviewed_at": "2026-09-15",
+      "reviewer": "Luis Gustavo R.C.",
+      "editorial_note": null
+    },
+    "status": "published"
+  }
+]

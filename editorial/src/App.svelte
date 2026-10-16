@@ -1,16 +1,16 @@
 <script lang="ts">
   import { t } from "./i18n/runtime";
   import { onMount } from "svelte";
-  import seedManifest from "./instruments.json";
-  import type { InstrumentResource, EditorialReview, EditorialSection, FurtherReading } from "../../web/src/api/types";
+  import TranslationEditor from "./TranslationEditor.svelte";
+  import { initialSnapshot, sourceSheets, snapshotFromSheets, sourceRevision, type Sheet, type Translations, type Snapshot } from "./content";
+  import type { EditorialSection } from "../../web/src/api/types";
   import { getStorageItem, isStorageAvailable, setStorageItem } from "../../web/src/storage";
 
   import { STORAGE_KEYS } from "../../web/src/utils/storage-keys";
   import { cleanupStorageVersions } from "../../web/src/utils/storage-cleanup";
 
-  type Reading = FurtherReading & { status: "draft" | "reviewed" | "published"; reviewer: string | null; reviewed_at: string | null };
-  type Sheet = { resource: Omit<InstrumentResource, "further_reading"> & { further_reading: Reading[] }; review: EditorialReview; text_citations: { description: string[]; sound_production: string[] } };
-  const seed = (Array.isArray(seedManifest) ? seedManifest : (seedManifest as { instruments: unknown[] }).instruments) as Sheet[];
+  const seed = sourceSheets(initialSnapshot);
+  let translations: Translations = structuredClone(Object.fromEntries(Object.entries(initialSnapshot.locales).filter(([locale]) => locale !== "pt-BR")));
   let sheets: Sheet[] = structuredClone(seed) as Sheet[];
   let selectedSlug = sheets[0].resource.slug;
   let search = "";
@@ -19,7 +19,7 @@
   let storageAvailable = true;
   $: selected = sheets.find((sheet) => sheet.resource.slug === selectedSlug) ?? sheets[0];
   $: visible = sheets.filter(({ resource }) => `${resource.name} ${resource.slug}`.toLowerCase().includes(search.toLowerCase()));
-  $: if (storageReady && storageAvailable) persist(sheets, selected);
+  $: if (storageReady && storageAvailable) persist(sheets, selected, translations);
 
   onMount(() => {
     cleanupStorageVersions();
@@ -28,10 +28,11 @@
       const saved = getStorageItem<unknown>(STORAGE_KEYS.editorialInstruments);
       if (saved && typeof saved === "object") {
         const parsed = saved as Record<string, unknown>;
-        const savedInstruments = Array.isArray(parsed.instruments) ? parsed.instruments as Sheet[] : [];
+        const savedInstruments = parsed.schema_version === 2 ? sourceSheets(parsed as unknown as Snapshot)
+          : Array.isArray(parsed.instruments) ? parsed.instruments as Sheet[] : [];
         const seedSlugs = new Set(seed.map((item) => item.resource.slug));
         const savedSlugs = savedInstruments.map((sheet) => sheet.resource?.slug);
-        if (parsed.schema_version !== 1 || !Array.isArray(parsed.instruments) ||
+        if (![1, 2].includes(Number(parsed.schema_version)) || !savedInstruments.length ||
             new Set(savedSlugs).size !== savedSlugs.length ||
             savedInstruments.some((sheet) => !seedSlugs.has(sheet.resource?.slug) ||
               !Array.isArray(sheet.resource?.sources) || Array.isArray(sheet.resource?.sections) === false ||
@@ -40,6 +41,7 @@
         }
         const savedBySlug = new Map(savedInstruments.map((sheet) => [sheet.resource.slug, sheet]));
         sheets = seed.map((item) => savedBySlug.get(item.resource.slug) ?? structuredClone(item)) as Sheet[];
+        if (parsed.schema_version === 2) translations = Object.fromEntries(Object.entries((parsed as unknown as Snapshot).locales).filter(([locale]) => locale !== "pt-BR"));
       }
     } catch {
       storageAvailable = false;
@@ -48,8 +50,8 @@
     storageReady = true;
   });
 
-  function persist(instruments: Sheet[], _selected: Sheet) {
-    if (!setStorageItem(STORAGE_KEYS.editorialInstruments, { schema_version: 1, instruments })) {
+  function persist(instruments: Sheet[], _selected: Sheet, translated: Translations) {
+    if (!setStorageItem(STORAGE_KEYS.editorialInstruments, snapshotFromSheets(instruments, translated))) {
       storageAvailable = false;
       feedback = t("errors.storageUnavailable");
     }
@@ -136,7 +138,7 @@
     }
     return errors;
   }
-  function exportRevision() {
+  async function exportRevision() {
     const snapshot = structuredClone(sheets);
     for (const sheet of snapshot) {
       const verified = (ids: string[]) => ids.length > 0 && ids.every((id) => sheet.resource.sources.find((source) => source.id === id)?.metadata_verified);
@@ -145,7 +147,22 @@
     }
     const errors = validate(snapshot);
     if (errors.length) { feedback = errors.join("\n"); return; }
-    const blob = new Blob([JSON.stringify({ schema_version: 1, exported_at: new Date().toISOString(), instruments: snapshot }, null, 2)], { type: "application/json" });
+    const output = snapshotFromSheets(snapshot, structuredClone(translations));
+    for (const [locale, texts] of Object.entries(output.locales)) {
+      if (locale === "pt-BR") continue;
+      for (const text of texts) {
+        const original = snapshot.find((item) => item.resource.slug === text.slug)!;
+        if (text.source_revision !== await sourceRevision(original)) text.status = "stale";
+        if (["reviewed", "published"].includes(text.status) &&
+            (!text.name.trim() || !text.description.trim() || !text.sound_production.trim() ||
+             !text.review.claim_support_verified || !text.review.reviewer?.trim() || !text.review.reviewed_at ||
+             text.sections.some((block) => ["reviewed", "published"].includes(block.status) &&
+               (!block.review.claim_support_verified || !block.review.reviewer?.trim() || !block.review.reviewed_at)))) {
+          feedback = t("translations.incomplete", { label: text.name, locale }); return;
+        }
+      }
+    }
+    const blob = new Blob([JSON.stringify(output, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url; anchor.download = "timbre-instrument-review.json"; anchor.click();
@@ -202,6 +219,7 @@
             <button on:click={() => { selected.resource.image = null; invalidate(); }}>{t("images.remove")}</button>
           {:else}<p class="hint">{t("images.unavailable")}</p><button on:click={addImage}>{t("images.add")}</button>{/if}
         </section>
+        <TranslationEditor sheet={selected} {translations} changed={() => translations = { ...translations }} />
         <section aria-labelledby="review-title"><h3 id="review-title">{t("review.title")}</h3><label class="check"><input type="checkbox" bind:checked={selected.review.claim_support_verified} />{t("review.textVerified")}</label><div class="form-grid"><label>{t("review.reviewer")}<input bind:value={selected.review.reviewer} /></label><label>{t("review.date")}<input type="date" bind:value={selected.review.reviewed_at} /></label></div><label>{t("review.note")}<textarea rows="2" bind:value={selected.review.editorial_note}></textarea></label></section>
       {/key}
     </main>
