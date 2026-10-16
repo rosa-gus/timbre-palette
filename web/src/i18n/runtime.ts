@@ -7,7 +7,7 @@ export const supportedLocales = ["pt-BR", "en-US"] as const;
 export type Locale = (typeof supportedLocales)[number];
 export const fallbackLocale: Locale = "en-US";
 export let locale: Locale = fallbackLocale;
-let messages = defaultMessages;
+let messages: Record<string, unknown> = defaultMessages;
 const activeLocale = writable<Locale>(locale);
 export const localeStore = { subscribe: activeLocale.subscribe };
 export const translation = derived<typeof localeStore, typeof t>(
@@ -96,7 +96,7 @@ type MessageKeys<Value> = {
       ? `${Key}.${MessageKeys<Value[Key]>}`
       : never;
 }[keyof Value & string];
-export type MessageKey = MessageKeys<typeof messages>;
+export type MessageKey = MessageKeys<typeof defaultMessages>;
 
 type MessageArguments<Key extends MessageKey> = [
   MessageParameters[Key],
@@ -187,13 +187,13 @@ export function messageParts(
 
 /** Source nesting does not change the full keys used by callers. */
 function messageText(key: MessageKey): string {
-  let value: unknown = messages;
-  for (const segment of key.split(".")) {
-    if (!value || typeof value !== "object" || !Object.hasOwn(value, segment)) {
-      throw new Error(`Unknown message: ${key}`);
+  for (const catalog of [messages, defaultMessages]) {
+    let value: unknown = catalog;
+    for (const segment of key.split(".")) {
+      value = value && typeof value === "object" && Object.hasOwn(value, segment)
+        ? (value as Record<string, unknown>)[segment] : undefined;
     }
-    value = (value as Record<string, unknown>)[segment];
+    if (typeof value === "string" && value.trim()) return value;
   }
-  if (typeof value !== "string") throw new Error(`Invalid message: ${key}`);
-  return value;
+  throw new Error(`Missing fallback message: ${key}`);
 }

@@ -145,3 +145,26 @@ def test_english_catalog_is_complete_current_and_preserves_neutral_identifiers()
     conn = database()
     publish(conn, sheets, "english")
     assert conn.execute("SELECT COUNT(*) FROM editorial_resource_translations WHERE locale='en-US' AND status='reviewed'").fetchone()[0] == 23
+
+
+def test_source_withdrawal_survives_split_export_and_publication(tmp_path):
+    payload = snapshot_with_translation()
+    payload["locales"]["pt-BR"][0]["status"] = "deprecated"
+    sheets = load_snapshot(tmp_path, payload)
+    exported = split_snapshot(sheets)
+    assert exported["locales"]["pt-BR"][0]["status"] == "deprecated"
+    conn = database()
+    publish(conn, load_snapshot(tmp_path, exported), "withdrawn")
+    assert conn.execute("SELECT status FROM editorial_resource_translations WHERE locale='pt-BR' AND resource_slug=?", (sheets[0]["resource"]["slug"],)).fetchone()[0] == "deprecated"
+
+
+def test_withdrawn_translation_remains_withdrawn_when_source_changes(tmp_path):
+    payload = snapshot_with_translation()
+    payload["locales"]["en"][0]["status"] = "deprecated"
+    payload["locales"]["pt-BR"][0]["description"] += " Updated."
+    sheets = load_snapshot(tmp_path, payload)
+    translated = next(item for item in sheets[0]["translations"] if item["locale"] == "en")
+    assert translated["status"] == "deprecated"
+    conn = database()
+    publish(conn, sheets, "withdrawn-translation")
+    assert conn.execute("SELECT status FROM editorial_resource_translations WHERE locale='en'").fetchone()[0] == "deprecated"

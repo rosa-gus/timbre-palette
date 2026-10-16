@@ -23,3 +23,13 @@ print(source_revision(load_manifest(Path('editorial/content/catalog.json'))[0]))
     expect(await sourceRevision(changed)).not.toBe(published);
   });
 });
+
+
+it("preserves withdrawal across editor exports even when the old review remains approved", () => {
+  const snapshot = structuredClone(initialSnapshot);
+  snapshot.locales["pt-BR"][0].status = "deprecated";
+  expect(snapshot.locales["pt-BR"][0].review.claim_support_verified).toBe(true);
+  const exported = snapshotFromSheets(sourceSheets(snapshot), snapshot.locales);
+  expect(exported.locales["pt-BR"][0].status).toBe("deprecated");
+  expect(snapshotFromSheets(sourceSheets(exported), exported.locales).locales["pt-BR"][0].status).toBe("deprecated");
+});

@@ -2,6 +2,8 @@ import { readFile, readdir, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
 import ts from "typescript";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 
 const compareKeys = (a, b) => {
   const first = a.match(/\d+|\D+/g) ?? [];
@@ -69,8 +71,9 @@ export function mergeCatalogs(files) {
 function renderParameters(catalog) {
   const entries = Object.entries(flattenCatalog(catalog)).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0);
   const lines = entries.map(([key, value]) => {
+    if (!value.trim()) throw new Error(`Empty message in ${key}`);
     const withoutWrappers = value.replace(/<(upper|emphasis|line|value|version)>([^<>]*)<\/\1>/gs, "$2");
-    if (/<\/?[A-Za-z][^>]*>/.test(withoutWrappers)) {
+    if (/[<>]/.test(withoutWrappers)) {
       throw new Error(`Invalid or nested message wrapper in ${key}`);
     }
     const parameters = [...new Set([...value.matchAll(/\{([^{}]+)\}/g)].map((match) => match[1]))].sort();
@@ -90,12 +93,15 @@ export function renderMessageTypes(source, filename = "locale.json") {
 }
 
 export function validateTranslation(base, translation) {
-  const expected = renderParameters(base);
-  if (renderParameters(translation) !== expected) throw new Error("Locale keys or parameters differ from pt-BR");
+  renderParameters(base);
+  renderParameters(translation);
   const source = flattenCatalog(base), target = flattenCatalog(translation);
   const wrappers = (text) => [...text.matchAll(/<([a-z]+)>/g)].map((match) => match[1]).filter((name) => name !== "upper").sort().join(",");
-  for (const key of Object.keys(source)) {
-    if (wrappers(source[key]) !== wrappers(target[key])) throw new Error(`Message wrappers differ in ${key}`);
+  for (const [key, text] of Object.entries(target)) {
+    if (!Object.hasOwn(source, key)) throw new Error(`Unknown translation key: ${key}`);
+    if (renderParameters({ message: source[key] }) !== renderParameters({ message: text }))
+      throw new Error(`Message parameters differ in ${key}`);
+    if (wrappers(source[key]) !== wrappers(text)) throw new Error(`Message wrappers differ in ${key}`);
   }
 }
 
@@ -115,6 +121,34 @@ async function update(output, generated, app, check) {
   await writeFile(output, generated);
 }
 
+/** Fallback messages never contribute to a locale's own coverage. */
+export function messageCoverage(base, translation) {
+  const expected = Object.keys(flattenCatalog(base));
+  const actual = translation ? flattenCatalog(translation) : {};
+  return { translated: expected.filter((key) => typeof actual[key] === "string" && actual[key].trim()).length, total: expected.length };
+}
+
+export function renderCoverageTable(catalogs, editorial) {
+  const locales = [...new Set([...Object.keys(catalogs.web), ...Object.keys(catalogs.editorial), ...Object.keys(editorial)])].sort();
+  const cell = (counts) => {
+    if (!counts) return "—";
+    const { translated, total } = counts;
+    // Truncate so incomplete coverage never rounds up to 100%.
+    return `${total ? `${Math.floor(translated * 1000 / total) / 10}%` : "—"} (${translated}/${total})`;
+  };
+  const lines = locales.map((locale) => `| ${locale} | ${cell(catalogs.web[locale] && messageCoverage(catalogs.web["en-US"], catalogs.web[locale]))} | ${cell(catalogs.editorial[locale] && messageCoverage(catalogs.editorial["en-US"], catalogs.editorial[locale]))} | ${cell(editorial[locale])} |`);
+  return ["| Locale | Web UI | Editorial UI | Reviewed editorial content |", "| --- | ---: | ---: | ---: |", ...lines].join("\n");
+}
+
+export async function updateCoverage(output, table, check) {
+  const source = await readFile(output, "utf8");
+  const start = "<!-- translation-coverage:start -->", end = "<!-- translation-coverage:end -->";
+  if (source.split(start).length !== 2 || source.split(end).length !== 2 || source.indexOf(start) > source.indexOf(end))
+    throw new Error("Translation policy must contain one ordered pair of coverage markers");
+  const generated = source.slice(0, source.indexOf(start) + start.length) + "\n\n" + table + "\n\n" + source.slice(source.indexOf(end));
+  await update(output, generated, "Translation coverage", check);
+}
+
 async function main(args) {
   const check = args.includes("--check");
   const format = args.includes("--format");
@@ -123,10 +157,11 @@ async function main(args) {
   if ((check && format) || apps.some((app) => !["web", "editorial"].includes(app))) {
     throw new Error("Usage: node scripts/generate_locale_types.mjs [--check|--format] [web|editorial]");
   }
-  for (const app of apps) {
+  const catalogs = { web: {}, editorial: {} };
+  for (const app of Object.keys(catalogs)) {
     const directory = new URL(`../${app}/src/i18n/`, import.meta.url);
     let sourceCatalog;
-    for (const locale of ["pt-BR", "en-US"]) {
+    for (const locale of ["en-US", "pt-BR"]) {
       const input = new URL(`locales/${locale}/`, directory);
       const filenames = (await readdir(input)).filter((name) => name.endsWith(".json")).sort();
       if (!filenames.length) throw new Error(`${app}/${locale}: no locale files found`);
@@ -134,9 +169,11 @@ async function main(args) {
         filename, source: await readFile(new URL(filename, input), "utf8"),
       })));
       const catalog = mergeCatalogs(files);
+      catalogs[app][locale] = catalog;
       const parameters = renderParameters(catalog);
-      if (locale === "pt-BR") sourceCatalog = catalog;
+      if (locale === "en-US") sourceCatalog = catalog;
       else validateTranslation(sourceCatalog, catalog);
+      if (!apps.includes(app)) continue;
       for (const file of files) {
         const ordered = JSON.stringify(orderedCatalog(parseCatalog(file.source, file.filename)), null, 2) + "\n";
         if (ordered !== file.source) {
@@ -148,10 +185,13 @@ async function main(args) {
         `import part${index} from ${JSON.stringify(`./locales/${locale}/${filename}`)};`);
       const loader = "// Generated by scripts/generate_locale_types.mjs. Do not edit.\n" +
         imports.join("\n") + "\n\nexport default { " + filenames.map((_, index) => `...part${index}`).join(", ") + " };\n";
-      if (locale === "pt-BR") await update(new URL("message-parameters.generated.d.ts", directory), parameters, app, check);
+      if (locale === "en-US") await update(new URL("message-parameters.generated.d.ts", directory), parameters, app, check);
       await update(new URL(locale === "pt-BR" ? "catalog.generated.ts" : `catalog.${locale}.generated.ts`, directory), loader, app, check);
     }
   }
+  const root = fileURLToPath(new URL("../", import.meta.url));
+  const { stdout } = await promisify(execFile)("python3", ["-m", "scripts.translation_coverage"], { cwd: root });
+  await updateCoverage(new URL("../docs/translation-policy.md", import.meta.url), renderCoverageTable(catalogs, JSON.parse(stdout)), check);
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

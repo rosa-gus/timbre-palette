@@ -332,7 +332,7 @@ def emit_sql(
             locale = translation.get("locale", "pt-BR")
             status = translation.get("status", "published")
             translated_from = translation.get("source_revision") or current_source_revision
-            if locale != "pt-BR" and translated_from != current_source_revision:
+            if locale != "pt-BR" and translated_from != current_source_revision and status != "deprecated":
                 status = "stale"
             review = translation["review"]
             if not review.get("claim_support_verified") and status in {"reviewed", "published"}:

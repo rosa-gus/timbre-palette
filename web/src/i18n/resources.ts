@@ -24,13 +24,19 @@ export async function localizedInstrument(
   return resource;
 }
 
+export const LOCALIZATION_DEADLINE_MS = 5_000;
+export type LocalizedAnalysis = ProfileAnalysisV3 & {
+  localization: { incomplete: boolean; localeBySlug: Record<string, string> };
+};
+
 /** Localize display fields without changing analytical facts or cached evidence. */
 export async function localizeAnalysis(
   source: ProfileAnalysisV3,
   language: Locale,
   signal: AbortSignal,
-): Promise<ProfileAnalysisV3> {
-  if (language === "pt-BR") return source;
+  refresh = false,
+): Promise<LocalizedAnalysis> {
+  signal.throwIfAborted();
   const slugs = new Set(source.track_palette.families.map(({ slug }) => slug));
   if (source.track_palette.discovery)
     slugs.add(source.track_palette.discovery.instrument_slug);
@@ -40,25 +46,40 @@ export async function localizeAnalysis(
   }
   for (const family of source.track_palette.families)
     if (family.image) slugs.add(family.image.depicted_instrument_slug);
+  if (source.track_palette.discovery?.image)
+    slugs.add(source.track_palette.discovery.image.depicted_instrument_slug);
   const resources = new Map<string, InstrumentResource>();
+  const request = new AbortController();
+  let closed = false;
+  let finish!: () => void;
+  const stopped = new Promise<void>((resolve) => { finish = resolve; });
+  const stop = () => { closed = true; request.abort(); finish(); };
+  signal.addEventListener("abort", stop, { once: true });
+  const timer = setTimeout(stop, LOCALIZATION_DEADLINE_MS);
   const pending = [...slugs];
-  await Promise.all(
+  const work = Promise.all(
     Array.from({ length: Math.min(4, pending.length) }, async () => {
-      while (pending.length && !signal.aborted) {
+      while (pending.length && !closed) {
         const slug = pending.shift()!;
         try {
-          resources.set(
-            slug,
-            await localizedInstrument(slug, signal, language),
-          );
-        } catch (error) {
-          if (signal.aborted)
-            throw error; /* Resource-level fallback preserves the neutral report. */
+          if (refresh) cache.delete(`${language}:${slug}`);
+          const resource = await localizedInstrument(slug, request.signal, language);
+          if (!closed) resources.set(slug, resource);
+        } catch {
+          /* Preserve original labels when a resource is unavailable. */
         }
       }
     }),
   );
+  try {
+    await Promise.race([work, stopped]);
+  } finally {
+    clearTimeout(timer);
+    signal.removeEventListener("abort", stop);
+    stop();
+  }
   signal.throwIfAborted();
+  const localeBySlug = Object.fromEntries([...slugs].map((slug) => [slug, resources.get(slug)?.locale ?? "pt-BR"]));
   const name = (slug: string, original: string) =>
     resources.get(slug)?.name ?? original;
   const originalNames = new Map<string, string>();
@@ -78,6 +99,7 @@ export async function localizeAnalysis(
     const resource = resources.get(item.depicted_instrument_slug);
     return {
       ...item,
+      locale: resource?.locale ?? "pt-BR",
       depicted_name: name(item.depicted_instrument_slug, item.depicted_name),
       family_name: originalNames.get(item.family_name) ?? item.family_name,
       alt:
@@ -87,6 +109,10 @@ export async function localizeAnalysis(
   const discovery = source.track_palette.discovery;
   return {
     ...source,
+    localization: {
+      incomplete: [...slugs].some((slug) => !resources.has(slug) || localeBySlug[slug] !== language),
+      localeBySlug,
+    },
     profile: source.is_example
       ? { ...source.profile, realname: t("example.displayName") }
       : source.profile,
@@ -95,11 +121,13 @@ export async function localizeAnalysis(
       families: source.track_palette.families.map((family) => ({
         ...family,
         name: name(family.slug, family.name),
+        locale: localeBySlug[family.slug],
         image: image(family.image),
       })),
       discovery: discovery
         ? {
             ...discovery,
+            locale: localeBySlug[discovery.instrument_slug],
             instrument_name: name(
               discovery.instrument_slug,
               discovery.instrument_name,
@@ -113,9 +141,11 @@ export async function localizeAnalysis(
       families: source.artist_vocabulary.families.map((family) => ({
         ...family,
         name: name(family.slug, family.name),
+        locale: localeBySlug[family.slug],
         instruments: family.instruments.map((instrument) => ({
           ...instrument,
           name: name(instrument.slug, instrument.name),
+          locale: localeBySlug[instrument.slug],
         })),
       })),
       featured_artists: source.artist_vocabulary.featured_artists.map(
@@ -124,6 +154,7 @@ export async function localizeAnalysis(
           families: artist.families.map((family) => ({
             ...family,
             name: name(family.slug, family.name),
+            locale: localeBySlug[family.slug],
             instruments: family.instruments.map(
               (instrument) => originalNames.get(instrument) ?? instrument,
             ),

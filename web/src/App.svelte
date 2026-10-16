@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     localizeAnalysis,
+    type LocalizedAnalysis,
     localizedInstrument as getInstrument,
   } from "./i18n/resources";
   import LanguageSelect from "./i18n/LanguageSelect.svelte";
@@ -179,25 +180,33 @@
   let isExample = false;
   let exampleId = "";
   let result: ProfileAnalysisV3 | null = null;
-  let displayResult: ProfileAnalysisV3 | null = null;
+  let displayResult: LocalizedAnalysis | null = null;
   let localizationPending = false;
   let localizationController: AbortController | null = null;
   $: void updatePresentation(result, $localeStore);
   async function updatePresentation(
     source: ProfileAnalysisV3 | null,
     language: typeof $localeStore,
+    refresh = false,
   ) {
     localizationController?.abort();
+    if (refresh) {
+      if (sharePreviewUrl) URL.revokeObjectURL(sharePreviewUrl);
+      sharePreviewUrl = "";
+      shareBlob = null;
+      shareFeedback = "";
+    }
     const request = new AbortController();
     localizationController = request;
-    displayResult = source;
-    localizationPending = Boolean(source && language !== "pt-BR");
+    displayResult = null;
+    localizationPending = Boolean(source);
     if (!source) return;
     try {
       const translated = await localizeAnalysis(
         source,
         language,
         request.signal,
+        refresh,
       );
       if (!request.signal.aborted) displayResult = translated;
     } catch {
@@ -765,6 +774,16 @@
         inert={preparingReport}
         aria-hidden={preparingReport}
       >
+        {#if !localizationPending && displayResult?.localization.incomplete}
+          <p class="localization-notice" role="status">
+            {$t("localization.partial")}
+            <button
+              type="button"
+              on:click={() => updatePresentation(result, $localeStore, true)}
+              >{$t("localization.retry")}</button
+            >
+          </p>
+        {/if}
         <ResultsView
           revealReady={view === "report"}
           result={displayResult ?? result}
@@ -883,6 +902,19 @@
 />
 
 <style>
+  .localization-notice {
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .localization-notice button {
+    margin-left: 8px;
+    color: inherit;
+    background: none;
+    border: 0;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
   main {
     position: relative;
   }

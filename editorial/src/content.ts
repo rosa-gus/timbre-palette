@@ -4,7 +4,7 @@ import sources from "../content/sources.json";
 import type { InstrumentResource, InstrumentImage, EditorialReview, EditorialSection, EditorialSource, FurtherReading } from "../../web/src/api/types";
 
 export type Reading = FurtherReading & { status: "draft" | "reviewed" | "published"; reviewer: string | null; reviewed_at: string | null };
-export type Sheet = { resource: Omit<InstrumentResource, "further_reading"> & { further_reading: Reading[] }; review: EditorialReview; text_citations: { description: string[]; sound_production: string[] } };
+export type Sheet = { status?: Translation["status"]; resource: Omit<InstrumentResource, "further_reading"> & { further_reading: Reading[] }; review: EditorialReview; text_citations: { description: string[]; sound_production: string[] } };
 const neutralFields = ["data_source", "catalog_version", "image_catalog_version", "slug", "kind", "family_slug", "related_slugs", "tone"] as const;
 type Entity = Pick<InstrumentResource, typeof neutralFields[number]> & {
   source_ids: string[]; text_citations: Sheet["text_citations"]; further_reading: Reading[];
@@ -35,7 +35,7 @@ export function sourceSheets(snapshot: Snapshot): Sheet[] {
         sources: entity.source_ids.map((id) => snapshot.sources.find((source) => source.id === id)!),
         further_reading: entity.further_reading,
         image: entity.image && text.image ? { ...entity.image, ...text.image } : null,
-      } as Sheet["resource"], review: text.review, text_citations: entity.text_citations,
+      } as Sheet["resource"], status: text.status, review: text.review, text_citations: entity.text_citations,
     };
   });
 }
@@ -46,7 +46,8 @@ export function localizedText(sheet: Sheet): Translation {
     sound_production: resource.sound_production, common_roles: resource.common_roles,
     sections: resource.sections.map(({ id, text, status, review }) => ({ id, text, status, review })),
     image: resource.image ? { asset_id: resource.image.asset_id, alt: resource.image.alt, caption: resource.image.caption } : null,
-    review: sheet.review, status: sheet.review.claim_support_verified ? "published" : "draft" };
+    review: sheet.review, status: sheet.status === "deprecated" ? "deprecated"
+      : !sheet.review.claim_support_verified ? "draft" : sheet.status ?? "published" };
 }
 
 export function snapshotFromSheets(sheets: Sheet[], translations: Translations): Snapshot {
@@ -82,7 +83,7 @@ export async function sourceRevision(sheet: Sheet): Promise<string> {
     omitDerivedFlag(review);
     return { ...block, review };
   });
-  const bytes = new TextEncoder().encode(canonical(normalized));
+  const bytes = new TextEncoder().encode(canonical({ resource: normalized.resource, review: normalized.review, text_citations: normalized.text_citations }));
   const digest = await crypto.subtle.digest("SHA-256", bytes);
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }

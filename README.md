@@ -54,7 +54,7 @@ Detailed catalog behavior, persistence, and business rules are maintained in the
 - [Catalog architecture](docs/catalog-architecture.md)
 - [Editorial publication](docs/editorial-publishing.md)
 - [Versioned analysis methodology](docs/methodology.md)
-- [Localization architecture](docs/localization-architecture.md)
+- [Translation policy](docs/translation-policy.md)
 
 ### Architecture
 

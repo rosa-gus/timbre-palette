@@ -18,6 +18,10 @@ it.each([
   '{"duplicate":"first", "duplicate":"second"}',
   '{"nested":{"text":"first", "text":"second"}}',
   '{"empty":{}}',
+  '{"empty":""}',
+  '{"empty":"   "}',
+  '{"message":"Hello <upper"}',
+  '{"message":"Hello </upper"}',
   '{"dotted.key":"Use nesting"}',
   '{"array":["value"]}',
   '{"count":1}',
@@ -106,4 +110,11 @@ it("rejects translation key, parameter and semantic wrapper mismatches", () => {
   expect(() => validateTranslation(base, { other: "Hello {name}" })).toThrow();
   expect(() => validateTranslation(base, { title: "<emphasis>Hello {user}</emphasis>" })).toThrow();
   expect(() => validateTranslation(base, { title: "Hello {name}" })).toThrow();
+});
+
+
+it("allows partial non-default catalogs while validating every supplied message", () => {
+  expect(() => validateTranslation({ title: "Title", tracks: "{count} tracks" }, { title: "Título" })).not.toThrow();
+  expect(() => validateTranslation({ title: "Title" }, { title: "" })).toThrow("Empty message");
+  expect(() => validateTranslation({ title: "Title" }, { title: "Hello <upper" })).toThrow();
 });

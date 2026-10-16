@@ -187,6 +187,8 @@ export type MessageParameters = {
   "loading.palette": never;
   "loading.profileProgress": never;
   "loading.tracksProgress": "current" | "total";
+  "localization.partial": never;
+  "localization.retry": never;
   "metadata.description": never;
   "metadata.imageAlt": never;
   "metadata.socialTitle": never;

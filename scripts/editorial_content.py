@@ -43,7 +43,7 @@ def split_snapshot(sheets: list[dict[str, Any]]) -> dict[str, Any]:
         texts.append(dict(slug=resource["slug"], name=resource["name"], description=resource["description"],
                           sound_production=resource["sound_production"], common_roles=resource["common_roles"],
                           sections=[{key: block[key] for key in ("id", "text", "status", "review")} for block in resource["sections"]],
-                          image=image_text, review=sheet["review"], status="published"))
+                          image=image_text, review=sheet["review"], status=sheet.get("status", "published")))
     locales = {DEFAULT_LOCALE: texts}
     for sheet in sheets:
         for translation in sheet.get("translations", []):
@@ -156,7 +156,7 @@ def expand_snapshot(payload: dict[str, Any]) -> list[dict[str, Any]]:
             base = by_slug[text["slug"]]
             stale = text.get("source_revision") != base["source_revision"]
             translation = expand(entity_by_slug[text["slug"]], text, locale, stale)
-            if stale:
+            if stale and translation["status"] != "deprecated":
                 translation["status"] = "stale"
             base["translations"].append(translation)
     return sheets

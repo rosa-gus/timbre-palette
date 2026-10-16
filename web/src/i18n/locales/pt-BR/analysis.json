@@ -48,6 +48,10 @@
     "profileProgress": "Carregando perfil (1/1)",
     "tracksProgress": "Carregando faixas ({current}/{total})"
   },
+  "localization": {
+    "partial": "Parte do conteúdo do catálogo é exibida no idioma original.",
+    "retry": "Tentar traduzir novamente"
+  },
   "nature": {
     "acoustic": "Acústica",
     "electric": "Elétrica",

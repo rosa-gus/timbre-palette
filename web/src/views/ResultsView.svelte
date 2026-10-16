@@ -216,7 +216,7 @@
   }
   function artistInstruments(
     artist: VocabularyFeaturedArtist,
-  ): { name: string; slug: string | null; tone: string }[] {
+  ): { name: string; locale?: string; slug: string | null; tone: string }[] {
     const seen = new Set<string>();
     return artist.families
       .flatMap((family) => {
@@ -225,6 +225,7 @@
         );
         return family.instruments.map((name) => ({
           name,
+          locale: listed?.instruments.find((item) => item.name === name)?.locale,
           slug: listed?.instruments.find((item) => item.name === name)?.slug ?? null,
           tone: listed?.tone?.highlight ?? "#F29191",
         }));
@@ -549,9 +550,9 @@
                         >
                         <h4>{artist.name}</h4>
                         <p class="artist-families">
-                          {artist.families
-                            .map((family) => family.name)
-                            .join(" · ")}
+                          {#each artist.families as family, index}
+                            {#if index > 0} · {/if}<span lang={family.locale}>{family.name}</span>
+                          {/each}
                         </p>
                         <p class="artist-instruments">
                           {#each artistInstruments(artist) as instrument, instrumentIndex (instrument.name)}
@@ -567,8 +568,9 @@
                                   on:click={() =>
                                     instrument.slug &&
                                     onOpenInstrumentSlug(instrument.slug)}
+                                  lang={instrument.locale}
                                   >{instrument.name}</button
-                                >{:else}{instrument.name}{/if}
+                                >{:else}<span lang={instrument.locale}>{instrument.name}</span>{/if}
                             </span>
                           {/each}
                         </p>
@@ -628,7 +630,7 @@
                     >{$t("actions.open")}</button>
                   </div>
                   <div class="family-top">
-                    <h3>{family.name}</h3>
+                    <h3 lang={family.locale}>{family.name}</h3>
                     <strong>{percent(family.share)}</strong>
                   </div>
                   <div
@@ -659,6 +661,7 @@
                               class="instrument-link"
                               on:click={() =>
                                 onOpenInstrumentSlug(instrument.slug)}
+                              lang={instrument.locale}
                               >{instrument.name}</button
                             ><span
                               >{$t("vocabulary.recordingCount", { count: count(instrument.distinct_recordings) })} <span

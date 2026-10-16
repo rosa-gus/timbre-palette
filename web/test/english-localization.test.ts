@@ -125,3 +125,23 @@ it("initializes both interfaces in English when browser languages are unavailabl
   expect(t("entry.profileLabel")).toBe("Your Last.fm profile");
   expect(editorialText("sheet.editLabel")).toBe("Edit profile");
 });
+
+
+it("falls back per key without changing the selected locale or losing other translations", async () => {
+  const publicCatalog = (await import("../src/i18n/catalog.generated")).default;
+  const editorCatalog = (await import("../../editorial/src/i18n/catalog.generated")).default;
+  const publicLabel = publicCatalog.entry.profileLabel;
+  const editorLabel = editorCatalog.sheet.editLabel;
+  try {
+    Reflect.deleteProperty(publicCatalog.entry, "profileLabel");
+    editorCatalog.sheet.editLabel = "   ";
+    expect(t("entry.profileLabel")).toBe("Your Last.fm profile");
+    expect(editorialText("sheet.editLabel")).toBe("Edit profile");
+    expect(t("example.displayName")).toBe("Besouro Hércules");
+    expect((await import("../src/i18n/runtime")).locale).toBe("pt-BR");
+    expect(messageParts("entry.profileLabel").map((part) => part.text).join("")).toBe("Your Last.fm profile");
+  } finally {
+    publicCatalog.entry.profileLabel = publicLabel;
+    editorCatalog.sheet.editLabel = editorLabel;
+  }
+});

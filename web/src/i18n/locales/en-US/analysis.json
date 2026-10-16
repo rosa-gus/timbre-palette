@@ -48,6 +48,10 @@
     "profileProgress": "Loading profile (1/1)",
     "tracksProgress": "Loading tracks ({current}/{total})"
   },
+  "localization": {
+    "partial": "Some catalog content is displayed in its original language.",
+    "retry": "Retry translations"
+  },
   "nature": {
     "acoustic": "Acoustic",
     "electric": "Electric",

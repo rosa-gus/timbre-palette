@@ -57,10 +57,15 @@ jobs:
           cache: yarn
           cache-dependency-path: yarn.lock
 
+      - name: Set up Python for translation coverage
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Validate locale types
+      - name: Validate locale types and translation coverage
         run: yarn locales:check
 
       - name: Type-check API Worker

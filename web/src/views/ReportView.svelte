@@ -180,13 +180,14 @@
               >{$t("actions.open")}</button>
             </div>
             <div class="instrument-name">
-              <h2>{family.name}</h2>
+              <h2 lang={family.locale}>{family.name}</h2>
               <strong>{percent(family.share)}</strong>
             </div>
           </figcaption>
           {#if family.image?.variants.length}<div class="credited-image">
               <img
                 src={family.image.variants[0].url}
+                lang={family.image.alt ? family.image.locale : $localeStore}
                 alt={getImageCopy(family.image, $localeStore).alt}
                 width={family.image.variants[0].width}
                 height={family.image.variants[0].height}
@@ -237,6 +238,7 @@
                 class="family-link"
                 aria-label={$t("actions.openInstrument", { name: family.name })}
                 on:click={() => onOpenInstrumentSlug(family.slug)}
+                lang={family.locale}
                 >{family.name}</button
               ><Badge tone="neutral"
                 >{confidenceLabels[family.confidence]}</Badge
@@ -317,6 +319,7 @@
           >
             <img
               src={report.discovery.image.variants[0].url}
+              lang={report.discovery.image.alt ? report.discovery.image.locale : $localeStore}
               alt={getImageCopy(report.discovery.image, $localeStore).alt}
               width={report.discovery.image.variants[0].width}
               height={report.discovery.image.variants[0].height}

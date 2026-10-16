@@ -30,7 +30,7 @@
     } catch { feedback = $t("translations.invalidLocale"); }
   }
   function resetReview(item: Translation) {
-    item.status = "draft";
+    if (item.status !== "deprecated") item.status = "draft";
     item.review = emptyReview();
     item.sections.forEach((block) => { block.status = "draft"; block.review = emptyReview(); });
   }

@@ -153,7 +153,7 @@
       if (locale === "pt-BR") continue;
       for (const text of texts) {
         const original = snapshot.find((item) => item.resource.slug === text.slug)!;
-        if (text.source_revision !== await sourceRevision(original)) text.status = "stale";
+        if (text.status !== "deprecated" && text.source_revision !== await sourceRevision(original)) text.status = "stale";
         if (["reviewed", "published"].includes(text.status) &&
             (!text.name.trim() || !text.description.trim() || !text.sound_production.trim() ||
              !text.review.claim_support_verified || !text.review.reviewer?.trim() || !text.review.reviewed_at ||
