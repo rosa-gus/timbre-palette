@@ -1,11 +1,12 @@
-import defaultMessages from "./catalog.generated";
+import defaultMessages from "./catalog.en-US.generated";
 import { writable, derived } from "svelte/store";
 import { STORAGE_KEYS } from "../utils/storage-keys";
 import type { MessageParameters } from "./message-parameters.generated";
 
 export const supportedLocales = ["pt-BR", "en-US"] as const;
 export type Locale = (typeof supportedLocales)[number];
-export let locale: Locale = "pt-BR";
+export const fallbackLocale: Locale = "en-US";
+export let locale: Locale = fallbackLocale;
 let messages = defaultMessages;
 const activeLocale = writable<Locale>(locale);
 export const localeStore = { subscribe: activeLocale.subscribe };
@@ -37,7 +38,7 @@ export function resolveLocale(
     matchLocale(query) ??
     matchLocale(saved) ??
     languages.map(matchLocale).find((value) => value !== null) ??
-    "pt-BR"
+    fallbackLocale
   );
 }
 
@@ -47,8 +48,8 @@ export async function setLocale(
 ): Promise<void> {
   const request = ++selection;
   const catalog =
-    next === "en-US"
-      ? (await import("./catalog.en-US.generated")).default
+    next === "pt-BR"
+      ? (await import("./catalog.generated")).default
       : defaultMessages;
   if (request !== selection) return;
   messages = catalog;
@@ -154,7 +155,7 @@ export async function initializeLocale(): Promise<void> {
   try {
     await setLocale(selected, { persist: false, updateUrl: false });
   } catch {
-    await setLocale("pt-BR", { persist: false, updateUrl: false });
+    await setLocale(fallbackLocale, { persist: false, updateUrl: false });
   }
 }
 

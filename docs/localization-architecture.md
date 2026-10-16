@@ -27,7 +27,7 @@ Structured reports use `profile-analysis-v3`. The reference retains its v2 respo
 
 ## Locale resolution
 
-Use canonical BCP 47 tags and an explicit supported-locale registry per application. Resolve the public web locale in this order: supported `lang` URL parameter, saved preference, browser preferences, then `pt-BR`. Match exact tags first, then an explicitly configured language fallback; do not infer a region arbitrarily.
+Use canonical BCP 47 tags and an explicit supported-locale registry per application. Resolve the public web locale in this order: supported `lang` URL parameter, saved preference, browser preferences, then `en-US`. Match exact tags first, then an explicitly configured language fallback; do not infer a region arbitrarily.
 
 Load UI dictionaries on demand, with the default available at startup. Use complete messages with named parameters and locale-aware plural rules. Centralize number, percentage, date, and language-name formatting through `Intl`. Update document language, text direction, accessibility copy, and exported images when the locale changes.
 
@@ -63,7 +63,7 @@ Later implementation must verify:
 
 ## Current implementation
 
-Public and editorial UI dictionaries independently support `pt-BR` and `en-US`, split by responsibility under `src/i18n/locales/{locale}/`. Portuguese is available at startup; English loads on demand. Resolve locale from `?lang=`, the application-specific saved preference, browser languages, then `pt-BR`. Explicit language fallbacks map `en` to `en-US` and `pt` to `pt-BR`. Both headers expose a language selector.
+Public and editorial UI dictionaries independently support `pt-BR` and `en-US`, split by responsibility under `src/i18n/locales/{locale}/`. English is available at startup; Portuguese loads on demand. Resolve locale from `?lang=`, the application-specific saved preference, browser languages, then `en-US`. Explicit language fallbacks map `en` to `en-US` and `pt` to `pt-BR`. Both headers expose a language selector.
 
 Each JSON file owns distinct top-level namespaces and uses nested objects. Nesting preserves existing full keys: `entry.profileLabel` resolves to `entry` → `profileLabel`. Web domains are common, entry, analysis, narratives, instruments, sharing, errors, and metadata. Editorial domains are common, catalog, sheet, sources, review, images, and translations. Key renaming and copy cleanup are deferred.
 
@@ -77,7 +77,7 @@ Report calculation and history collection do not import UI locales. `web/src/ana
 
 Editorial resources use schema-v2 snapshots: neutral entities and bibliographic sources are separate from locale files. Each translation has independent review metadata and a source-content SHA-256 revision; changed source content makes it stale. Publication persists resource and block translations plus revision history. The Worker serves a complete eligible translation or the complete Portuguese fallback, with locale and publication metadata. Legacy taxonomy text columns remain compatibility projections for evidence consumers and the Python reference. The development-only ASCII workspace remains outside UI extraction, but its report fixtures use the structured contract.
 
-Language changes update subscribed UI text, document language, public metadata, formatters, and report presentation in place. They do not repeat listening-history collection or analysis. Public HTML retains Portuguese build-time metadata for clients that do not execute JavaScript. A failed initial English bundle load falls back to Portuguese; a failed manual change keeps the current locale.
+Language changes update subscribed UI text, document language, public metadata, formatters, and report presentation in place. They do not repeat listening-history collection or analysis. Public HTML retains English build-time metadata for clients that do not execute JavaScript. A failed initial Portuguese bundle load falls back to English; a failed manual change keeps the current locale.
 
 Instrument requests include the selected content locale. Resource caches include locale and expire after five minutes. Report display names are resolved from localized catalog resources, with bounded concurrency and cancellation; neutral report and evidence caches remain unchanged. Changing language clears an existing share preview, so exported images use the current language. The ASCII development workspace remains Portuguese.
 

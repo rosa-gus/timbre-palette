@@ -1,4 +1,5 @@
-import { afterEach, expect, it, vi } from "vitest";
+import { setLocale } from "../src/i18n/runtime";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { PaletteReport, Temperament } from "../src/api/types";
 import { getAnalysisNotice, getDiscoveryCopy, getImageCopy, getPortraitCopy } from "../src/analysis/presentation";
 import { getAnalysis, getApiErrorMessage, PaletteApiError } from "../src/api/client";
@@ -22,6 +23,7 @@ const report: PaletteReport = {
   temperament: { rule: "recurring-percussion-synthesizers", primary_family_slug: "percussion", primary_nature: "electronic" },
 };
 
+beforeEach(() => setLocale("pt-BR", { persist: false, updateUrl: false }));
 afterEach(() => vi.unstubAllGlobals());
 
 it("renders the selected rule without recalculation, mutation, or network calls", () => {

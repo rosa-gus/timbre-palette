@@ -1,11 +1,12 @@
-import defaultMessages from "./catalog.generated";
+import defaultMessages from "./catalog.en-US.generated";
 import { writable, derived } from "svelte/store";
 import { STORAGE_KEYS } from "../../../web/src/utils/storage-keys";
 import type { MessageParameters } from "./message-parameters.generated";
 
 export const supportedLocales = ["pt-BR", "en-US"] as const;
 export type Locale = typeof supportedLocales[number];
-export let locale: Locale = "pt-BR";
+export const fallbackLocale: Locale = "en-US";
+export let locale: Locale = fallbackLocale;
 let messages = defaultMessages;
 const activeLocale = writable<Locale>(locale);
 export const localeStore = { subscribe: activeLocale.subscribe };
@@ -24,12 +25,12 @@ export function matchLocale(value: string | null | undefined): Locale | null {
 }
 
 export function resolveLocale(query: string | null, saved: string | null, languages: readonly string[]): Locale {
-  return matchLocale(query) ?? matchLocale(saved) ?? languages.map(matchLocale).find((value) => value !== null) ?? "pt-BR";
+  return matchLocale(query) ?? matchLocale(saved) ?? languages.map(matchLocale).find((value) => value !== null) ?? fallbackLocale;
 }
 
 export async function setLocale(next: Locale, options: { persist?: boolean; updateUrl?: boolean } = {}): Promise<void> {
   const request = ++selection;
-  const catalog = next === "en-US" ? (await import("./catalog.en-US.generated")).default : defaultMessages;
+  const catalog = next === "pt-BR" ? (await import("./catalog.generated")).default : defaultMessages;
   if (request !== selection) return;
   messages = catalog;
   locale = next;
@@ -88,7 +89,7 @@ export async function initializeLocale(): Promise<void> {
   const languages = typeof navigator === "undefined" ? [] : navigator.languages;
   const selected = resolveLocale(query, saved, languages);
   try { await setLocale(selected, { persist: false, updateUrl: false }); }
-  catch { await setLocale("pt-BR", { persist: false, updateUrl: false }); }
+  catch { await setLocale(fallbackLocale, { persist: false, updateUrl: false }); }
 }
 
 /** Source nesting does not change the full keys used by callers. */

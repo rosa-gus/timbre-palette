@@ -1,11 +1,16 @@
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { get } from "svelte/store";
 import { setLocale, resolveLocale, matchLocale, t, translation, messageParts, initializeLocale } from "../src/i18n/runtime";
-import { setLocale as setEditorialLocale, t as editorialText } from "../../editorial/src/i18n/runtime";
+import { setLocale as setEditorialLocale, t as editorialText, resolveLocale as resolveEditorialLocale, initializeLocale as initializeEditorialLocale } from "../../editorial/src/i18n/runtime";
 import { formatNumber, formatDate, formatPercent, formatShareDate, formatRegisteredDate } from "../src/i18n/formatters";
 import { getPortraitCopy } from "../src/analysis/presentation";
 import { createShareImage } from "../src/sharing/share";
 import { localizeAnalysis } from "../src/i18n/resources";
+
+beforeEach(async () => {
+  await setLocale("pt-BR", { persist: false, updateUrl: false });
+  await setEditorialLocale("pt-BR", { persist: false, updateUrl: false });
+});
 
 afterEach(async () => {
   await setLocale("pt-BR", { persist: false, updateUrl: false });
@@ -17,7 +22,12 @@ it("resolves URL, saved preference, browser fallback and unsupported languages",
   expect(resolveLocale("en", "pt-BR", ["pt-BR"])).toBe("en-US");
   expect(resolveLocale(null, "en-US", ["pt-BR"])).toBe("en-US");
   expect(resolveLocale("de", null, ["de", "en-GB"])).toBe("en-US");
-  expect(resolveLocale("broken_tag", "bad", ["ja"])).toBe("pt-BR");
+  expect(resolveLocale("broken_tag", "bad", ["ja"])).toBe("en-US");
+  expect(resolveLocale(null, null, [])).toBe("en-US");
+  expect(resolveLocale(null, null, ["pt-BR", "en-US"])).toBe("pt-BR");
+  expect(resolveLocale(null, null, ["ja", "pt-PT"])).toBe("pt-BR");
+  expect(resolveEditorialLocale(null, null, ["ja"])).toBe("en-US");
+  expect(resolveEditorialLocale(null, null, ["pt-BR"])).toBe("pt-BR");
   expect(matchLocale("PT-pt")).toBe("pt-BR");
 });
 
@@ -105,4 +115,13 @@ it("keeps the newest language selection when a lazy import completes late", asyn
   await setLocale("pt-BR", { persist: false, updateUrl: false });
   await english;
   expect(t("entry.profileLabel")).toBe("Seu perfil do Last.fm");
+});
+
+it("initializes both interfaces in English when browser languages are unavailable or unsupported", async () => {
+  vi.stubGlobal("navigator", { languages: ["ja-JP"] });
+  vi.stubGlobal("localStorage", { getItem: () => null });
+  await initializeLocale();
+  await initializeEditorialLocale();
+  expect(t("entry.profileLabel")).toBe("Your Last.fm profile");
+  expect(editorialText("sheet.editLabel")).toBe("Edit profile");
 });

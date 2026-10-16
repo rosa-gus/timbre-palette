@@ -1,11 +1,16 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { initializeLocale, locale, messageParts, t, setLocale } from "../src/i18n/runtime";
-import { t as editorialText } from "../../editorial/src/i18n/runtime";
+import { t as editorialText, setLocale as setEditorialLocale } from "../../editorial/src/i18n/runtime";
 import {
   formatDate, formatNumber, formatPercent, formatRegisteredDate,
   formatShareDate, formatWaitDuration,
 } from "../src/i18n/formatters";
 import { getApiErrorMessage, PaletteApiError } from "../src/api/client";
+
+beforeEach(async () => {
+  await setLocale("pt-BR", { persist: false, updateUrl: false });
+  await setEditorialLocale("pt-BR", { persist: false, updateUrl: false });
+});
 
 afterEach(async () => { await setLocale("pt-BR", { persist: false, updateUrl: false }); vi.unstubAllGlobals(); });
 
