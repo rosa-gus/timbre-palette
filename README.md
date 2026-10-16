@@ -7,7 +7,7 @@ Timbre Palette is an experimental web application that transforms a public Last.
 The project is currently in a pilot phase. Its results are designed to be transparent, reproducible, and explicit about incomplete evidence.
 
 
-UI languages are Portuguese (`pt-BR`) and English (`en-US`). Use the header selector or `?lang=en-US`; each application saves its own preference. Publish the editorial snapshot to serve the English instrument profiles.
+[Supports multiple languages.](docs/translation-policy.md)
 
 ## Features
 
