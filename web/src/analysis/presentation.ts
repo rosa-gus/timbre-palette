@@ -1,13 +1,11 @@
 import type { AnalysisImage, AnalysisSummary, Discovery, PaletteReport } from "../api/types";
 import { locale, type Locale } from "../i18n/runtime";
 import { createTranslator } from "../i18n/translator";
-import english from "../i18n/locales/en-US/narratives.json";
-import portuguese from "../i18n/locales/pt-BR/narratives.json";
-
-const catalogs = { "en-US": english, "pt-BR": portuguese };
+import { fallbackLocale } from "../../../shared/i18n/locales.mjs";
+import { narrativesCatalogs as catalogs } from "../i18n/presentation-catalogs.generated";
 
 export function getAnalysisNotice(analysis: AnalysisSummary, language: Locale = locale): string {
-  const t = createTranslator(catalogs[language], english, language);
+  const t = createTranslator(catalogs[language], catalogs[fallbackLocale], language);
   const source = analysis.history_source === "lastfm"
     ? analysis.instrumentation_source === "catalog"
       ? t("narrative.notice.lastfmCatalog") : t("narrative.notice.lastfmMock")
@@ -19,7 +17,7 @@ export function getAnalysisNotice(analysis: AnalysisSummary, language: Locale = 
 }
 
 export function getDiscoveryCopy(discovery: Discovery, language: Locale = locale): { title: string; summary: string } {
-  const t = createTranslator(catalogs[language], english, language);
+  const t = createTranslator(catalogs[language], catalogs[fallbackLocale], language);
   const instrument = discovery.instrument_name;
   return {
     title: t("narrative.discovery.title", { instrument }),
@@ -28,7 +26,7 @@ export function getDiscoveryCopy(discovery: Discovery, language: Locale = locale
 }
 
 export function getImageCopy(image: AnalysisImage, language: Locale = locale): { alt: string; caption: string; label: string } {
-  const t = createTranslator(catalogs[language], english, language);
+  const t = createTranslator(catalogs[language], catalogs[fallbackLocale], language);
   const instrument = image.depicted_name;
   const caption = image.resolution === "family"
     ? t("narrative.image.family", { family: image.family_name, instrument })
@@ -42,7 +40,7 @@ export function getImageCopy(image: AnalysisImage, language: Locale = locale): {
 
 /** Render the same structured selection for screen and exported portrait. */
 export function getPortraitCopy(report: PaletteReport, language: Locale = locale): { title: string; summary: string; disclaimer: string } {
-  const t = createTranslator(catalogs[language], english, language);
+  const t = createTranslator(catalogs[language], catalogs[fallbackLocale], language);
   const family = report.families.find((item) => item.slug === report.temperament?.primary_family_slug);
   if (report.temperament && family) {
     const temperament = report.temperament;

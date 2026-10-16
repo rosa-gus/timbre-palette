@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Popover } from "bits-ui";
+  import { languageNames } from "../../../shared/i18n/locales.mjs";
   import {
     localeStore,
     setLocale,
@@ -12,10 +13,6 @@
   let busy = false;
   let error = "";
   let trigger: HTMLButtonElement | null = null;
-  const languageNames: Record<Locale, string> = {
-    "pt-BR": "Português (Brasil)",
-    "en-US": "English (United States)",
-  };
 
   async function change(language: Locale) {
     busy = true;

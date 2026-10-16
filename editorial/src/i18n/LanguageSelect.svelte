@@ -1,5 +1,6 @@
 <script lang="ts">
   import { localeStore, setLocale, translation as t, type Locale } from "./runtime";
+  import { supportedLocales, languageNames } from "../../../shared/i18n/locales.mjs";
   let busy = false;
   let error = "";
   async function change(event: Event) {
@@ -13,8 +14,9 @@
 <label class="language-select">
   <span class="label">{$t("language.label")}</span>
   <select value={$localeStore} on:change={change} disabled={busy}>
-    <option value="pt-BR" lang="pt-BR">Português (Brasil)</option>
-    <option value="en-US" lang="en-US">English (US)</option>
+    {#each supportedLocales as language}
+      <option value={language} lang={language}>{languageNames[language]}</option>
+    {/each}
   </select>
 </label>
 {#if error}<span role="status">{error}</span>{/if}

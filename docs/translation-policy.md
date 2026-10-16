@@ -23,6 +23,8 @@ Keep identifiers, error codes, evidence, analytical values, and history caches i
 
 ## UI language and fallback
 
+Declare UI locales, autonyms, language mappings, and fallback in `shared/i18n/locales.json`. Both applications and the generator use this registry; it contains no UI messages or backend resource locales. Add matching locale directories in both applications, then run `yarn locales:generate` to refresh loaders and presentation catalogs. CI rejects unregistered or missing directories and stale generated files.
+
 Support canonical `pt-BR` and `en-US`. Resolve the UI language from the supported `lang` query parameter, saved application preference, browser preferences, then `en-US`. Map `pt` to `pt-BR` and `en` to `en-US`; do not infer other regional mappings.
 
 English is the complete, startup-available fallback catalog and defines message keys and parameters. Other catalogs may omit messages. Resolve each complete message in the selected language, then in English; never discard available translations because another key is missing. Runtime lookup treats blank messages as missing, but committed blank messages are invalid: omit untranslated keys instead. A missing English message is an error.
@@ -55,7 +57,9 @@ Changing UI language must not recollect listening history, recalculate analysis,
 
 Resolve report resources with at most four concurrent requests and one total five-second deadline. Keep completed translations and declared editorial fallbacks. On failure or timeout, retain the original report labels, disclose partial localization, and cancel pending requests. Late responses must not change the consolidated presentation.
 
-Allow translation retries without rerunning analysis; bypass cached fallbacks on an explicit retry. Cancel superseded presentation requests when the report or locale changes. Enable sharing after presentation settles and export that same consolidated report. Clear obsolete previews when the language changes or translations are retried.
+Allow translation retries without rerunning analysis; bypass cached fallbacks on an explicit retry. Concurrent requests for the same resource slug and requested locale share one API request. Cancelling one consumer must not cancel others; abort the shared request when its last consumer leaves. Failures and abandoned responses must not populate the cache.
+
+Cancel superseded presentation requests when the report or locale changes. Enable sharing after presentation settles and export that same consolidated report. Clear obsolete previews when the language changes or translations are retried.
 
 Formatting and narrative helpers honor an explicit locale without changing UI selection. Their small catalogs are available synchronously in both languages; the remaining Portuguese UI copy loads on demand.
 

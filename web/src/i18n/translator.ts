@@ -1,3 +1,4 @@
+import { fallbackLocale } from "../../../shared/i18n/locales.mjs";
 import { selectMessage } from "../../../shared/i18n/messages.mjs";
 import type { Locale, MessageKey } from "./runtime";
 import type { MessageParameters, PluralParameters } from "./message-parameters.generated";
@@ -9,7 +10,7 @@ type Arguments<Key extends MessageKey> = [MessageParameters[Key]] extends [never
 /** Translate synchronous presentation data without changing the active UI locale. */
 export function createTranslator(catalog: Catalog, fallback: Catalog, language: Locale) {
   return <Key extends MessageKey>(key: Key, ...args: Arguments<Key>): string => {
-    for (const [dictionary, messageLocale] of [[catalog, language], [fallback, "en-US"]] as const) {
+    for (const [dictionary, messageLocale] of [[catalog, language], [fallback, fallbackLocale]] as const) {
       let value: unknown = dictionary;
       for (const segment of key.split("."))
         value = value && typeof value === "object" && Object.hasOwn(value, segment)

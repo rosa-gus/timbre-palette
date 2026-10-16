@@ -25,7 +25,7 @@ it("consolidates completed resources at one deadline even when a request ignores
   expect(display.track_palette.families[0].name).toBe("Translated deadline-ready");
   expect(display.track_palette.families[1].name).toBe("Original deadline-late");
   expect(display.localization.incomplete).toBe(true);
-  expect(lookup.mock.calls.every(([, signal]) => signal.aborted)).toBe(true);
+  expect(lookup.mock.calls.filter(([slug]) => slug !== "deadline-ready").every(([, signal]) => signal.aborted)).toBe(true);
   const settled = JSON.stringify(display);
   complete(resource("deadline-late"));
   await Promise.resolve(); await Promise.resolve();

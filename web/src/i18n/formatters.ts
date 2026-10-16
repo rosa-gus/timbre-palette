@@ -1,12 +1,10 @@
 import { locale, type Locale } from "./runtime";
-import english from "./locales/en-US/formatting.json";
-import portuguese from "./locales/pt-BR/formatting.json";
+import { fallbackLocale } from "../../../shared/i18n/locales.mjs";
+import { formattingCatalogs as catalogs } from "./presentation-catalogs.generated";
 import { createTranslator } from "./translator";
 
-const catalogs = { "en-US": english, "pt-BR": portuguese };
-
 /** Formatting is synchronous and independent of UI catalog loading or selection. */
-const translator = (language: Locale) => createTranslator(catalogs[language], english, language);
+const translator = (language: Locale) => createTranslator(catalogs[language], catalogs[fallbackLocale], language);
 
 export function formatNumber(
   value: number,

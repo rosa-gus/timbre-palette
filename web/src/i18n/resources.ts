@@ -10,18 +10,68 @@ const cache = new Map<
   string,
   { resource: InstrumentResource; expires: number }
 >();
+type PendingResource = {
+  controller: AbortController;
+  promise: Promise<InstrumentResource>;
+  consumers: number;
+  settled: boolean;
+};
+const pendingResources = new Map<string, PendingResource>();
+
 export async function localizedInstrument(
   slug: string,
   signal: AbortSignal,
   language: Locale = locale,
 ): Promise<InstrumentResource> {
+  signal.throwIfAborted();
   const key = `${language}:${slug}`;
   const saved = cache.get(key);
   if (saved && saved.expires > Date.now()) return saved.resource;
-  const resource = await getInstrument(slug, signal, language);
-  signal.throwIfAborted();
-  cache.set(key, { resource, expires: Date.now() + 300_000 });
-  return resource;
+  cache.delete(key);
+  let pending = pendingResources.get(key);
+  if (!pending) {
+    const controller = new AbortController();
+    const entry: PendingResource = {
+      controller, consumers: 0, settled: false,
+      promise: Promise.resolve().then(() => {
+        controller.signal.throwIfAborted();
+        return getInstrument(slug, controller.signal, language);
+      }).then((resource) => {
+        controller.signal.throwIfAborted();
+        if (pendingResources.get(key) === entry)
+          cache.set(key, { resource, expires: Date.now() + 300_000 });
+        return resource;
+      }).finally(() => {
+        entry.settled = true;
+        if (pendingResources.get(key) === entry) pendingResources.delete(key);
+      }),
+    };
+    pendingResources.set(key, entry);
+    pending = entry;
+  }
+  const entry = pending;
+  entry.consumers++;
+  return new Promise<InstrumentResource>((resolve, reject) => {
+    let finished = false;
+    const finish = (complete: () => void) => {
+      if (finished) return;
+      finished = true;
+      signal.removeEventListener("abort", abort);
+      entry.consumers--;
+      if (!entry.consumers && !entry.settled) {
+        if (pendingResources.get(key) === entry) pendingResources.delete(key);
+        entry.controller.abort();
+      }
+      complete();
+    };
+    const abort = () => finish(() => reject(signal.reason));
+    signal.addEventListener("abort", abort, { once: true });
+    entry.promise.then(
+      (resource) => finish(() => resolve(resource)),
+      (error) => finish(() => reject(error)),
+    );
+    if (signal.aborted) abort();
+  });
 }
 
 export const LOCALIZATION_DEADLINE_MS = 5_000;

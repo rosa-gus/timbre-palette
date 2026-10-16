@@ -1,0 +1,17 @@
+{
+  "fallbackLocale": "en-US",
+  "languageFallbacks": {
+    "en": "en-US",
+    "pt": "pt-BR"
+  },
+  "locales": {
+    "pt-BR": {
+      "name": "Português (Brasil)",
+      "catalog": "catalog.generated.ts"
+    },
+    "en-US": {
+      "name": "English (United States)",
+      "catalog": "catalog.en-US.generated.ts"
+    }
+  }
+}

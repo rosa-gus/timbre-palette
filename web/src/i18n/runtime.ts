@@ -1,12 +1,12 @@
 import { selectMessage } from "../../../shared/i18n/messages.mjs";
-import defaultMessages from "./catalog.en-US.generated";
+import { defaultMessages, catalogLoaders } from "./catalog-loaders.generated";
+import { supportedLocales, fallbackLocale, matchLocale, resolveLocale, type Locale } from "../../../shared/i18n/locales.mjs";
 import { writable, derived } from "svelte/store";
 import { STORAGE_KEYS } from "../utils/storage-keys";
 import type { MessageParameters, PluralParameters } from "./message-parameters.generated";
 
-export const supportedLocales = ["pt-BR", "en-US"] as const;
-export type Locale = (typeof supportedLocales)[number];
-export const fallbackLocale: Locale = "en-US";
+export { supportedLocales, fallbackLocale, matchLocale, resolveLocale, type Locale };
+
 export let locale: Locale = fallbackLocale;
 let messages: Record<string, unknown> = defaultMessages;
 const activeLocale = writable<Locale>(locale);
@@ -18,40 +18,12 @@ export const translation = derived<typeof localeStore, typeof t>(
 const preferenceKey = STORAGE_KEYS.webLocale;
 let selection = 0;
 
-export function matchLocale(value: string | null | undefined): Locale | null {
-  if (!value) return null;
-  try {
-    const tag = Intl.getCanonicalLocales(value)[0];
-    if (supportedLocales.includes(tag as Locale)) return tag as Locale;
-    const language = tag.split("-")[0];
-    return language === "en" ? "en-US" : language === "pt" ? "pt-BR" : null;
-  } catch {
-    return null;
-  }
-}
-
-export function resolveLocale(
-  query: string | null,
-  saved: string | null,
-  languages: readonly string[],
-): Locale {
-  return (
-    matchLocale(query) ??
-    matchLocale(saved) ??
-    languages.map(matchLocale).find((value) => value !== null) ??
-    fallbackLocale
-  );
-}
-
 export async function setLocale(
   next: Locale,
   options: { persist?: boolean; updateUrl?: boolean } = {},
 ): Promise<void> {
   const request = ++selection;
-  const catalog =
-    next === "pt-BR"
-      ? (await import("./catalog.generated")).default
-      : defaultMessages;
+  const catalog = next === fallbackLocale ? defaultMessages : await catalogLoaders[next]();
   if (request !== selection) return;
   messages = catalog;
   locale = next;
