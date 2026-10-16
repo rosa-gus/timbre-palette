@@ -1,0 +1,19 @@
+{
+  "formatting": {
+    "month1": "jan.",
+    "month2": "fev.",
+    "month3": "mar.",
+    "month4": "abr.",
+    "month5": "mai.",
+    "month6": "jun.",
+    "month7": "jul.",
+    "month8": "ago.",
+    "month9": "set.",
+    "month10": "out.",
+    "month11": "nov.",
+    "month12": "dez.",
+    "shareDate": "{day} <upper>de</upper> {month} {year}",
+    "waitMinutes": "{count} min",
+    "waitSeconds": "{count} s"
+  }
+}

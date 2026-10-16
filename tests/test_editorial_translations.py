@@ -168,3 +168,54 @@ def test_withdrawn_translation_remains_withdrawn_when_source_changes(tmp_path):
     conn = database()
     publish(conn, sheets, "withdrawn-translation")
     assert conn.execute("SELECT status FROM editorial_resource_translations WHERE locale='en'").fetchone()[0] == "deprecated"
+
+
+@pytest.mark.parametrize("field", ["catalog_version", "image_catalog_version", "tone", "image-url", "image-credit", "review-note", "review-date", "source-access-date"])
+def test_operational_metadata_does_not_invalidate_translations(tmp_path, field):
+    payload = snapshot_with_translation()
+    entity = payload["entities"][0]
+    text = payload["locales"]["pt-BR"][0]
+    if field in {"catalog_version", "image_catalog_version"}: entity[field] = "new-version"
+    if field == "tone": entity["tone"]["highlight"] = "#ffffff"
+    if field == "image-url": entity["image"]["variants"][0]["url"] += "?updated=1"
+    if field == "image-credit": entity["image"]["credit"]["photographer"] = "Updated attribution"
+    if field == "review-note": text["review"]["editorial_note"] = "Operational note"
+    if field == "review-date": text["review"]["reviewed_at"] = "2026-10-17"
+    if field == "source-access-date": payload["sources"][0]["accessed_at"] = "2026-10-17"
+    sheets = load_snapshot(tmp_path, payload)
+    translation = next(item for item in sheets[0]["translations"] if item["locale"] == "en")
+    assert translation["status"] == "published"
+    assert translation["source_revision"] == source_revision(sheets[0])
+
+
+@pytest.mark.parametrize("field", ["description", "block-text", "citation", "source-url", "asset", "alt", "block-withdrawal", "source-verification"])
+def test_content_and_publication_changes_still_invalidate_translations(field):
+    payload = snapshot_with_translation()
+    text = payload["locales"]["pt-BR"][0]
+    entity = payload["entities"][0]
+    if field == "description": text["description"] += " Updated."
+    if field == "block-text": text["sections"][0]["text"] += " Updated."
+    if field == "citation": entity["sections"][0]["citations"][0]["note"] = "Changed evidence"
+    if field == "source-url": payload["sources"][0]["url"] += "?updated=1"
+    if field == "asset":
+        entity["image"]["asset_id"] = "new-image"
+        text["image"]["asset_id"] = "new-image"
+    if field == "alt": text["image"]["alt"] += " Updated."
+    if field == "block-withdrawal": text["sections"][0]["status"] = "deprecated"
+    if field == "source-verification": payload["sources"][0]["metadata_verified"] = False
+    assert next(item for item in expand_snapshot(payload)[0]["translations"] if item["locale"] == "en")["status"] == "stale"
+
+
+def test_upgrades_legacy_revisions_only_when_the_exact_source_matches():
+    from scripts.editorial_content import legacy_source_revision
+    payload = snapshot_with_translation()
+    source = expand_snapshot(payload)[0]
+    text = payload["locales"]["en"][0]
+    text["source_revision"] = legacy_source_revision(source)
+    upgraded = next(item for item in expand_snapshot(payload)[0]["translations"] if item["locale"] == "en")
+    assert upgraded["status"] == "published"
+    assert upgraded["source_revision"] == source_revision(source)
+    payload["locales"]["pt-BR"][0]["description"] += " Changed after review."
+    changed = next(item for item in expand_snapshot(payload)[0]["translations"] if item["locale"] == "en")
+    assert changed["status"] == "stale"
+    assert changed["source_revision"] == text["source_revision"]

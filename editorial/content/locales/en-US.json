@@ -36,7 +36,7 @@
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },
     "status": "reviewed",
-    "source_revision": "a13c9d41456e1b5f634f1add475029bacc064db390283700d255c2c89e3aafc4"
+    "source_revision": "e3c095462903c0ff688b419da6d52a95eb255278ec4adc802beb4aca498caf16"
   },
   {
     "slug": "bowed-strings",
@@ -75,7 +75,7 @@
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },
     "status": "reviewed",
-    "source_revision": "edee0e61d988c0e19a6eb77c52bc04874dda20ced74419875fea6ec957794c12"
+    "source_revision": "6fd323c1bf10d82620cc36b13e1cf96e978ede127af05ddb916bcfd98831f449"
   },
   {
     "slug": "cello",
@@ -114,7 +114,7 @@
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },
     "status": "reviewed",
-    "source_revision": "5583e7bbb4e4661216721bf07833145f4c5d22d92f9501b077db87d5f22534f7"
+    "source_revision": "799f360d29db5fa711af017ddbb271c46d6473cadce9d2a91fb41bf6395dcf25"
   },
   {
     "slug": "drums",
@@ -153,7 +153,7 @@
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },
     "status": "reviewed",
-    "source_revision": "72e37e19747c6b4c6339e92d5e55fd5ea3d3d84928382b63f947febccb30cb6d"
+    "source_revision": "adf7d1e770708d288c53807591cadc6d10ce7d03736dd53a2ac8aa71f30408d4"
   },
   {
     "slug": "electric-bass",
@@ -192,7 +192,7 @@
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },
     "status": "reviewed",
-    "source_revision": "04257bb03360386991480ae588417ac9b0a2d00031a8ff8ba19a383948d5f1f1"
+    "source_revision": "f617464a21da5e9edb3207c3f4bfd30631ffda6380bbc40bf9aeb839d9c583e4"
   },
   {
     "slug": "electric-guitar",
@@ -231,7 +231,7 @@
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },
     "status": "reviewed",
-    "source_revision": "06b28f557bddfdd4cae5553754ba58b318e59acaa353175a36174e85154a9e90"
+    "source_revision": "90c40006e676a767be4c5f875d940b5a159e2eee8f442d65d602a8fd4f16f58d"
   },
   {
     "slug": "percussion",
@@ -270,7 +270,7 @@
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },
     "status": "reviewed",
-    "source_revision": "1ef3c3133079b28d67406c4c5859853929a157982d4ab05dfeb88c71b0de1171"
+    "source_revision": "65dd55e72ad4eab3e9c1820942be28253e420bbdf02240f7f6880b2cad2e33ff"
   },
   {
     "slug": "piano",
@@ -309,7 +309,7 @@
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },
     "status": "reviewed",
-    "source_revision": "d34867a94f1cf95df4fa21cc3706d89a58f1bd4677611208647254fce845e8dd"
+    "source_revision": "59430d0ac7cfd4b1663006edd65f5cc12b013113f9dc08f5f6a8dbd37e7b11b5"
   },
   {
     "slug": "plucked-strings",
@@ -348,7 +348,7 @@
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },
     "status": "reviewed",
-    "source_revision": "5810abdbc3fb7512c29d5e70a03d3ac5abd4545edece5666ea749533e25e921a"
+    "source_revision": "a7496ba3fbeff6913e95f70f0187d6e8b641427b33a5d1f100d45102e2720618"
   },
   {
     "slug": "sampled-sounds",
@@ -387,7 +387,7 @@
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },
     "status": "reviewed",
-    "source_revision": "e48a3b6ecf96902b915170a8c40582389a12511e5cecafbf588376142a760d59"
+    "source_revision": "1254ce25979989aefbb097642054d03f1386299c2a8b4e3b89fd0f140fc9fe0b"
   },
   {
     "slug": "sampler",
@@ -426,7 +426,7 @@
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },
     "status": "reviewed",
-    "source_revision": "405ec2a4bf00400f65f44215aa7e5c9c4900711bb9174ad06f7f3176664d2b1f"
+    "source_revision": "392d0c8b5cf1aa9737f9626a2717b36f7c17dbe02b8c15a8b8bc2fe1399aac19"
   },
   {
     "slug": "synthesizer",
@@ -466,7 +466,7 @@
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },
     "status": "reviewed",
-    "source_revision": "9e68689038bf86899a7899c0567a486e1911419ba97bddcba8371eb0cb4b4993"
+    "source_revision": "2337e1b8ef0dd787071740b14cee8e1b4e658bd7bf79cc0378323c18ba140e7b"
   },
   {
     "slug": "synthesizers",
@@ -506,7 +506,7 @@
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },
     "status": "reviewed",
-    "source_revision": "9afc96ca011800c45ed9e5a6d7820025249400550db7274a11ac3b66e34bc7ad"
+    "source_revision": "e970176877063276e6c6bac16a0f40d3df0601035462b278439e6ac355cb6414"
   },
   {
     "slug": "woodwinds",
@@ -532,7 +532,7 @@
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },
     "status": "reviewed",
-    "source_revision": "05ed130ec6c5617afaa1ead4c554c48a89ab957cbd3c9e1b1605356a0fb15281"
+    "source_revision": "a5eb0c1a795c0c0763515d5f065848759654bacefd126140df52af963023f5a6"
   },
   {
     "slug": "brass",
@@ -558,7 +558,7 @@
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },
     "status": "reviewed",
-    "source_revision": "0e4b46dc5187c593cf2d4f39b3c91d2422c741a902dc9b3c2ee6ac84dc054794"
+    "source_revision": "5c18025462fa3336bddc6c22d5c23099d0d33e3c7d36322fa3cd07f1f43e6e02"
   },
   {
     "slug": "voice",
@@ -584,7 +584,7 @@
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },
     "status": "reviewed",
-    "source_revision": "bf5a15098c3be37676773e27f3c7cdac8e51afedb380162ea47092207e2ce1c0"
+    "source_revision": "ee372f6df05d2bb3dd48a816252474add381bbf690e42a9c9bef84d066a5c9fc"
   },
   {
     "slug": "electric-keys",
@@ -610,7 +610,7 @@
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },
     "status": "reviewed",
-    "source_revision": "19f56fdf23c8bebb9a0bd45ae7df356f39bc6c4a10749057fa9cc7b1d4365bc6"
+    "source_revision": "6ac63424b4506067cb236e396d0fd183c608e4e978820b565e0992234829ea02"
   },
   {
     "slug": "acoustic-guitar",
@@ -649,7 +649,7 @@
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },
     "status": "reviewed",
-    "source_revision": "8992909bc667b505ccdff583122dae97aa5e211a2cdf09d187f65fbf037d3bfa"
+    "source_revision": "face0a63237515c2d0adfd7fde116bd56ceee3e2d99a477ee8cdc6ae656cbd1f"
   },
   {
     "slug": "cavaquinho",
@@ -688,7 +688,7 @@
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },
     "status": "reviewed",
-    "source_revision": "76dac31ce61757993274565a82485dde058df6fd9bac11d42701c1b8d64d551e"
+    "source_revision": "18f44b2dbf693b36f0697cd79ad4b918a79eda52f7f02444fcfbe3098b7eabbd"
   },
   {
     "slug": "pandeiro",
@@ -727,7 +727,7 @@
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },
     "status": "reviewed",
-    "source_revision": "fd99a3420138140edccd98a9d8451eafa82342881c1798ead2310fc882e3fa38"
+    "source_revision": "4f7e1b925f98369927e7bb7cc774d4a4dff0b5981005126ea728e982cb11bf5f"
   },
   {
     "slug": "surdo",
@@ -766,7 +766,7 @@
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },
     "status": "reviewed",
-    "source_revision": "a517713b26f17b71e9351c93d928e7d94f33b63cf6aecf496038c7ef1ab83cfe"
+    "source_revision": "67ae4f16ba16b5b13a8253c237fad342536bdc22d5d1d082b6511775004b4c91"
   },
   {
     "slug": "tamborim",
@@ -805,7 +805,7 @@
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },
     "status": "reviewed",
-    "source_revision": "600e19bcadcbb978a95ceb2017b4457e8b0a933b5be5589fc9b160c7294ed313"
+    "source_revision": "5290ddad92d79559f4053a19f53fbe32ff651f99bc01f366157cc328c29152b5"
   },
   {
     "slug": "cuica",
@@ -844,6 +844,6 @@
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },
     "status": "reviewed",
-    "source_revision": "7151800dbdb251513d66086cd5449428d6716bf2d8db2f1c1d23708bb6f6c30b"
+    "source_revision": "662de39e13a257be6d6f7c98a08b93604f53818855538e2fdd7288f3abd32f4f"
   }
 ]

@@ -110,3 +110,7 @@ export type MessageParameters = {
   "validation.review": "label";
   "validation.source": "label";
 };
+export type PluralMessages = {
+
+};
+export type PluralParameters = { [Key in keyof MessageParameters]: Key extends keyof PluralMessages ? PluralMessages[Key] : never };

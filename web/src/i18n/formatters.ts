@@ -1,4 +1,12 @@
-import { locale, t } from "./runtime";
+import { locale, type Locale } from "./runtime";
+import english from "./locales/en-US/formatting.json";
+import portuguese from "./locales/pt-BR/formatting.json";
+import { createTranslator } from "./translator";
+
+const catalogs = { "en-US": english, "pt-BR": portuguese };
+
+/** Formatting is synchronous and independent of UI catalog loading or selection. */
+const translator = (language: Locale) => createTranslator(catalogs[language], english, language);
 
 export function formatNumber(
   value: number,
@@ -34,45 +42,45 @@ export function formatLanguage(
 }
 
 const months = [
-  "dates.month1",
-  "dates.month2",
-  "dates.month3",
-  "dates.month4",
-  "dates.month5",
-  "dates.month6",
-  "dates.month7",
-  "dates.month8",
-  "dates.month9",
-  "dates.month10",
-  "dates.month11",
-  "dates.month12",
+  "formatting.month1",
+  "formatting.month2",
+  "formatting.month3",
+  "formatting.month4",
+  "formatting.month5",
+  "formatting.month6",
+  "formatting.month7",
+  "formatting.month8",
+  "formatting.month9",
+  "formatting.month10",
+  "formatting.month11",
+  "formatting.month12",
 ] as const;
 
 /** Preserve the existing short month/year style and UTC registration dates. */
 export function formatRegisteredDate(
   value: string | null | undefined,
-  _language = locale,
+  language = locale,
 ): string | null {
   if (!value) return null;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return null;
-  return `${t(months[date.getUTCMonth()])} ${date.getUTCFullYear()}`;
+  return `${translator(language)(months[date.getUTCMonth()])} ${date.getUTCFullYear()}`;
 }
 
 /** Share images use the visitor's local date, as before. */
-export function formatShareDate(date = new Date()): string {
-  return t("sharing.date", {
+export function formatShareDate(date = new Date(), language = locale): string {
+  return translator(language)("formatting.shareDate", {
     day: date.getDate(),
-    month: t(months[date.getMonth()]).toLocaleUpperCase(locale),
+    month: translator(language)(months[date.getMonth()]).toLocaleUpperCase(language),
     year: date.getFullYear(),
   });
 }
 
 export function formatWaitDuration(
   seconds: number,
-  _language = locale,
+  language = locale,
 ): string {
   return seconds >= 60
-    ? t("history.minutes", { count: Math.ceil(seconds / 60) })
-    : t("history.seconds", { count: seconds });
+    ? translator(language)("formatting.waitMinutes", { count: formatNumber(Math.ceil(seconds / 60), undefined, language) })
+    : translator(language)("formatting.waitSeconds", { count: formatNumber(seconds, undefined, language) });
 }

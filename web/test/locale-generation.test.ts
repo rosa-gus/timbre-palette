@@ -73,6 +73,9 @@ it("retains compile-time validation of JSON message keys and named parameters", 
     t("loading.tracksProgress", { current: 1, total: 4 });
     t("entry.profileLabel");
     editorialText("validation.requiredText", { label: "Piano" });
+    t("report.trackCount", { tracks_analyzed: 1 });
+    // @ts-expect-error Plural selectors require raw numbers.
+    t("report.trackCount", { tracks_analyzed: "1" });
     // @ts-expect-error Missing named parameter.
     t("loading.tracksProgress", { current: 1 });
     // @ts-expect-error Unknown message key.

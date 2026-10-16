@@ -1,4 +1,4 @@
-import { setLocale } from "../src/i18n/runtime";
+import { locale, setLocale } from "../src/i18n/runtime";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { PaletteReport, Temperament } from "../src/api/types";
 import { getAnalysisNotice, getDiscoveryCopy, getImageCopy, getPortraitCopy } from "../src/analysis/presentation";
@@ -84,4 +84,28 @@ it("rejects legacy server reports on the versioned route without parsing prose o
   expect(fetch.mock.calls[0][0]).toContain("/v3/profiles/listener/analysis?period=1month");
   expect(getApiErrorMessage(new PaletteApiError("Untrusted provider message", 500, "future_error")))
     .toBe("Não foi possível concluir a análise.");
+});
+
+
+it.each(["pt-BR", "en-US"] as const)("keeps explicit narrative languages independent of the active %s UI", async (active) => {
+  await setLocale(active, { persist: false, updateUrl: false });
+  const source = JSON.stringify(report);
+  expect(getPortraitCopy(report, "en-US").title).toBe("Movement with atmosphere");
+  expect(getPortraitCopy(report, "pt-BR").title).toBe("Movimento com atmosfera");
+  expect(getAnalysisNotice(report.analysis, "en-US")).toContain("The history was obtained");
+  expect(getAnalysisNotice(report.analysis, "pt-BR")).toContain("O histórico foi obtido");
+  const discovery = { instrument_slug: "cuica", instrument_name: "Cuíca", image: null };
+  expect(getDiscoveryCopy(discovery, "en-US").title).toBe("A less obvious presence: Cuíca");
+  expect(getDiscoveryCopy(discovery, "pt-BR").title).toBe("Uma presença menos óbvia: Cuíca");
+  const image = {
+    asset_id: "cuica", resolution: "exact" as const, depicted_instrument_slug: "cuica",
+    depicted_name: "Cuíca", family_name: "Percussão", alt: null, variants: [],
+    tone: { shadow: "#000000", highlight: "#f29191" },
+    credit: { photographer: null, provider: null, photo_url: null, photographer_url: null, license: null, license_url: null },
+  };
+  expect(getImageCopy(image, "en-US").alt).toBe("Image of Cuíca.");
+  expect(getImageCopy(image, "pt-BR").alt).toBe("Imagem de Cuíca.");
+  expect(getImageCopy({ ...image, alt: "Reviewed alt" }, "pt-BR").alt).toBe("Reviewed alt");
+  expect(JSON.stringify(report)).toBe(source);
+  expect(locale).toBe(active);
 });

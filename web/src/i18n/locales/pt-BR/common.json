@@ -23,20 +23,6 @@
     "closeNotice": "Fechar aviso",
     "explanation": "Abrir explicação"
   },
-  "dates": {
-    "month1": "jan.",
-    "month2": "fev.",
-    "month3": "mar.",
-    "month4": "abr.",
-    "month5": "mai.",
-    "month6": "jun.",
-    "month7": "jul.",
-    "month8": "ago.",
-    "month9": "set.",
-    "month10": "out.",
-    "month11": "nov.",
-    "month12": "dez."
-  },
   "footer": {
     "by": "por",
     "code": "Código",

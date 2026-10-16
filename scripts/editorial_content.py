@@ -16,12 +16,37 @@ def canonical(value: object) -> str:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
-def source_revision(sheet: dict[str, Any]) -> str:
+def source_content(sheet: dict[str, Any], *, legacy: bool = False) -> dict[str, Any]:
     source = copy.deepcopy({k: sheet[k] for k in ("resource", "review", "text_citations")})
     source["review"].pop("source_metadata_verified", None)
     for block in source["resource"]["sections"]:
         block["review"].pop("source_metadata_verified", None)
-    return hashlib.sha256(canonical(source).encode()).hexdigest()
+    if legacy:
+        return source
+    resource = source["resource"]
+    for key in ("data_source", "catalog_version", "image_catalog_version", "tone"):
+        resource.pop(key, None)
+    source["review"] = {"claim_support_verified": source["review"]["claim_support_verified"]}
+    for block in resource["sections"]:
+        block["review"] = {"claim_support_verified": block["review"]["claim_support_verified"]}
+    for item in resource["sources"]:
+        for key in ("accessed_at", "verified_at"):
+            item.pop(key, None)
+    for item in resource["further_reading"]:
+        for key in ("reviewer", "reviewed_at", "editorial_note"):
+            item.pop(key, None)
+    if resource["image"]:
+        for key in ("variants", "tone", "credit", "resolution"):
+            resource["image"].pop(key, None)
+    return {"revision_schema": 2, **source}
+
+
+def source_revision(sheet: dict[str, Any]) -> str:
+    return hashlib.sha256(canonical(source_content(sheet)).encode()).hexdigest()
+
+
+def legacy_source_revision(sheet: dict[str, Any]) -> str:
+    return hashlib.sha256(canonical(source_content(sheet, legacy=True)).encode()).hexdigest()
 
 
 def split_snapshot(sheets: list[dict[str, Any]]) -> dict[str, Any]:
@@ -154,6 +179,9 @@ def expand_snapshot(payload: dict[str, Any]) -> list[dict[str, Any]]:
             continue
         for text in texts:
             base = by_slug[text["slug"]]
+            # Upgrade only a digest proven to match this exact legacy source.
+            if text.get("source_revision") == legacy_source_revision(base):
+                text = {**text, "source_revision": base["source_revision"]}
             stale = text.get("source_revision") != base["source_revision"]
             translation = expand(entity_by_slug[text["slug"]], text, locale, stale)
             if stale and translation["status"] != "deprecated":

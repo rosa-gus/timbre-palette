@@ -3,9 +3,10 @@ import part0 from "./locales/en-US/analysis.json";
 import part1 from "./locales/en-US/common.json";
 import part2 from "./locales/en-US/entry.json";
 import part3 from "./locales/en-US/errors.json";
-import part4 from "./locales/en-US/instruments.json";
-import part5 from "./locales/en-US/metadata.json";
-import part6 from "./locales/en-US/narratives.json";
-import part7 from "./locales/en-US/sharing.json";
+import part4 from "./locales/en-US/formatting.json";
+import part5 from "./locales/en-US/instruments.json";
+import part6 from "./locales/en-US/metadata.json";
+import part7 from "./locales/en-US/narratives.json";
+import part8 from "./locales/en-US/sharing.json";
 
-export default { ...part0, ...part1, ...part2, ...part3, ...part4, ...part5, ...part6, ...part7 };
+export default { ...part0, ...part1, ...part2, ...part3, ...part4, ...part5, ...part6, ...part7, ...part8 };

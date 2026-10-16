@@ -595,9 +595,7 @@
                 <span>{$t("vocabulary.playsHeading")}</span><strong
                   >{percent(vocabulary.reach.play_reach)}</strong
                 ><small
-                  >{$t("vocabulary.playReach", { qualified: count(vocabulary.reach.qualified_plays), total: count(
-                    vocabulary.reach.total_plays,
-                  ) })}</small
+                  >{$t("vocabulary.playReach", { qualified: count(vocabulary.reach.qualified_plays), total: vocabulary.reach.total_plays })}</small
                 >
               </div>
               <div>
@@ -664,7 +662,7 @@
                               lang={instrument.locale}
                               >{instrument.name}</button
                             ><span
-                              >{$t("vocabulary.recordingCount", { count: count(instrument.distinct_recordings) })} <span
+                              >{$t("vocabulary.recordingCount", { count: instrument.distinct_recordings })} <span
                                 class="separator-indicator"
                                 aria-hidden="true">·</span
                               >{$t("vocabulary.creditScope", { scope: instrument.evidence.scope === "track"
@@ -705,9 +703,7 @@
                 <p>{$t("vocabulary.concentration", { share: percent(
                     vocabulary.concentration,
                   ) })} </p>
-                <p>{$t("vocabulary.unresolvedIdentities", { artists: count(vocabulary.reach.unresolved_artists), tracks: count(
-                    vocabulary.reach.unresolved_tracks,
-                  ) })} </p>
+                <p>{$t("vocabulary.unresolvedIdentities", { artists: vocabulary.reach.unresolved_artists, tracks: vocabulary.reach.unresolved_tracks })} </p>
                 <p>{$t("vocabulary.snapshot", { snapshot_version: result.snapshot.snapshot_version })} <span class="separator-indicator" aria-hidden="true">·</span>{$t("vocabulary.methodology", { methodology_version: vocabulary.methodology_version })} </p>
               </Dropdown>
             </div>

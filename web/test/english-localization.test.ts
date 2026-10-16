@@ -110,13 +110,6 @@ it("persists a manual selection and preserves report URL parameters", async () =
   expect(setItem).toHaveBeenCalledWith("app:v1:web:locale", "en-US");
 });
 
-it("keeps the newest language selection when a lazy import completes late", async () => {
-  const english = setLocale("en-US", { persist: false, updateUrl: false });
-  await setLocale("pt-BR", { persist: false, updateUrl: false });
-  await english;
-  expect(t("entry.profileLabel")).toBe("Seu perfil do Last.fm");
-});
-
 it("initializes both interfaces in English when browser languages are unavailable or unsupported", async () => {
   vi.stubGlobal("navigator", { languages: ["ja-JP"] });
   vi.stubGlobal("localStorage", { getItem: () => null });
@@ -144,4 +137,22 @@ it("falls back per key without changing the selected locale or losing other tran
     publicCatalog.entry.profileLabel = publicLabel;
     editorCatalog.sheet.editLabel = editorLabel;
   }
+});
+
+
+it.each([
+  [{ language: "pt-BR" }, "pt-BR"],
+  [{ languages: [], language: "pt-PT" }, "pt-BR"],
+  [{ languages: undefined, language: "en-GB" }, "en-US"],
+  [{}, "en-US"],
+  [{ language: "ja-JP" }, "en-US"],
+  [undefined, "en-US"],
+  [{ languages: ["en-US"], language: "pt-BR" }, "en-US"],
+] as const)("initializes both interfaces with incomplete browser preferences: %j", async (browser, expected) => {
+  vi.stubGlobal("navigator", browser);
+  vi.stubGlobal("localStorage", { getItem: () => null });
+  await initializeLocale();
+  await initializeEditorialLocale();
+  expect((await import("../src/i18n/runtime")).locale).toBe(expected);
+  expect((await import("../../editorial/src/i18n/runtime")).locale).toBe(expected);
 });

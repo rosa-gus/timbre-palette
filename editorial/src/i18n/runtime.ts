@@ -1,7 +1,8 @@
+import { selectMessage } from "../../../shared/i18n/messages.mjs";
 import defaultMessages from "./catalog.en-US.generated";
 import { writable, derived } from "svelte/store";
 import { STORAGE_KEYS } from "../../../web/src/utils/storage-keys";
-import type { MessageParameters } from "./message-parameters.generated";
+import type { MessageParameters, PluralParameters } from "./message-parameters.generated";
 
 export const supportedLocales = ["pt-BR", "en-US"] as const;
 export type Locale = typeof supportedLocales[number];
@@ -59,11 +60,12 @@ export type MessageKey = MessageKeys<typeof defaultMessages>;
 type MessageArguments<Key extends MessageKey> =
   [MessageParameters[Key]] extends [never]
     ? []
-    : [values: Record<MessageParameters[Key], string | number>];
+    : [values: { [Name in MessageParameters[Key]]: Name extends PluralParameters[Key] ? number : string | number }];
 
 /** Resolve catalog transforms without parsing external values as tags. */
 export function t<Key extends MessageKey>(key: Key, ...args: MessageArguments<Key>): string {
-  return interpolateUpper(messageText(key), args[0], key);
+  const selected = messageText(key, args[0]);
+  return interpolateUpper(selected.text, selected.values, key);
 }
 
 function interpolate(text: string, values: Record<string, string | number> | undefined, key: MessageKey): string {
@@ -86,21 +88,23 @@ export async function initializeLocale(): Promise<void> {
   let saved: string | null = null;
   try { saved = localStorage.getItem(preferenceKey); } catch { /* Optional preference. */ }
   const query = typeof window === "undefined" ? null : new URL(window.location.href).searchParams.get("lang");
-  const languages = typeof navigator === "undefined" ? [] : navigator.languages;
+  const languages = typeof navigator === "undefined" ? []
+    : navigator.languages?.length ? navigator.languages
+    : navigator.language ? [navigator.language] : [];
   const selected = resolveLocale(query, saved, languages);
   try { await setLocale(selected, { persist: false, updateUrl: false }); }
   catch { await setLocale(fallbackLocale, { persist: false, updateUrl: false }); }
 }
 
 /** Source nesting does not change the full keys used by callers. */
-function messageText(key: MessageKey): string {
-  for (const catalog of [messages, defaultMessages]) {
+function messageText(key: MessageKey, values?: Record<string, string | number>) {
+  for (const [catalog, language] of [[messages, locale], [defaultMessages, fallbackLocale]] as const) {
     let value: unknown = catalog;
     for (const segment of key.split(".")) {
       value = value && typeof value === "object" && Object.hasOwn(value, segment)
         ? (value as Record<string, unknown>)[segment] : undefined;
     }
-    if (typeof value === "string" && value.trim()) return value;
+    if (typeof value === "string" && value.trim()) return selectMessage(value, values, language, locale);
   }
   throw new Error(`Missing fallback message: ${key}`);
 }

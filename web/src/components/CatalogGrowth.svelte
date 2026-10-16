@@ -62,7 +62,7 @@
   >
     <div use:alignStem>
       <p class="catalog-title">{$t("growth.summary", { percentage: percentage })}</p>
-      <p>{$t("growth.recordings", { count: formatNumber(added) })} </p>
+      <p>{$t("growth.recordings", { count: added })} </p>
       <p>{$t("growth.hydration")} </p>
     </div>
   </Popover.Content>

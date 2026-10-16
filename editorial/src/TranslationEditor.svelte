@@ -1,55 +1,64 @@
 <script lang="ts">
   import { translation as t } from "./i18n/runtime";
-  import { emptyReview, localizedText, sourceRevision, type Sheet, type Translation, type Translations } from "./content";
+  import { onDestroy } from "svelte";
+  import { sourceRevision, legacySourceRevision, type Sheet, type Translations } from "./content";
+  import { startTranslation, rebaseTranslation, resetTranslationReview } from "./translation-operations";
   export let sheet: Sheet;
   export let translations: Translations;
   export let changed: () => void;
   let locale = "en-US";
   let feedback = "";
   let revision = "";
+  let legacyRevision = "";
   let generation = 0;
+  let operation = 0;
+  let disposed = false;
+  $: cancelPending(sheet, locale);
+  onDestroy(() => { disposed = true; generation++; operation++; });
+  function cancelPending(_sheet: Sheet, _locale: string) {
+    operation++;
+    feedback = "";
+  }
+  function task() {
+    const current = ++operation;
+    const selectedLocale = locale;
+    const context = { sheet, locale, translations };
+    return { context, isCurrent: () => !disposed && current === operation &&
+      sheet === context.sheet && locale === selectedLocale && translations === context.translations };
+  }
   $: translation = translations[locale]?.find((item) => item.slug === sheet.resource.slug);
   $: refresh(sheet);
   async function refresh(source: Sheet) {
     const current = ++generation;
-    const digest = await sourceRevision(source);
-    if (current === generation) revision = digest;
+    revision = "";
+    legacyRevision = "";
+    const snapshot = structuredClone(source);
+    const [digest, legacy] = await Promise.all([sourceRevision(snapshot), legacySourceRevision(snapshot)]);
+    if (!disposed && current === generation) { revision = digest; legacyRevision = legacy; }
   }
   async function start() {
+    const { context, isCurrent } = task();
     try {
-      const canonical = Intl.getCanonicalLocales(locale)[0];
+      const canonical = Intl.getCanonicalLocales(context.locale)[0];
       if (!canonical || canonical === "pt-BR" || !/^[a-z]{2,3}(?:-[A-Z][a-z]{3})?(?:-(?:[A-Z]{2}|[0-9]{3}))?$/.test(canonical)) throw new Error();
+      context.locale = canonical;
+      const created = await startTranslation(context, isCurrent);
+      if (!isCurrent()) return;
       locale = canonical;
-      if (translations[locale]?.some((item) => item.slug === sheet.resource.slug)) return;
-      const draft = structuredClone(localizedText(sheet));
-      draft.source_revision = await sourceRevision(sheet);
-      resetReview(draft);
-      translations[locale] = [...(translations[locale] ?? []), draft];
-      changed();
       feedback = "";
-    } catch { feedback = $t("translations.invalidLocale"); }
-  }
-  function resetReview(item: Translation) {
-    if (item.status !== "deprecated") item.status = "draft";
-    item.review = emptyReview();
-    item.sections.forEach((block) => { block.status = "draft"; block.review = emptyReview(); });
+      if (created) changed();
+    } catch {
+      if (isCurrent()) feedback = $t("translations.invalidLocale");
+    }
   }
   function invalidate() {
-    if (translation) resetReview(translation);
+    operation++;
+    if (translation) resetTranslationReview(translation);
     changed();
   }
   async function rebase() {
-    if (!translation) return;
-    translation.sections = sheet.resource.sections.map((block) => ({
-      id: block.id, text: translation!.sections.find((item) => item.id === block.id)?.text ?? block.text,
-      status: "draft", review: emptyReview(),
-    }));
-    if (sheet.resource.image?.asset_id !== translation.image?.asset_id) {
-      translation.image = localizedText(sheet).image;
-    }
-    translation.source_revision = await sourceRevision(sheet);
-    resetReview(translation);
-    changed();
+    const { context, isCurrent } = task();
+    if (await rebaseTranslation(context, isCurrent) && isCurrent()) changed();
   }
 </script>
 
@@ -59,7 +68,7 @@
   <label>{$t("translations.locale")}<input bind:value={locale} list="content-locales" placeholder="en-US" /></label>
   <datalist id="content-locales">{#each Object.keys(translations) as language}<option value={language}></option>{/each}</datalist>
   {#if translation}
-    {#if translation.source_revision !== revision}<p role="status">{$t("translations.stale")}</p>{/if}
+    {#if translation.source_revision !== revision && translation.source_revision !== legacyRevision}<p role="status">{$t("translations.stale")}</p>{/if}
     <button on:click={rebase}>{$t("translations.rebase")}</button>
     <label>{$t("sheet.name")}<input lang={locale} bind:value={translation.name} on:input={invalidate} /></label>
     <label>{$t("sheet.description")}<textarea rows="3" lang={locale} bind:value={translation.description} on:input={invalidate}></textarea></label>

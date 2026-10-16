@@ -3,7 +3,7 @@
   import { translation as t } from "./i18n/runtime";
   import { onMount } from "svelte";
   import TranslationEditor from "./TranslationEditor.svelte";
-  import { initialSnapshot, sourceSheets, snapshotFromSheets, sourceRevision, type Sheet, type Translations, type Snapshot } from "./content";
+  import { initialSnapshot, sourceSheets, snapshotFromSheets, sourceRevision, legacySourceRevision, type Sheet, type Translations, type Snapshot } from "./content";
   import type { EditorialSection } from "../../web/src/api/types";
   import { getStorageItem, isStorageAvailable, setStorageItem } from "../../web/src/storage";
 
@@ -153,7 +153,9 @@
       if (locale === "pt-BR") continue;
       for (const text of texts) {
         const original = snapshot.find((item) => item.resource.slug === text.slug)!;
-        if (text.status !== "deprecated" && text.source_revision !== await sourceRevision(original)) text.status = "stale";
+        const revision = await sourceRevision(original);
+        if (text.source_revision === await legacySourceRevision(original)) text.source_revision = revision;
+        if (text.status !== "deprecated" && text.source_revision !== revision) text.status = "stale";
         if (["reviewed", "published"].includes(text.status) &&
             (!text.name.trim() || !text.description.trim() || !text.sound_production.trim() ||
              !text.review.claim_support_verified || !text.review.reviewer?.trim() || !text.review.reviewed_at ||

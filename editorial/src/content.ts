@@ -72,21 +72,35 @@ function canonical(value: unknown): string {
   return JSON.stringify(value);
 }
 
-export async function sourceRevision(sheet: Sheet): Promise<string> {
-  // Hash only source content, using the publisher's canonical JSON representation.
-  const normalized = sourceSheets(snapshotFromSheets([sheet], {}))[0];
-  const omitDerivedFlag = (review: EditorialReview) => Reflect.deleteProperty(review, "source_metadata_verified");
-  normalized.review = { ...normalized.review };
-  omitDerivedFlag(normalized.review);
-  normalized.resource.sections = normalized.resource.sections.map((block) => {
-    const review = { ...block.review };
-    omitDerivedFlag(review);
-    return { ...block, review };
-  });
-  const bytes = new TextEncoder().encode(canonical({ resource: normalized.resource, review: normalized.review, text_citations: normalized.text_citations }));
+function sourceContent(sheet: Sheet, legacy: boolean): object {
+  const normalized = structuredClone(sourceSheets(snapshotFromSheets([sheet], {}))[0]);
+  const { resource, text_citations } = normalized;
+  Reflect.deleteProperty(normalized.review, "source_metadata_verified");
+  for (const block of resource.sections) Reflect.deleteProperty(block.review, "source_metadata_verified");
+  if (legacy) return { resource, review: normalized.review, text_citations };
+  for (const key of ["data_source", "catalog_version", "image_catalog_version", "tone"])
+    Reflect.deleteProperty(resource, key);
+  const review = { claim_support_verified: normalized.review.claim_support_verified };
+  for (const block of resource.sections)
+    for (const key of Object.keys(block.review))
+      if (key !== "claim_support_verified") Reflect.deleteProperty(block.review, key);
+  for (const item of resource.sources)
+    for (const key of ["accessed_at", "verified_at"]) Reflect.deleteProperty(item, key);
+  for (const item of resource.further_reading)
+    for (const key of ["reviewer", "reviewed_at", "editorial_note"]) Reflect.deleteProperty(item, key);
+  if (resource.image)
+    for (const key of ["variants", "tone", "credit", "resolution"]) Reflect.deleteProperty(resource.image, key);
+  return { revision_schema: 2, resource, review, text_citations };
+}
+
+async function digestSource(sheet: Sheet, legacy: boolean): Promise<string> {
+  const bytes = new TextEncoder().encode(canonical(sourceContent(sheet, legacy)));
   const digest = await crypto.subtle.digest("SHA-256", bytes);
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
+
+export const sourceRevision = (sheet: Sheet): Promise<string> => digestSource(sheet, false);
+export const legacySourceRevision = (sheet: Sheet): Promise<string> => digestSource(sheet, true);
 
 export const emptyReview = (): EditorialReview => ({ source_metadata_verified: false, claim_support_verified: false,
   reviewer: null, reviewed_at: null, editorial_note: null });
