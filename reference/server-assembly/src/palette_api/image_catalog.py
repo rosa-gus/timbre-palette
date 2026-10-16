@@ -16,6 +16,9 @@ class ResolvedImage:
     depicted_instrument_slug: str
     alt: str
     caption: str
+    authored_alt: str | None
+    depicted_name: str
+    family_name: str
     url: str
     width: int
     height: int
@@ -153,6 +156,9 @@ class InstrumentImageCatalog:
             depicted_instrument_slug=depicted,
             alt=str(item.get("alt", f"Imagem de {label}.")),
             caption=caption,
+            authored_alt=item.get("alt") if isinstance(item.get("alt"), str) else None,
+            depicted_name=str(label),
+            family_name=str(family_name),
             url=url,
             width=width,
             height=height,

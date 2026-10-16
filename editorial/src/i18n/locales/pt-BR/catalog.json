@@ -1,0 +1,18 @@
+{
+  "catalog": {
+    "description": "Textos breves, imagens, referências e caminhos para saber mais.",
+    "empty": "Nenhuma ficha encontrada.",
+    "family": "Família sonora",
+    "heading": "<upper>01 / Catálogo editorial</upper>",
+    "listLabel": "Fichas",
+    "search": "Buscar ficha",
+    "searchPlaceholder": "Nome ou slug",
+    "sidebarLabel": "Instrumentos e famílias",
+    "titleEnd": "em poucas palavras.",
+    "titleStart": "Instrumentos,"
+  },
+  "navigation": {
+    "editorial": "editorial",
+    "instrumentSheets": "<upper>Fichas de instrumentos</upper>"
+  }
+}

@@ -8,8 +8,8 @@
   "packageManager": "yarn@1.22.22",
   "scripts": {
     "prepare:images": "python3 scripts/publish_images.py",
-    "dev:web": "yarn prepare:images && vite --host 127.0.0.1",
-    "dev:editorial": "vite --config vite.editorial.config.ts --host 127.0.0.1",
+    "dev:web": "node scripts/generate_locale_types.mjs web && yarn prepare:images && vite --host 127.0.0.1",
+    "dev:editorial": "node scripts/generate_locale_types.mjs editorial && vite --config vite.editorial.config.ts --host 127.0.0.1",
     "db:migrate:local": "wrangler d1 migrations apply DB --local --persist-to .wrangler/state -c wrangler.jsonc",
     "db:migrate:remote": "wrangler d1 migrations apply DB --remote -c wrangler.jsonc",
     "dev:api": "yarn db:migrate:local && wrangler dev -c wrangler.jsonc --persist-to .wrangler/state --port 8787",
@@ -20,8 +20,8 @@
     "musicbrainz:publish": "python3 scripts/publish_snapshot.py",
     "editorial:validate": "python3 scripts/publish_editorial.py editorial/src/instruments.json",
     "editorial:sql": "python3 scripts/publish_editorial.py editorial/src/instruments.json --sql",
-    "typecheck:web": "tsc --noEmit -p web/tsconfig.json && svelte-check --tsconfig ./web/tsconfig.json",
-    "typecheck:editorial": "tsc --noEmit -p tsconfig.editorial.json && svelte-check --tsconfig ./tsconfig.editorial.json",
+    "typecheck:web": "node scripts/generate_locale_types.mjs --check web && tsc --noEmit -p web/tsconfig.json && svelte-check --tsconfig ./web/tsconfig.json",
+    "typecheck:editorial": "node scripts/generate_locale_types.mjs --check editorial && tsc --noEmit -p tsconfig.editorial.json && svelte-check --tsconfig ./tsconfig.editorial.json",
     "typecheck:hydrator": "tsc --noEmit -p workers/hydrator/tsconfig.json",
     "typecheck:api": "yarn prepare:images && tsc --noEmit -p workers/api/tsconfig.json",
     "types:api": "wrangler types workers/api/worker-configuration.d.ts --config wrangler.jsonc",
@@ -29,7 +29,10 @@
     "build:editorial": "yarn typecheck:editorial && vite build --config vite.editorial.config.ts",
     "test:web": "yarn typecheck:web && vitest run --config vitest.web.config.ts",
     "test:api": "tsc --noEmit -p workers/api/test/tsconfig.json && vitest run --config vitest.api.config.ts",
-    "stress:api": "tsc --noEmit -p workers/api/test/tsconfig.json && vitest run --config vitest.stress.config.ts"
+    "stress:api": "tsc --noEmit -p workers/api/test/tsconfig.json && vitest run --config vitest.stress.config.ts",
+    "locales:generate": "node scripts/generate_locale_types.mjs",
+    "locales:check": "node scripts/generate_locale_types.mjs --check",
+    "locales:format": "node scripts/generate_locale_types.mjs --format"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "1.3.6",

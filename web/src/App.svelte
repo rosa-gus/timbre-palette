@@ -24,7 +24,7 @@
     InstrumentResource,
     ListeningPeriod,
     PaletteReport,
-    ProfileAnalysisV2,
+    ProfileAnalysisV3,
     AnalysisView,
     SectionAvailability,
   } from "./api/types";
@@ -169,7 +169,7 @@
   let period: ListeningPeriod = "1month";
   let isExample = false;
   let exampleId = "";
-  let result: ProfileAnalysisV2 | null = null;
+  let result: ProfileAnalysisV3 | null = null;
   let activeAnalysisView: AnalysisView = "track_palette";
   let formError = "";
   let loadingTitle = t("loading.historyTitle");
@@ -260,7 +260,7 @@
   }
 
   function resolveAnalysisView(
-    next: ProfileAnalysisV2,
+    next: ProfileAnalysisV3,
     requested: AnalysisView | null,
   ): AnalysisView {
     if (requested === "artist_vocabulary") {

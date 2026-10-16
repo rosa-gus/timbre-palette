@@ -1,10 +1,10 @@
 # Public API and profile assembly contract
 
-The active public API is the TypeScript Cloudflare Worker configured by the root `wrangler.jsonc`. Its OpenAPI 3.1 document is served at `GET /openapi.json`. The Worker provides profile inputs, snapshot evidence, catalog resources, and asynchronous hydration scheduling. The browser assembles the Profile Analysis v2 report.
+The active public API is the TypeScript Cloudflare Worker configured by the root `wrangler.jsonc`. Its OpenAPI 3.1 document is served at `GET /openapi.json`. The Worker provides profile inputs, snapshot evidence, catalog resources, and asynchronous hydration scheduling. The browser assembles the Profile Analysis v3 report.
 
 `GET /docs` (also `/docs/`) serves Swagger UI for that document. Its pinned JavaScript and CSS load from unpkg; viewing the documentation does not access D1 or R2. Executing operations through the UI uses the API's normal protections and budgets.
 
-The active API runtime version is `3.0.0`, reflecting the split v3 profile-input and evidence contract. The report schema remains v2. The local FastAPI server-assembly reference retains version `2.1.1`.
+The active API runtime version is `3.0.0`, reflecting the split v3 profile-input and evidence contract. The browser report schema is `profile-analysis-v3`, independently versioned from the API and methodology. The local FastAPI server-assembly reference retains version `2.1.1`.
 
 The former FastAPI implementation remains in `reference/server-assembly/` for local comparison. It is not deployed as the public API or used by the default front-end runtime.
 
@@ -92,7 +92,7 @@ The browser preserves pending state in the current report. A later profile reque
 
 ## Browser report model
 
-The browser builds the `ProfileAnalysisV2` object from the paginated history and evidence responses. Track coverage uses every valid track returned for the selected period as its denominator. Missing recording or track identities are queued up to the 50-target per-report limit; the browser separately deduplicates up to 200 artist identities.
+The browser builds the `ProfileAnalysisV3` object from the paginated history and evidence responses. Track coverage uses every valid track returned for the selected period as its denominator. Missing recording or track identities are queued up to the 50-target per-report limit; the browser separately deduplicates up to 200 artist identities.
 
 The report keeps `track_palette` and `artist_vocabulary` independent. The direct palette owns track and play coverage, sound balance, discovery, and temperament. Vocabulary reach belongs only to the artist vocabulary. Pending hydration does not turn missing catalog rows into evidence or change the direct palette's availability state.
 
@@ -134,3 +134,13 @@ All runtime D1 executions in the API and hydrator share daily accounting outside
 `public/profile-analysis-config.json` selects the default assembly mode at runtime. It defaults to `browser`. `VITE_PROFILE_ANALYSIS_MODE=server` can override it during local development, and `VITE_PROFILE_SERVER_API_BASE_URL` selects the server-reference endpoint. The server mode exists only to compare local results against the retained FastAPI implementation. The reference service is started with `yarn dev:api:reference` on port `8788`; do not deploy it as the production API.
 
 `VITE_API_BASE_URL` selects the active TypeScript Worker URL. The Last.fm key belongs in the Worker secret or local `.dev.vars`; it must never be placed in a `VITE_*` variable or static runtime configuration.
+
+## Structured reports and compatibility
+
+Browser assembly returns `report_schema_version: "profile-analysis-v3"`. Analysis notices derive from source and availability fields. Discovery carries the instrument slug/name; temperament carries a stable rule, primary family slug, and primary sound nature. Recording states replace rendered status details. Analysis images retain published metadata and authored alt text; the UI generates fallback alt text and captions.
+
+Presentation and share images use the same front-end renderer. Calculations, thresholds, snapshot versions, and methodology version are unchanged. Catalog names and authored descriptions remain editorial data pending multilingual publication.
+
+Only the local Python reference exposes `GET /v3/profiles/{username}/analysis` and `GET /v3/examples/analysis`. Its v2 endpoints retain the previous prose-bearing shape through an isolated legacy serializer. The public Worker gains no report-assembly endpoints.
+
+Clients reject missing or unsupported report versions instead of interpreting legacy prose. Separate reference URLs prevent v2/v3 HTTP cache collisions. No assembled reports are persisted in browser storage; existing v1 history checkpoints contain raw history and remain reusable. Any future report cache must include the report schema and methodology versions and store structured data only.

@@ -1,0 +1,13 @@
+{
+  "errors": {
+    "loadRevisions": "Não foi possível carregar as revisões locais. Os dados iniciais estão visíveis; exporte suas alterações para preservá-las.",
+    "storageUnavailable": "Armazenamento local indisponível. Exporte a revisão para preservar as alterações."
+  },
+  "export": {
+    "action": "Exportar revisão JSON ↗",
+    "success": "Revisão exportada. A exportação não publica alterações na API."
+  },
+  "storage": {
+    "notice": "Revisões salvas neste navegador · exportação manual"
+  }
+}

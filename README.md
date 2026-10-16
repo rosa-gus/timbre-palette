@@ -32,7 +32,7 @@ MusicBrainz data is consumed exclusively through versioned offline snapshots bui
 
 ## API
 
-The public API is the TypeScript Cloudflare Worker in `workers/api/`. It provides bounded Last.fm history pages and profile metadata, read-only snapshot evidence, and a queue for asynchronous hydration. The browser combines those responses into the Profile Analysis v2 report; the API does not assemble the report on the production request path.
+The public API is the TypeScript Cloudflare Worker in `workers/api/`. It provides bounded Last.fm history pages and profile metadata, read-only snapshot evidence, and a queue for asynchronous hydration. The browser combines those responses into the Profile Analysis v3 report; the API does not assemble the report on the production request path.
 
 The API exposes these resources:
 
@@ -63,7 +63,7 @@ flowchart LR
     API -->|read snapshot projections| D1[(Cloudflare D1)]
     Browser -->|queue missing targets| API
     API -->|record hydration jobs| D1
-    Browser -->|assemble Profile Analysis v2| Report[Profile report]
+    Browser -->|assemble Profile Analysis v3| Report[Profile report]
     Hydrator[Snapshot hydrator] -->|claim jobs| D1
     Hydrator -->|read versioned shards| R2[(R2 credit index)]
     Hydrator -->|materialize projections| D1
@@ -73,7 +73,7 @@ The browser requests history in pages of 50, pins evidence reads to one snapshot
 
 ## Front-end
 
-Both interfaces use Svelte, strict TypeScript, Vite, semantic HTML, and project-owned CSS. The public application is a static build with no server credentials. Its versioned browser code assembles the Profile Analysis v2 report.
+Both interfaces use Svelte, strict TypeScript, Vite, semantic HTML, and project-owned CSS. The public application is a static build with no server credentials. Its versioned browser code assembles the Profile Analysis v3 report.
 
 ### Central Panel
 

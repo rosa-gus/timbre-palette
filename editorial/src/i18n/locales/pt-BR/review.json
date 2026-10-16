@@ -1,0 +1,29 @@
+{
+  "review": {
+    "date": "Data da revisão",
+    "deprecated": "Retirado",
+    "draft": "Rascunho",
+    "linkReviewer": "Responsável pela revisão",
+    "note": "Nota editorial",
+    "pending": "Em revisão",
+    "published": "Publicado",
+    "reviewed": "Revisado",
+    "reviewer": "Responsável",
+    "sourced": "Fonte vinculada",
+    "status": "Estado",
+    "textVerified": "Descrição e produção do som revisadas",
+    "title": "Revisão da ficha"
+  },
+  "validation": {
+    "curiosityCitation": "{label}: curiosidade com fonte vinculada precisa de uma citação.",
+    "curiosityReference": "{label}: referência inexistente na curiosidade.",
+    "curiosityReview": "{label}: conclua a revisão da curiosidade antes de promovê-la.",
+    "image": "{label}: confira identificador, descrição e URL da imagem.",
+    "missingReference": "{label}: referência inexistente em {field}.",
+    "readingLink": "{label}: confira título e URL de Saiba mais.",
+    "readingReview": "{label}: informe a revisão do link de Saiba mais.",
+    "requiredText": "{label}: preencha nome, descrição e produção do som.",
+    "review": "{label}: informe responsável e data da revisão.",
+    "source": "{label}: confira título e URL da fonte."
+  }
+}

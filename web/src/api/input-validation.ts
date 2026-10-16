@@ -1,7 +1,8 @@
 import type {
+  AnalysisImage,
   InstrumentImage,
   InstrumentResource,
-  ProfileAnalysisV2,
+  ProfileAnalysisV3,
 } from "./types";
 
 const MAX_RESPONSE_BYTES = 2_000_000;
@@ -140,7 +141,18 @@ function safeImage(value: InstrumentImage | null): InstrumentImage | null {
   };
 }
 
-export function sanitizeProfileAnalysis(report: ProfileAnalysisV2): ProfileAnalysisV2 {
+function safeAnalysisImage(value: AnalysisImage | null): AnalysisImage | null {
+  if (!isRecord(value)) return null;
+  const depictedName = boundedText(value.depicted_name, 256);
+  const familyName = boundedText(value.family_name, 256);
+  if (!depictedName || !familyName) return null;
+  const validated = safeImage({ ...value, alt: value.alt ?? depictedName, caption: depictedName });
+  if (!validated) return null;
+  const { alt: _alt, caption: _caption, ...image } = validated;
+  return { ...image, alt: boundedText(value.alt, 512), depicted_name: depictedName, family_name: familyName };
+}
+
+export function sanitizeProfileAnalysis(report: ProfileAnalysisV3): ProfileAnalysisV3 {
   const profile = {
     ...report.profile,
     profile_url: report.is_example ? null : safeLastFmProfileUrl(report.profile.profile_url, report.profile.username),
@@ -159,11 +171,11 @@ export function sanitizeProfileAnalysis(report: ProfileAnalysisV2): ProfileAnaly
       families: report.track_palette.families.map((family) => ({
         ...family,
         tone: safeTone(family.tone),
-        image: safeImage(family.image),
+        image: safeAnalysisImage(family.image),
       })),
       discovery: report.track_palette.discovery ? {
         ...report.track_palette.discovery,
-        image: safeImage(report.track_palette.discovery.image),
+        image: safeAnalysisImage(report.track_palette.discovery.image),
       } : null,
     },
     artist_vocabulary: {

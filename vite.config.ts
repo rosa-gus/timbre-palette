@@ -1,4 +1,4 @@
-import messages from "./web/src/i18n/locales/pt-BR";
+import messages from "./web/src/i18n/locales/pt-BR/metadata.json";
 import { defineConfig } from "vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { readFileSync } from "node:fs";
@@ -43,8 +43,9 @@ export default defineConfig({
         order: "pre",
         handler(html) {
           return html.replace(/\{\{i18n:(metadata\.[a-zA-Z]+)\}\}/g, (_, key: string) => {
-            if (!Object.hasOwn(messages, key)) throw new Error(`Unknown HTML message: ${key}`);
-            return messages[key as keyof typeof messages]
+            const field = key.slice("metadata.".length);
+            if (!Object.hasOwn(messages.metadata, field)) throw new Error(`Unknown HTML message: ${key}`);
+            return messages.metadata[field as keyof typeof messages.metadata]
               .replace(/&/g, "&amp;").replace(/</g, "&lt;")
               .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
           });

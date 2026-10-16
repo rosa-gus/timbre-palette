@@ -33,6 +33,20 @@ describe("Portuguese presentation compatibility", () => {
     expect(() => messageParts("sources.snapshot")).toThrow("Missing message parameter");
   });
 
+  it("renders uppercase markers in text and rich messages without changing external values", () => {
+    const registeredLabel = "jan. 2020 <upper>external</upper>";
+    const expected = `SCROBBLANDO DESDE ${registeredLabel}`;
+    expect(t("profile.registered", { registeredLabel })).toBe(expected);
+    const parts = messageParts("profile.registered", { registeredLabel });
+    expect(parts.map((part) => part.text).join("")).toBe(expected);
+    expect(parts.some((part) => part.wrapper)).toBe(false);
+    expect(t("report.dominantPresence", { index: 1 })).toBe("1 / PRESENÇA DOMINANTE");
+    expect(t("images.photoCaption", { caption: "João toca piano" })).toBe("FOTO · João toca piano");
+    expect(t("sharing.previewIdentity", { listener: "Maria" })).toBe("TIMBRE PALETTE / Maria");
+    expect(t("sharing.paletteHeading")).toBe("/ PALETA INSTRUMENTAL");
+    expect(editorialText("catalog.heading")).toBe("01 / CATÁLOGO EDITORIAL");
+  });
+
   it("preserves counts, percentages, wait thresholds, and date conventions", () => {
     expect(formatNumber(1234)).toBe("1.234");
     expect(formatPercent(0.126)).toBe("13%");

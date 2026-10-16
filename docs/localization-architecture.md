@@ -1,6 +1,6 @@
 # Localization architecture
 
-Status: accepted; phase 2 implemented. API and editorial publication behavior remain unchanged.
+Status: accepted; phase 3 implemented. Public API and editorial publication behavior remain unchanged.
 
 ## Ownership and dependency boundaries
 
@@ -23,7 +23,7 @@ Editorial content is API resource data, not a web dictionary. The editorial app'
 - Assemble analysis as structured facts, reason codes, and narrative identifiers with parameters. Render prose in the presentation layer, including portraits and share images. Translation keys remain private to each client.
 - Keep history checkpoints and analysis caches language-neutral. Cache localized resources separately by effective locale and publication revision.
 
-The current browser report and Python reference still contain rendered strings. Migrating them requires explicit schema/cache compatibility handling; existing fields must not silently change meaning.
+Structured reports use `profile-analysis-v3`. The reference retains its v2 response contract through a separate legacy serializer; existing fields keep their meanings.
 
 ## Locale resolution
 
@@ -47,7 +47,7 @@ Translations retain citations, source IDs, provenance, and original bibliographi
 
 1. Record ownership and contracts (complete).
 2. Extract current Portuguese UI copy without changing behavior (complete).
-3. Separate analysis data from rendered narratives, including cache and reference compatibility.
+3. Separate analysis data from rendered narratives, including cache and reference compatibility (complete).
 4. Add editorial translation storage, review, publication, and API support.
 5. Add another language and validate UI, accessibility, and exported images.
 
@@ -63,8 +63,16 @@ Later implementation must verify:
 
 ## Current implementation
 
-Public and editorial UI messages live in separate `src/i18n/locales/pt-BR.ts` catalogs. Their runtimes support only `pt-BR`; language selection and additional dictionaries are deferred. Public HTML metadata is resolved from its catalog during Vite development and builds.
+Public and editorial UI messages live in separate `src/i18n/locales/pt-BR/` directories, split into JSON files by responsibility. Their runtimes support only `pt-BR`; language selection and additional dictionaries are deferred. Public HTML metadata is resolved from its catalog during Vite development and builds.
+
+Each JSON file owns distinct top-level namespaces and uses nested objects. Nesting preserves existing full keys: `entry.profileLabel` resolves to `entry` → `profileLabel`. Web domains are common, entry, analysis, narratives, instruments, sharing, errors, and metadata. Editorial domains are common, catalog, sheet, sources, review, and images. Key renaming and copy cleanup are deferred.
+
+Run `yarn locales:format` to apply natural key ordering and two-space indentation. After adding files or changing keys or `{parameters}`, run `yarn locales:generate`. Commit the generated import catalogs and parameter `.d.ts` files; neither duplicates message text. `yarn locales:check` rejects duplicate keys, namespace conflicts, malformed placeholders, unordered JSON, and stale artifacts. CI and application type checks enforce these rules. Development commands generate artifacts at startup.
 
 Use semantic keys and named parameters with `t`. Public `Message.svelte` supports named wrappers for component-owned markup without rendering HTML. Date, number, percentage, and wait-duration formatting is centralized in `web/src/i18n/formatters.ts`.
 
-Rendered analysis narratives, the Python reference, and report/cache compatibility remain phase 3 work. Editorial resource translations remain phase 4 work. The development-only ASCII workspace is outside this UI extraction. Existing unknown-error fallback behavior is preserved until the error-contract migration.
+Use `<upper>Sentence case</upper>` for uppercase presentation. Both runtimes apply locale-aware casing in `t`; public `Message.svelte` also handles it without a snippet. Only text inside the tag changes case; keep names and dates outside when their casing must be preserved. Tags must be balanced and cannot nest. Parameter values are never parsed as tags.
+
+Report calculation and history collection do not import UI locales. `web/src/analysis/presentation.ts` renders structured narratives for screens and share images. Unknown API errors use local generic copy. The Python reference calculates the same neutral contract and isolates frozen v2 prose in `legacy_presentation.py`. See [report compatibility](api-contract.md#structured-reports-and-compatibility).
+
+Editorial resource translations remain phase 4 work. The development-only ASCII workspace remains outside UI extraction, but its report fixtures use the structured contract.

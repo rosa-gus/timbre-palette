@@ -2,7 +2,7 @@
 
 Current direct-palette methodology version: `0.5.0`.
 
-The browser assembles two independent products into the versioned Profile Analysis v2 report:
+The browser assembles two independent products into the versioned Profile Analysis v3 report:
 
 - `track_palette` uses direct recording/track evidence and owns coverage,
   sound balance, discovery, and temperament;

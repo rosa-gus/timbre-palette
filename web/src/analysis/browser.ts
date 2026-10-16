@@ -1,11 +1,11 @@
-import { t } from "../i18n/runtime";
+import { REPORT_SCHEMA_VERSION } from "../api/types";
 import type {
   AnalysisStatus,
   Confidence,
   FamilyPresence,
-  InstrumentImage,
+  AnalysisImage,
   ListeningPeriod,
-  ProfileAnalysisV2,
+  ProfileAnalysisV3,
   ProfileSummary,
   RecordingAnalysis,
   RecordingStatus,
@@ -15,7 +15,9 @@ import type {
   VocabularyFamily,
   VocabularyFeaturedArtist,
 } from "../api/types";
-import { apiBaseUrl, isProfileAnalysisV2, PaletteApiError } from "../api/client";
+import { apiBaseUrl } from "../api/runtime-config";
+import { isProfileAnalysisV3 } from "../api/report-validation";
+import { PaletteApiError } from "../api/errors";
 import { retryAfterSeconds } from "../api/retry-after";
 import { loadHistory, finishHistory, recordHistoryFailure } from "./history";
 import {
@@ -136,12 +138,6 @@ interface DiscoveryLayer extends InstrumentLayer {
   plays: number;
 }
 
-interface TemperamentIdentity {
-  title: string;
-  invitation: string;
-  basis: string;
-}
-
 function isRecord(value: unknown): value is Row {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -161,7 +157,7 @@ function round(value: number, places: number): number {
 }
 
 function normalizedName(value: string): string {
-  return value.toLocaleLowerCase().trim().replace(/\s+/g, " ");
+  return value.toLowerCase().trim().replace(/\s+/g, " ");
 }
 
 function stringOrder(a: string, b: string): number {
@@ -196,35 +192,6 @@ function unitFraction(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1 ? value : null;
 }
 
-function apiMessage(code: string): string {
-  const messages: Record<string, string> = {
-    invalid_username: t("errors.invalidUsername"),
-    invalid_username_or_period: t("errors.invalidUsernameOrPeriod"),
-    empty_history: t("errors.emptyHistory"),
-    lastfm_profile_not_found: t("errors.lastfmProfileNotFound"),
-    rate_limited: t("errors.rateLimited"),
-    lastfm_busy: t("errors.lastfmBusy"),
-    hydration_busy: t("errors.hydrationBusy"),
-    hydration_daily_budget: t("errors.hydrationDailyBudget"),
-    d1_daily_budget: t("errors.d1DailyBudget"),
-    protection_unavailable: t("errors.protectionUnavailable"),
-    lastfm_rate_limited: t("errors.lastfmRateLimited"),
-    lastfm_unavailable: t("errors.lastfmUnavailable"),
-    lastfm_key_missing: t("errors.lastfmKeyMissing"),
-    snapshot_unavailable: t("errors.snapshotUnavailable"),
-    unsupported_snapshot_schema: t("errors.unsupportedSnapshotSchema"),
-    invalid_lastfm_response: t("errors.invalidLastfmResponse"),
-    invalid_page_or_limit: t("errors.invalidPageOrLimit"),
-    request_too_large: t("errors.requestTooLarge"),
-    invalid_mbid_list: t("errors.invalidMbidList"),
-    invalid_snapshot_version: t("errors.invalidSnapshotVersion"),
-    database_unavailable: t("errors.databaseUnavailable"),
-    hydration_unavailable: t("errors.hydrationUnavailable"),
-    example_data_unavailable: t("errors.exampleDataUnavailable"),
-  };
-  return messages[code] ?? t("errors.assemblyUnavailable");
-}
-
 async function fetchJson(
   url: string,
   signal: AbortSignal,
@@ -235,7 +202,7 @@ async function fetchJson(
     response = await fetch(url, { ...init, signal });
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") throw error;
-    throw new PaletteApiError("Não foi possível conectar ao serviço de análise.", 0, "network_error");
+    throw new PaletteApiError("Analysis service connection failed.", 0, "network_error");
   }
 
   let value: unknown;
@@ -243,19 +210,19 @@ async function fetchJson(
     value = await readBoundedJson(response);
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") throw error;
-    throw new PaletteApiError("O serviço devolveu uma resposta inválida.", response.status, "invalid_json");
+    throw new PaletteApiError("The service returned invalid JSON.", response.status, "invalid_json");
   }
   if (!response.ok) {
     const code = isRecord(value) && typeof value.error === "string"
       ? value.error
       : isRecord(value) && typeof value.code === "string" ? value.code : "api_request_failed";
-    throw new PaletteApiError(apiMessage(code), response.status, code, retryAfterSeconds(response));
+    throw new PaletteApiError(code, response.status, code, retryAfterSeconds(response));
   }
   if (isRecord(value) && value.error !== undefined) {
     const code = Number(value.error) === 6 ? "lastfm_profile_not_found"
       : Number(value.error) === 29 ? "lastfm_rate_limited"
       : "lastfm_unavailable";
-    throw new PaletteApiError(apiMessage(code), 502, code);
+    throw new PaletteApiError(code, 502, code);
   }
   return value;
 }
@@ -288,13 +255,13 @@ function parsePage(value: unknown, fallbackUsername: string): {
 } {
   const topTracks = isRecord(value) && isRecord(value.toptracks) ? value.toptracks : null;
   if (!topTracks) {
-    throw new PaletteApiError("O Last.fm devolveu uma resposta inválida.", 502, "invalid_lastfm_response");
+    throw new PaletteApiError("Last.fm returned invalid history.", 502, "invalid_lastfm_response");
   }
   const attributes = isRecord(topTracks["@attr"]) ? topTracks["@attr"] : {};
   const rawTracks = Array.isArray(topTracks.track) ? topTracks.track
     : topTracks.track === undefined ? [] : [topTracks.track];
   if (rawTracks.length > PAGE_SIZE) {
-    throw new PaletteApiError("O Last.fm devolveu uma página maior que o permitido.", 502, "invalid_lastfm_response");
+    throw new PaletteApiError("Last.fm exceeded the allowed page size.", 502, "invalid_lastfm_response");
   }
   const tracks = rawTracks.map(parseTrack).filter((track): track is ListeningTrack => track !== null);
   const totalPages = Number(attributes.totalPages);
@@ -352,11 +319,11 @@ function rows(value: unknown): Row[] {
 }
 
 function mergeEvidence(state: EvidenceState, value: unknown): void {
-  if (!isRecord(value)) throw new PaletteApiError("A resposta de evidências é inválida.", 502, "invalid_evidence");
+  if (!isRecord(value)) throw new PaletteApiError("Invalid evidence response.", 502, "invalid_evidence");
   const snapshot = isRecord(value.snapshot) ? value.snapshot : null;
   if (!snapshot || !["aliases", "recording_statuses", "recording_claims", "artist_statuses", "artist_vocabulary"]
     .every((key) => Array.isArray(value[key]))) {
-    throw new PaletteApiError("A resposta de evidências é inválida.", 502, "invalid_evidence");
+    throw new PaletteApiError("Invalid evidence response.", 502, "invalid_evidence");
   }
   {
     const snapshotVersion = boundedText(snapshot.snapshot_version, 128);
@@ -364,7 +331,7 @@ function mergeEvidence(state: EvidenceState, value: unknown): void {
     const manifestHash = boundedText(snapshot.manifest_hash, 64);
     if (!snapshotVersion || schemaVersion !== SNAPSHOT_SCHEMA ||
         !manifestHash || !/^[0-9a-f]{64}$/i.test(manifestHash)) {
-      throw new PaletteApiError(apiMessage("unsupported_snapshot_schema"), 503, "unsupported_snapshot_schema");
+      throw new PaletteApiError("unsupported_snapshot_schema", 503, "unsupported_snapshot_schema");
     }
     const nextSnapshot: SnapshotInfo = {
       snapshot_version: snapshotVersion,
@@ -374,7 +341,7 @@ function mergeEvidence(state: EvidenceState, value: unknown): void {
       methodology_version: boundedText(snapshot.methodology_version, 128) ?? VOCABULARY_METHODOLOGY,
     };
     if (state.snapshot && state.snapshot.snapshot_version !== nextSnapshot.snapshot_version) {
-      throw new PaletteApiError("O catálogo mudou durante a consulta. Tente novamente.", 503, "snapshot_changed");
+      throw new PaletteApiError("The pinned snapshot changed during collection.", 503, "snapshot_changed");
     }
     state.snapshot = nextSnapshot;
   }
@@ -470,7 +437,7 @@ function familyTone(catalog: ImageCatalog, familySlug: string): { shadow: string
   return shadow && highlight ? { shadow, highlight } : null;
 }
 
-function resolveImage(catalog: ImageCatalog, slug: string, familySlug: string | null): InstrumentImage | null {
+function resolveImage(catalog: ImageCatalog, slug: string, familySlug: string | null): AnalysisImage | null {
   const instrumentImages = isRecord(catalog.instrument_images) ? catalog.instrument_images : {};
   const fallbacks = isRecord(catalog.instrument_fallbacks) ? catalog.instrument_fallbacks : {};
   const familyImages = isRecord(catalog.family_images) ? catalog.family_images : {};
@@ -501,11 +468,6 @@ function resolveImage(catalog: ImageCatalog, slug: string, familySlug: string | 
     const depicted = cleanText(item.instrument_slug) ?? cleanText(item.slug) ?? slug;
     const label = cleanText(item.depicted_name) ?? depicted;
     const familyName = cleanText(names[imageFamily]) ?? imageFamily;
-    const caption = candidate.resolution === "family"
-      ? `Imagem ilustrativa da família ${familyName}: ${label}.`
-      : candidate.resolution === "related"
-        ? `Imagem relacionada ao instrumento ${label}.`
-        : `Imagem do instrumento ${label}.`;
     const treatment = {
       ...defaults,
       ...(familyTone(catalog, imageFamily) ?? {}),
@@ -520,8 +482,9 @@ function resolveImage(catalog: ImageCatalog, slug: string, familySlug: string | 
       asset_id: candidate.assetId,
       resolution: candidate.resolution,
       depicted_instrument_slug: depicted,
-      alt: cleanText(item.alt) ?? `Imagem de ${label}.`,
-      caption,
+      alt: cleanText(item.alt),
+      depicted_name: label,
+      family_name: familyName,
       variants: [{ name: "detail", url, width: finiteNumber(variant?.width), height: finiteNumber(variant?.height) }],
       tone,
       credit: {
@@ -743,7 +706,7 @@ function buildTemperament(
   const pairShare = (first: string, second: string) => pairShares.get([first, second].sort(stringOrder).join("\u0000")) ?? 0;
   const primaryNature = [...natureScores].sort((a, b) => (b[1] - a[1]) || stringOrder(b[0], a[0]))[0][0];
   const firstFamily = families[0];
-  let identity: TemperamentIdentity | null = null;
+  let rule: Temperament["rule"] | null = null;
   const percussion = familyTrackSets.get("percussion") ?? new Set<string>();
   const synthesizers = familyTrackSets.get("synthesizers") ?? new Set<string>();
   let sharedRecordings = 0;
@@ -753,45 +716,18 @@ function buildTemperament(
     (familyShares.get("synthesizers") ?? 0) >= 0.1 &&
     sharedRecordings >= 3 && pairShare("percussion", "synthesizers") >= 0.15
   ) {
-    identity = {
-      title: "Movimento com atmosfera",
-      invitation: "Sua escuta encontra impulso sem abrir mão de um lugar para permanecer.",
-      basis: "Percussão e sintetizadores aparecem juntos com presença recorrente, aproximando pulso e textura.",
-    };
+    rule = "recurring-percussion-synthesizers";
   } else if ((familyShares.get("plucked-strings") ?? 0) >= 0.25 && soundBalance.electric >= 0.25) {
-    identity = {
-      title: "Corpo elétrico",
-      invitation: "Sua escuta tem uma assinatura elétrica: corpo amplificado e possibilidades de timbre.",
-      basis: "Cordas dedilhadas e fontes elétricas sustentam a maior parte da paleta.",
-    };
+    rule = "electric-plucked-strings";
   } else if (soundBalance.sampled >= 0.15) {
-    identity = {
-      title: "Memória em recortes",
-      invitation: "Sua escuta encontra identidade nos recortes: sons que carregam outros contextos e ganham novas leituras.",
-      basis: "Sons sampleados têm participação recorrente na paleta deste período.",
-    };
+    rule = "recurring-sampled";
   } else if (soundBalance.electronic >= 0.25) {
-    identity = {
-      title: "Textura eletrônica",
-      invitation: "Sua escuta encontra nos sons eletrônicos uma linguagem própria, feita de timbres que podem ser moldados e transformados.",
-      basis: "Fontes eletrônicas têm a maior participação entre as naturezas identificadas.",
-    };
+    rule = "recurring-electronic";
   }
-  if (!identity) {
-    const fallback: Record<SoundNature, TemperamentIdentity> = {
-      acoustic: { title: "Acústica com presença", invitation: "Sua escuta encontra nas fontes acústicas uma marca própria, aproximando gesto, vibração e matéria sonora.", basis: "Fontes acústicas têm a maior participação entre as naturezas identificadas." },
-      electric: { title: "Corpo elétrico", invitation: "Sua escuta tem uma assinatura elétrica: uma leitura de corpo amplificado e possibilidades de timbre.", basis: "Fontes elétricas têm a maior participação entre as naturezas identificadas." },
-      electronic: { title: "Textura eletrônica", invitation: "Sua escuta encontra nos sons eletrônicos uma linguagem própria, feita de timbres moldados e transformados.", basis: "Fontes eletrônicas têm a maior participação entre as naturezas identificadas." },
-      sampled: { title: "Memória em recortes", invitation: "Sua escuta encontra identidade nos recortes: sons que carregam outros contextos e ganham novas leituras.", basis: "Sons sampleados têm participação recorrente na paleta deste período." },
-      hybrid: { title: "Orgânica e eletrônica", invitation: "Sua escuta aproxima fontes orgânicas e processos eletrônicos, fazendo da mistura uma marca própria.", basis: "Fontes híbridas têm a maior participação entre as naturezas identificadas." },
-    };
-    identity = fallback[primaryNature];
-  }
-  const familyNames = new Map(families.map((family) => [family.slug, family.name]));
   return {
-    title: identity.title,
-    summary: `${identity.invitation} ${identity.basis} A família com maior participação na paleta é a de ${familyNames.get(firstFamily.slug)!.toLowerCase()}.`,
-    disclaimer: "Esta é uma interpretação lúdica do histórico musical, não uma avaliação psicológica ou científica da personalidade.",
+    rule: rule ?? `dominant-${primaryNature}`,
+    primary_family_slug: firstFamily.slug,
+    primary_nature: primaryNature,
   };
 }
 
@@ -818,7 +754,7 @@ function analyzePalette(
   snapshot: SnapshotInfo,
   catalog: ImageCatalog,
   historySource: "lastfm" | "mock" = "lastfm",
-): ProfileAnalysisV2["track_palette"] {
+): ProfileAnalysisV3["track_palette"] {
   const recordingStatuses = tracks.map((track) => track.recording_status);
   const statusCounts = Object.fromEntries(RECORDING_STATUSES.map((status) => [status, recordingStatuses.filter((value) => value === status).length])) as Record<RecordingStatus, number>;
   const totalTracks = tracks.length;
@@ -847,29 +783,8 @@ function analyzePalette(
     mbid: track.mbid,
     lastfm_url: track.lastfm_url,
     status: track.recording_status,
-    status_detail: track.recording_status === "resolved_without_evidence"
-      ? "The recording was resolved, but has no accepted instrumental evidence."
-      : track.recording_status === "unresolved_identity"
-        ? "Last.fm did not provide a MusicBrainz identity for this recording."
-        : track.recording_status === "pending_enrichment"
-          ? "The recording is awaiting snapshot hydration."
-          : track.recording_status === "ambiguous"
-            ? "The match is ambiguous and awaiting review."
-            : track.recording_status === "transient_failure"
-              ? "Snapshot hydration failed transiently and can be retried."
-              : track.recording_status === "terminal_failure"
-                ? "Snapshot hydration ended without another automatic retry."
-                : null,
   }));
-  const historyProfile: ProfileSummary = profile;
-  const baseNotice = historySource === "mock"
-    ? "Este perfil de exemplo combina uma história de escuta fictícia com evidências instrumentais publicadas no catálogo do projeto."
-    : "O histórico foi obtido do Last.fm e relacionado às evidências instrumentais publicadas no catálogo do projeto.";
-  const notice = status === "insufficient"
-    ? `${baseNotice} A cobertura aceita ainda não é suficiente para montar uma paleta.`
-    : status === "partial"
-      ? `${baseNotice} A paleta usa a evidência publicada até agora; algumas interpretações permanecem restritas e podem ser ampliadas em uma visita futura.`
-      : baseNotice;
+
   const analysisBase = {
     status,
     data_source: "catalog" as const,
@@ -880,7 +795,6 @@ function analyzePalette(
     coverage_tracks: coverageTracks,
     coverage_plays: coveragePlays,
     recording_status_counts: statusCounts,
-    notice,
     section_availability: {
       families: "insufficient_coverage" as SectionAvailability,
       sound_balance: "insufficient_coverage" as SectionAvailability,
@@ -893,7 +807,7 @@ function analyzePalette(
   if (!paletteReady && coveredTracks === 0) {
     const reason: SectionAvailability = coverageFloor ? "insufficient_diversity" : "insufficient_coverage";
     return {
-      profile: historyProfile,
+      profile,
       analysis: { ...analysisBase, section_availability: { families: reason, sound_balance: reason, discovery: reason, temperament: reason } },
       recordings,
       families: [],
@@ -911,15 +825,14 @@ function analyzePalette(
     : null;
   const availability = sectionAvailability(interpretationReady, coverageFloor, calculated.soundBalance, discoveryLayer, temperament);
   return {
-    profile: historyProfile,
+    profile,
     analysis: { ...analysisBase, section_availability: availability },
     recordings,
     families: calculated.families,
     sound_balance: calculated.soundBalance,
     discovery: discoveryLayer ? {
       instrument_slug: discoveryLayer.slug,
-      title: `Uma presença menos óbvia: ${discoveryLayer.name}`,
-      summary: `${discoveryLayer.name} acrescenta uma cor particular à paleta e aparece fora do núcleo instrumental mais evidente.`,
+      instrument_name: discoveryLayer.name,
       image: resolveImage(catalog, discoveryLayer.slug, discoveryLayer.family_slug),
     } : null,
     temperament,
@@ -942,11 +855,11 @@ function analyzeVocabulary(
   sourceRows: VocabularyRow[],
   pendingArtists: Set<string>,
   catalog: ImageCatalog,
-): ProfileAnalysisV2["artist_vocabulary"] {
+): ProfileAnalysisV3["artist_vocabulary"] {
   const totalTracks = tracks.length;
   const totalPlays = tracks.reduce((sum, track) => sum + track.play_count, 0);
-  const artistKeys = new Set(tracks.map((track) => track.artist_mbid?.trim().toLowerCase() || `name:${track.artist.toLocaleLowerCase().trim()}`));
-  const unresolvedArtistKeys = new Set(tracks.filter((track) => !track.artist_mbid).map((track) => `name:${track.artist.toLocaleLowerCase().trim()}`));
+  const artistKeys = new Set(tracks.map((track) => track.artist_mbid?.trim().toLowerCase() || `name:${track.artist.toLowerCase().trim()}`));
+  const unresolvedArtistKeys = new Set(tracks.filter((track) => !track.artist_mbid).map((track) => `name:${track.artist.toLowerCase().trim()}`));
   const unresolvedTracks = tracks.filter((track) => !track.artist_mbid).length;
   const qualifiedRows = sourceRows.filter((row) => row.distinct_recordings >= 3);
   const byArtistFamily = new Map<string, VocabularyRow[]>();
@@ -1087,7 +1000,6 @@ function analyzeVocabulary(
     concentration: round(concentration, 4),
     families: vocabularyFamilies,
     featured_artists: featuredArtists,
-    notice: "Recorre em gravações documentadas destes artistas; não descreve necessariamente cada faixa ou a presença de um instrumento no áudio.",
   };
 }
 
@@ -1136,9 +1048,9 @@ function assemble(
   evidence: EvidenceState,
   catalog: ImageCatalog,
   options: { isExample?: boolean; exampleId?: string | null; historySource?: "lastfm" | "mock"; fixtureTracks?: boolean } = {},
-): ProfileAnalysisV2 {
-  if (!rawTracks.length) throw new PaletteApiError(apiMessage("empty_history"), 422, "empty_history");
-  if (!evidence.snapshot) throw new PaletteApiError(apiMessage("snapshot_unavailable"), 503, "snapshot_unavailable");
+): ProfileAnalysisV3 {
+  if (!rawTracks.length) throw new PaletteApiError("empty_history", 422, "empty_history");
+  if (!evidence.snapshot) throw new PaletteApiError("snapshot_unavailable", 503, "snapshot_unavailable");
   const tracks = options.fixtureTracks ? rawTracks : enrichTracks(rawTracks, evidence);
   const totalPlays = tracks.reduce((sum, track) => sum + track.play_count, 0);
   const profile: ProfileSummary = {
@@ -1162,7 +1074,7 @@ function assemble(
   const paletteAvailable = ["ready", "partial"].includes(trackPalette.analysis.status) &&
     trackPalette.analysis.section_availability.families === "available";
   const vocabularyAvailable = artistVocabulary.status === "available";
-  const availableViews: ProfileAnalysisV2["available_views"] = [];
+  const availableViews: ProfileAnalysisV3["available_views"] = [];
   if (paletteAvailable) availableViews.push("track_palette");
   if (vocabularyAvailable) availableViews.push("artist_vocabulary");
   const defaultView = trackPalette.analysis.status !== "insufficient" && paletteAvailable
@@ -1171,7 +1083,8 @@ function assemble(
       ? "artist_vocabulary" : null;
   const recordingTargets = pendingRecordingTargets(tracks, evidence);
   const pendingArtistCount = pendingArtists.size;
-  const report: ProfileAnalysisV2 = {
+  const report: ProfileAnalysisV3 = {
+    report_schema_version: REPORT_SCHEMA_VERSION,
     is_example: options.isExample ?? false,
     example_id: options.isExample ? options.exampleId ?? null : null,
     profile,
@@ -1187,8 +1100,8 @@ function assemble(
       pending_aliases: recordingTargets.aliases,
     },
   };
-  if (!isProfileAnalysisV2(report)) {
-    throw new PaletteApiError("A montagem no navegador gerou um relatório incompatível com o contrato v2.", 500, "invalid_browser_report");
+  if (!isProfileAnalysisV3(report)) {
+    throw new PaletteApiError("Browser assembly produced an incompatible structured report.", 500, "invalid_browser_report");
   }
   return sanitizeProfileAnalysis(report);
 }
@@ -1309,7 +1222,7 @@ async function loadExampleFixture(signal: AbortSignal): Promise<CuratedExampleFi
     return value as unknown as CuratedExampleFixture;
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") throw error;
-    throw new PaletteApiError(apiMessage("example_data_unavailable"), 503, "example_data_unavailable");
+    throw new PaletteApiError("example_data_unavailable", 503, "example_data_unavailable");
   }
 }
 
@@ -1350,13 +1263,13 @@ export async function getBrowserExampleAnalysis(
   period: ListeningPeriod,
   signal: AbortSignal,
   sampleId = crypto.randomUUID().replaceAll("-", ""),
-): Promise<ProfileAnalysisV2> {
+): Promise<ProfileAnalysisV3> {
   if (!sampleId || sampleId.length > 64) {
-    throw new PaletteApiError("O identificador do exemplo é inválido.", 422, "invalid_example_id");
+    throw new PaletteApiError("Invalid example identifier.", 422, "invalid_example_id");
   }
   const [fixture, catalog] = await Promise.all([loadExampleFixture(signal), loadImageCatalog(signal)]);
   const multiplier = finiteNumber(fixture.period_multipliers[period]);
-  if (multiplier < 1) throw new PaletteApiError(apiMessage("example_data_unavailable"), 503, "example_data_unavailable");
+  if (multiplier < 1) throw new PaletteApiError("example_data_unavailable", 503, "example_data_unavailable");
   const random = seededRandom(`${sampleId}:${period}`);
   const selected = chooseExampleRecordings(fixture, random);
   const qualifiedArtists = new Set(fixture.artist_vocabulary
@@ -1382,7 +1295,7 @@ export async function getBrowserExampleAnalysis(
       recording_status: layers.length ? "resolved" : "resolved_without_evidence",
     };
   }).sort((a, b) => b.play_count - a.play_count || stringOrder(a.mbid ?? "", b.mbid ?? ""));
-  if (tracks.length < 5) throw new PaletteApiError(apiMessage("example_data_unavailable"), 503, "example_data_unavailable");
+  if (tracks.length < 5) throw new PaletteApiError("example_data_unavailable", 503, "example_data_unavailable");
   const artistIds = new Set(tracks.map((track) => track.artist_mbid).filter((id): id is string => id !== null));
   const evidence = makeExampleEvidence(fixture);
   for (const artist of artistIds) evidence.artistStatuses.set(artist, "complete");
@@ -1423,7 +1336,7 @@ export async function getBrowserAnalysis(
   signal: AbortSignal,
   onProgress: Progress,
   resume = false,
-): Promise<ProfileAnalysisV2> {
+): Promise<ProfileAnalysisV3> {
   const baseUrl = apiBaseUrl();
   const history = await loadHistory(baseUrl, username, period, signal,
     async (page) => parsePage(await fetchJson(

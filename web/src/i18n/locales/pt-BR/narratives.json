@@ -1,0 +1,73 @@
+{
+  "narrative": {
+    "discovery": {
+      "summary": "{instrument} acrescenta uma cor particular à paleta e aparece fora do núcleo instrumental mais evidente.",
+      "title": "Uma presença menos óbvia: {instrument}"
+    },
+    "image": {
+      "alt": "Imagem de {instrument}.",
+      "exact": "Imagem do instrumento {instrument}.",
+      "family": "Imagem ilustrativa da família {family}: {instrument}.",
+      "related": "Imagem relacionada ao instrumento {instrument}."
+    },
+    "notice": {
+      "exampleCatalog": "Este perfil de exemplo combina uma história de escuta fictícia com evidências instrumentais publicadas no catálogo do projeto.",
+      "insufficient": "{source} A cobertura aceita ainda não é suficiente para montar uma paleta.",
+      "lastfmCatalog": "O histórico foi obtido do Last.fm e relacionado às evidências instrumentais publicadas no catálogo do projeto.",
+      "lastfmMock": "O histórico foi obtido do Last.fm. As evidências instrumentais ainda são fictícias e servem apenas para desenvolver o produto.",
+      "mock": "Histórico e evidências instrumentais fictícios. O contrato e o cálculo são funcionais.",
+      "partial": "{source} A paleta usa a evidência publicada até agora; algumas interpretações permanecem restritas e podem ser ampliadas em uma visita futura."
+    },
+    "portrait": {
+      "disclaimer": "Uma interpretação lúdica da escuta, não uma avaliação psicológica ou científica da personalidade.",
+      "emptySummary": "Encontramos seu histórico, mas não informações instrumentais suficientes para compor este retrato.",
+      "emptyTitle": "Sua escuta ainda não ganhou uma paleta.",
+      "singleSummary": "Nas faixas com informação instrumental disponível, encontramos {families}.",
+      "singleTitle": "Um primeiro retrato: {families}.",
+      "summary": "{families} são as famílias mais presentes nas faixas com informação instrumental disponível.",
+      "title": "{families}."
+    },
+    "temperament": {
+      "disclaimer": "Esta é uma interpretação lúdica do histórico musical, não uma avaliação psicológica ou científica da personalidade.",
+      "dominant-acoustic": {
+        "summary": "Sua escuta encontra nas fontes acústicas uma marca própria, aproximando gesto, vibração e matéria sonora. Fontes acústicas têm a maior participação entre as naturezas identificadas. A família com maior participação na paleta é a de {family}.",
+        "title": "Acústica com presença"
+      },
+      "dominant-electric": {
+        "summary": "Sua escuta tem uma assinatura elétrica: uma leitura de corpo amplificado e possibilidades de timbre. Fontes elétricas têm a maior participação entre as naturezas identificadas. A família com maior participação na paleta é a de {family}.",
+        "title": "Corpo elétrico"
+      },
+      "dominant-electronic": {
+        "summary": "Sua escuta encontra nos sons eletrônicos uma linguagem própria, feita de timbres moldados e transformados. Fontes eletrônicas têm a maior participação entre as naturezas identificadas. A família com maior participação na paleta é a de {family}.",
+        "title": "Textura eletrônica"
+      },
+      "dominant-hybrid": {
+        "summary": "Sua escuta aproxima fontes orgânicas e processos eletrônicos, fazendo da mistura uma marca própria. Fontes híbridas têm a maior participação entre as naturezas identificadas. A família com maior participação na paleta é a de {family}.",
+        "title": "Orgânica e eletrônica"
+      },
+      "dominant-sampled": {
+        "summary": "Sua escuta encontra identidade nos recortes: sons que carregam outros contextos e ganham novas leituras. Sons sampleados têm participação recorrente na paleta deste período. A família com maior participação na paleta é a de {family}.",
+        "title": "Memória em recortes"
+      },
+      "electric-plucked-strings": {
+        "summary": "Sua escuta tem uma assinatura elétrica: corpo amplificado e possibilidades de timbre. Cordas dedilhadas e fontes elétricas sustentam a maior parte da paleta. A família com maior participação na paleta é a de {family}.",
+        "title": "Corpo elétrico"
+      },
+      "recurring-electronic": {
+        "summary": "Sua escuta encontra nos sons eletrônicos uma linguagem própria, feita de timbres que podem ser moldados e transformados. Fontes eletrônicas têm a maior participação entre as naturezas identificadas. A família com maior participação na paleta é a de {family}.",
+        "title": "Textura eletrônica"
+      },
+      "recurring-percussion-synthesizers": {
+        "summary": "Sua escuta encontra impulso sem abrir mão de um lugar para permanecer. Percussão e sintetizadores aparecem juntos com presença recorrente, aproximando pulso e textura. A família com maior participação na paleta é a de {family}.",
+        "title": "Movimento com atmosfera"
+      },
+      "recurring-sampled": {
+        "summary": "Sua escuta encontra identidade nos recortes: sons que carregam outros contextos e ganham novas leituras. Sons sampleados têm participação recorrente na paleta deste período. A família com maior participação na paleta é a de {family}.",
+        "title": "Memória em recortes"
+      }
+    },
+    "vocabulary": {
+      "notice": "Recorre em gravações documentadas destes artistas; não descreve necessariamente cada faixa ou a presença de um instrumento no áudio."
+    }
+  }
+}

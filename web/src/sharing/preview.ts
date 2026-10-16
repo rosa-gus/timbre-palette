@@ -40,7 +40,6 @@ const base: PaletteReport = {
       resolved: 20, unresolved_identity: 0, pending_enrichment: 0, ambiguous: 0,
       resolved_without_evidence: 20, transient_failure: 0, terminal_failure: 0,
     },
-    notice: "Dados demonstrativos para visualizar o retrato.",
     section_availability: {
       families: "available", sound_balance: "insufficient_nature_evidence",
       discovery: "no_candidate", temperament: "insufficient_coverage",
@@ -58,11 +57,7 @@ const examples: { label: string; report: PaletteReport }[] = [
     label: "Temperamento disponível",
     report: {
       ...base,
-      temperament: {
-        title: "Ressonância em primeiro plano",
-        summary: "A presença de cordas dedilhadas conduz a paleta. A combinação recorrente valoriza presença física, ressonância e espaço, sem abandonar os contrastes trazidos pelas famílias menos presentes.",
-        disclaimer: "Interpretação lúdica da escuta, sem avaliação psicológica ou científica.",
-      },
+      temperament: { rule: "recurring-percussion-synthesizers", primary_family_slug: "plucked-strings", primary_nature: "electronic" },
     },
   },
   { label: "Retrato parcial", report: base },
@@ -79,11 +74,7 @@ for (let index = 0; index < otherFamilies.length; index += 3) {
     report: {
       ...base,
       families: group.map((item) => ({ ...item, share: 1 / group.length })),
-      temperament: {
-        title: "Outras cores da escuta",
-        summary: "Emblemas das famílias instrumentais, na mesma grade e escala. Dados demonstrativos para comparar os desenhos.",
-        disclaimer: "Interpretação lúdica da escuta.",
-      },
+      temperament: null,
     },
   });
 }

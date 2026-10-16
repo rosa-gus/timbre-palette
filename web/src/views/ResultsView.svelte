@@ -17,7 +17,7 @@
     AnalysisView,
     Confidence,
     ListeningPeriod,
-    ProfileAnalysisV2,
+    ProfileAnalysisV3,
     SectionAvailability,
     VocabularyFeaturedArtist,
   } from "../api/types";
@@ -32,7 +32,7 @@
     disabled?: boolean;
     note?: string;
   };
-  export let result: ProfileAnalysisV2;
+  export let result: ProfileAnalysisV3;
   export let revealReady = true;
   export let period: ListeningPeriod = "1month";
   export let periods: { value: ListeningPeriod; label: string }[] = [];
@@ -454,10 +454,8 @@
         <ReportView
           report={palette}
           isExample={result.is_example}
-          embedded
           {sectionOptions}
           {periodLabels}
-          {statusLabels}
           {confidenceLabels}
           {shareFeedback}
           {sharePreviewUrl}
@@ -501,7 +499,7 @@
               </p>
               <h2 id="vocabulary-title">{t("vocabulary.title")} </h2>
               <p class="lead-copy">{t("vocabulary.description")} </p>
-              <p class="scope-note">{vocabulary.notice}</p>
+              <p class="scope-note">{t("narrative.vocabulary.notice")}</p>
             </div>
             {#if predominantDrawing && predominantFamily}
               <figure

@@ -8,12 +8,10 @@
   import ColorSwatch from "../components/ColorSwatch.svelte";
   import Dropdown from "../components/Dropdown.svelte";
   import Tooltip from "../components/Tooltip.svelte";
-  import { normalizePathname } from "../navigation";
-  import { getPortraitCopy } from "../portrait";
+  import { getPortraitCopy, getAnalysisNotice, getDiscoveryCopy, getImageCopy } from "../analysis/presentation";
   import { createAsciiArtwork, getFamilyTexture } from "../sharing/ascii";
   import { fitFamilyTexture } from "../sharing/texture";
   import type {
-    AnalysisStatus,
     Confidence,
     PaletteReport,
     SectionAvailability,
@@ -29,15 +27,14 @@
   };
   export let report: PaletteReport;
   export let isExample = false;
-  export let embedded = false;
   export let hydrationPending = false;
   $: portrait = getPortraitCopy(report);
+  $: discoveryCopy = report.discovery ? getDiscoveryCopy(report.discovery) : null;
   $: asciiArtwork = createAsciiArtwork(report.families);
   $: discoveryAvailable =
     !!report.discovery && getAvailability("discovery") === "available";
   export let sectionOptions: SectionOption[] = [];
   export let periodLabels: Record<string, string>;
-  export let statusLabels: Record<AnalysisStatus, string>;
   export let confidenceLabels: Record<Confidence, string>;
   export let shareFeedback = "";
   export let onOpenInstrument: () => void = () => undefined;
@@ -46,7 +43,6 @@
   export let getAvailability: (
     section: SectionId,
   ) => SectionAvailability = () => "insufficient_coverage";
-  const homePath = normalizePathname();
 
   function percent(value: number): string {
     return formatPercent(value);
@@ -83,12 +79,6 @@
     return hex(mix(base, [0, 0, 0], 0.6));
   }
 
-  function imageCaption(value: string): string {
-    return value
-      .replace(/^Imagem ilustrativa da família [^:]+:\s*/i, "")
-      .replace(/^Imagem do instrumento\s*/i, "")
-      .trim();
-  }
 
   function toneSwatches(family: FamilyPresence): string[] {
     const base =
@@ -124,35 +114,9 @@
 
 <section
   class="report-view"
-  class:embedded
   aria-labelledby="report-title"
   style={`--report-tone:${report.families[0]?.tone?.highlight ?? fallbackTone};--report-tone-text:${toneText(report.families[0]?.tone?.highlight ?? fallbackTone)}`}
 >
-  {#if !embedded}<div class="report-back">
-      <a class="back-link" href={homePath}><Arrow direction="left" />{t("navigation.back")}</a>
-    </div>{/if}
-  {#if !embedded}<div class="archive-header">
-      <p class="eyebrow">{t("report.listener", { listener: isExample
-          ? report.profile.realname || t("example.displayName")
-          : `@${report.profile.username}` })} {#if isExample}<Badge tone="accent">{t("example.badge")}</Badge>{/if}
-      </p>
-      <div class="archive-period">
-        <span
-          >{periodLabels[report.profile.period]}<span
-            class="separator-indicator"
-            aria-hidden="true">·</span
-          >{t("report.status", { status: statusLabels[report.analysis.status] })}</span
-        >{#if report.analysis.data_source !== "catalog"}<span
-            >{t("report.dataSource", { source: report.analysis.data_source === "mock"
-              ? t("report.demoData")
-              : t("report.hybridData") })}</span
-          >{/if}
-      </div>
-      <a class="image-link" href="#share"
-        >{isExample ? t("sharing.viewExample") : t("sharing.viewOwn")}
-        <Arrow direction="up-right" /></a
-      >
-    </div>{/if}
   <nav class="report-index" aria-label={t("report.indexLabel")}>
     {#each sectionOptions as option, index}
       <a
@@ -166,10 +130,7 @@
   <section id="portrait" class="portrait" aria-labelledby="report-title">
     <div class="portrait-copy">
       <p class="eyebrow">{t("report.portraitHeading")}</p>
-      {#if embedded}<h2 class="portrait-title" id="report-title">
-          {portrait.title}
-        </h2>
-      {:else}<h1 id="report-title">{portrait.title}</h1>{/if}
+      <h2 class="portrait-title" id="report-title">{portrait.title}</h2>
       <p class="large-copy">
         {portrait.summary}
       </p>
@@ -228,7 +189,7 @@
           {#if family.image?.variants.length}<div class="credited-image">
               <img
                 src={family.image.variants[0].url}
-                alt={family.image.alt}
+                alt={getImageCopy(family.image).alt}
                 width={family.image.variants[0].width}
                 height={family.image.variants[0].height}
               />
@@ -244,7 +205,7 @@
           </div>
           {#if family.image?.variants.length}<p class="photo-caption">
               <span class="photo-caption-text"
-                >{t("images.photoCaption", { caption: imageCaption(family.image.caption) })}</span
+                >{t("images.photoCaption", { caption: getImageCopy(family.image).label })}</span
               >{#if family.image.credit.photographer_url}<a
                   href={family.image.credit.photographer_url}
                   target="_blank"
@@ -319,7 +280,7 @@
     </div>
     <div class="analysis-details">
       <Dropdown title={t("report.dataTitle")}>
-        <p>{report.analysis.notice}</p>
+        <p>{getAnalysisNotice(report.analysis)}</p>
         <p><Message
           message="report.coverage"
           values={{ tracks: percent(report.analysis.coverage_tracks), plays: percent(report.analysis.coverage_plays) }}
@@ -358,14 +319,14 @@
           >
             <img
               src={report.discovery.image.variants[0].url}
-              alt={report.discovery.image.alt}
+              alt={getImageCopy(report.discovery.image).alt}
               width={report.discovery.image.variants[0].width}
               height={report.discovery.image.variants[0].height}
               loading="lazy"
             />
             <figcaption class="photo-caption">
               <span class="photo-caption-text"
-                >{t("images.photoCaption", { caption: imageCaption(report.discovery.image.caption) })}</span
+                >{t("images.photoCaption", { caption: getImageCopy(report.discovery.image).label })}</span
               >{#if report.discovery.image.credit.photographer_url}
                 <a
                   href={report.discovery.image.credit.photographer_url}
@@ -380,8 +341,8 @@
             </figcaption>
           </figure>{/if}
         <div>
-          <h3>{report.discovery.title}</h3>
-          <p class="large-copy">{report.discovery.summary}</p>
+          <h3>{discoveryCopy?.title}</h3>
+          <p class="large-copy">{discoveryCopy?.summary}</p>
           <Button variant="secondary" on:click={onOpenInstrument}
             >{t("actions.exploreInstrument")} <Arrow direction="right" /></Button
           >
@@ -472,55 +433,7 @@
     width: 100%;
     max-width: 1320px;
     margin: 0 auto;
-    padding: 54px 0 32px;
-  }
-  .report-view.embedded {
-    padding-top: 0;
-  }
-  .report-back {
-    margin-bottom: 20px;
-  }
-  .back-link {
-    display: inline-block;
-    padding-bottom: 8px;
-    color: var(--accent-soft);
-    font-family: var(--meta);
-    font-size: 13px;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    text-decoration: none;
-  }
-  .back-link:hover {
-    color: var(--accent-pale);
-  }
-  .archive-header {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 20px;
-    padding-bottom: 24px;
-    border-bottom: 1px solid var(--line);
-  }
-  .archive-header .eyebrow {
-    margin: 0;
-    color: var(--ink);
-  }
-  .archive-period {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px 24px;
-    color: var(--muted);
-    font-family: var(--meta);
-    font-size: 13px;
-  }
-  .image-link {
-    margin-left: auto;
-    padding: 12px 18px;
-    background: var(--report-tone);
-    color: #000;
-    text-decoration: none;
-    font-size: 14px;
-    font-weight: 600;
+    padding: 0 0 32px;
   }
   .report-index {
     display: flex;
@@ -548,7 +461,6 @@
     grid-template-columns: minmax(0, 1fr) 220px;
     gap: 32px;
   }
-  h1,
   .portrait-title {
     max-width: 950px;
     margin: 12px 0 24px;
@@ -938,19 +850,6 @@
     font-size: 14px;
   }
   @media (max-width: 800px) {
-    .report-view {
-      padding-top: 32px;
-    }
-    .archive-header {
-      gap: 16px;
-    }
-    .archive-period {
-      font-size: 12px;
-      gap: 16px;
-    }
-    .image-link {
-      margin-left: 0;
-    }
     .report-index {
       gap: 14px 20px;
     }

@@ -16,21 +16,18 @@ from palette_api.domain import (
 )
 from palette_api.methodology import DEFAULT_METHODOLOGY, MethodologyPolicy
 from palette_api.image_catalog import DEFAULT_IMAGE_CATALOG, InstrumentImageCatalog
+from palette_api.report import (
+    AnalysisSummary, Discovery, FamilyPresence, AnalysisImage, PaletteReport,
+    RecordingAnalysis, Temperament, TemperamentRule,
+)
 from palette_api.schemas import (
-    AnalysisSummary,
-    Discovery,
-    FamilyPresence,
     ImageCredit,
     ImageVariant,
     ImageTone,
-    InstrumentImage,
-    PaletteReport,
     ProfileSummary,
-    RecordingAnalysis,
     RecordingStatusCounts,
     SectionAvailabilitySummary,
     SoundBalance,
-    Temperament,
     VocalPresence,
 )
 
@@ -42,10 +39,6 @@ CONFIDENCE_WEIGHT = {
 }
 
 METHODOLOGY_VERSION = DEFAULT_METHODOLOGY.version
-SCIENTIFIC_DISCLAIMER = (
-    "Esta é uma interpretação lúdica do histórico musical, não uma avaliação "
-    "psicológica ou científica da personalidade."
-)
 
 
 class EmptyListeningHistoryError(Exception):
@@ -59,13 +52,6 @@ class _DiscoveryCandidate:
     artists: set[str]
     plays: int = 0
 
-
-@dataclass(frozen=True, slots=True)
-class _TemperamentIdentity:
-    key: str
-    title: str
-    invitation: str
-    basis: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -193,7 +179,6 @@ class PaletteService:
                 mbid=track.mbid,
                 lastfm_url=track.lastfm_url,
                 status=recording_status,
-                status_detail=self._recording_status_detail(track, recording_status),
             )
             for track, recording_status in recording_items
         ]
@@ -271,11 +256,7 @@ class PaletteService:
             discovery=(
                 Discovery(
                     instrument_slug=discovery_layer.slug,
-                    title=f"Uma presença menos óbvia: {discovery_layer.name}",
-                    summary=(
-                        f"{discovery_layer.name} acrescenta uma cor particular à paleta e "
-                        "aparece fora do núcleo instrumental mais evidente."
-                    ),
+                    instrument_name=discovery_layer.name,
                     image=self._image(discovery_layer.slug, discovery_layer.family_slug),
                 )
                 if discovery_layer is not None
@@ -490,16 +471,17 @@ class PaletteService:
         tone = self._image_catalog.family_tone(family_slug)
         return ImageTone(**tone) if tone else None
 
-    def _image(self, slug: str, family_slug: str | None) -> InstrumentImage | None:
+    def _image(self, slug: str, family_slug: str | None) -> AnalysisImage | None:
         resolved = self._image_catalog.resolve(slug, family_slug)
         if resolved is None:
             return None
-        return InstrumentImage(
+        return AnalysisImage(
             asset_id=resolved.asset_id,
             resolution=resolved.resolution,
             depicted_instrument_slug=resolved.depicted_instrument_slug,
-            alt=resolved.alt,
-            caption=resolved.caption,
+            alt=resolved.authored_alt,
+            depicted_name=resolved.depicted_name,
+            family_name=resolved.family_name,
             variants=[
                 ImageVariant(
                     name="detail",
@@ -544,7 +526,6 @@ class PaletteService:
                     for recording_status in RecordingStatus
                 }
             ),
-            notice=self._analysis_notice(history, status),
             section_availability=availability,
             vocal_presence=vocal_presence,
         )
@@ -628,27 +609,6 @@ class PaletteService:
         return " ".join(value.casefold().split())
 
     @staticmethod
-    def _recording_status_detail(
-        track: Track,
-        recording_status: RecordingStatus,
-    ) -> str | None:
-        if track.recording_status_detail:
-            return track.recording_status_detail
-        if recording_status is RecordingStatus.RESOLVED_WITHOUT_EVIDENCE:
-            return "The recording was resolved, but has no accepted instrumental evidence."
-        if recording_status is RecordingStatus.UNRESOLVED_IDENTITY:
-            return "Last.fm did not provide a MusicBrainz identity for this recording."
-        if recording_status is RecordingStatus.PENDING_ENRICHMENT:
-            return "The recording is awaiting snapshot hydration."
-        if recording_status is RecordingStatus.AMBIGUOUS:
-            return "The match is ambiguous and awaiting review."
-        if recording_status is RecordingStatus.TRANSIENT_FAILURE:
-            return "Snapshot hydration failed transiently and can be retried."
-        if recording_status is RecordingStatus.TERMINAL_FAILURE:
-            return "Snapshot hydration ended without another automatic retry."
-        return None
-
-    @staticmethod
     def _data_source(history: ListeningHistory) -> str:
         if (
             history.history_source is DataSource.MOCK
@@ -658,44 +618,6 @@ class PaletteService:
         if history.instrumentation_source is DataSource.CATALOG:
             return "catalog"
         return "hybrid"
-
-    @staticmethod
-    def _analysis_notice(history: ListeningHistory, status: AnalysisStatus) -> str:
-        if (
-            history.history_source is DataSource.LASTFM
-            and history.instrumentation_source is DataSource.CATALOG
-        ):
-            base_notice = (
-                "O histórico foi obtido do Last.fm e relacionado às evidências "
-                "instrumentais publicadas no catálogo do projeto."
-            )
-        elif history.history_source is DataSource.LASTFM:
-            base_notice = (
-                "O histórico foi obtido do Last.fm. As evidências instrumentais "
-                "ainda são fictícias e servem apenas para desenvolver o produto."
-            )
-        elif history.instrumentation_source is DataSource.CATALOG:
-            base_notice = (
-                "Escuta fictícia montada com gravações do catálogo e relacionada "
-                "às evidências instrumentais publicadas no projeto."
-            )
-        else:
-            base_notice = (
-                "Histórico e evidências instrumentais fictícios. O contrato e o "
-                "cálculo são funcionais."
-            )
-        if status is AnalysisStatus.INSUFFICIENT:
-            return (
-                f"{base_notice} A cobertura aceita ainda não é suficiente para "
-                "montar uma paleta."
-            )
-        if status is AnalysisStatus.PARTIAL:
-            return (
-                f"{base_notice} A paleta usa a evidência publicada até agora; "
-                "algumas interpretações permanecem restritas e podem ser "
-                "ampliadas em uma visita futura."
-            )
-        return base_notice
 
     @staticmethod
     def _aggregate_confidence(weighted_ratio: float) -> Confidence:
@@ -763,7 +685,6 @@ class PaletteService:
         covered_history: tuple[Track, ...],
     ) -> Temperament:
         signals = self._temperament_signals(families, sound_balance, covered_history)
-        family_names = {family.slug: family.name for family in families}
         primary_family = families[0]
         primary_nature = max(
             nature_scores,
@@ -772,7 +693,7 @@ class PaletteService:
 
         # Pair identities come first: they say something about the relationship
         # in the listening history, rather than merely repeating its largest bar.
-        identity: _TemperamentIdentity | None = None
+        rule: TemperamentRule | None = None
         if (
             signals.family_shares.get("percussion", 0.0)
             >= self._methodology.temperament_contrast_share
@@ -786,88 +707,27 @@ class PaletteService:
             and self._pair_share(signals, "percussion", "synthesizers")
             >= self._methodology.temperament_pair_share
         ):
-            identity = _TemperamentIdentity(
-                "movement-with-atmosphere",
-                "Movimento com atmosfera",
-                "Sua escuta encontra impulso sem abrir mão de um lugar para permanecer.",
-                "Percussão e sintetizadores aparecem juntos com presença recorrente, "
-                "aproximando pulso e textura.",
-            )
+            rule = "recurring-percussion-synthesizers"
         elif (
             signals.family_shares.get("plucked-strings", 0.0)
             >= self._methodology.temperament_signal_share
             and signals.nature_shares.get(SoundNature.ELECTRIC, 0.0)
             >= self._methodology.temperament_signal_share
         ):
-            identity = _TemperamentIdentity(
-                "electric-body",
-                "Corpo elétrico",
-                "Sua escuta tem uma assinatura elétrica: corpo amplificado e possibilidades de timbre.",
-                "Cordas dedilhadas e fontes elétricas sustentam a maior parte da paleta.",
-            )
+            rule = "electric-plucked-strings"
         elif (
             signals.nature_shares.get(SoundNature.SAMPLED, 0.0)
             >= self._methodology.temperament_sampled_signal_share
         ):
-            identity = _TemperamentIdentity(
-                "memory-in-cuts",
-                "Memória em recortes",
-                "Sua escuta encontra identidade nos recortes: sons que carregam outros contextos e ganham novas leituras.",
-                "Sons sampleados têm participação recorrente na paleta deste período.",
-            )
+            rule = "recurring-sampled"
         elif (
             signals.nature_shares.get(SoundNature.ELECTRONIC, 0.0)
             >= self._methodology.temperament_signal_share
         ):
-            identity = _TemperamentIdentity(
-                "electronic-texture",
-                "Textura eletrônica",
-                "Sua escuta encontra nos sons eletrônicos uma linguagem própria, feita de timbres que podem ser moldados e transformados.",
-                "Fontes eletrônicas têm a maior participação entre as naturezas identificadas.",
-            )
+            rule = "recurring-electronic"
 
-        if identity is None:
-            fallback_identities = {
-                SoundNature.ACOUSTIC: _TemperamentIdentity(
-                    "acoustic-presence",
-                    "Acústica com presença",
-                    "Sua escuta encontra nas fontes acústicas uma marca própria, aproximando gesto, vibração e matéria sonora.",
-                    "Fontes acústicas têm a maior participação entre as naturezas identificadas.",
-                ),
-                SoundNature.ELECTRIC: _TemperamentIdentity(
-                    "electric-body",
-                    "Corpo elétrico",
-                    "Sua escuta tem uma assinatura elétrica: uma leitura de corpo amplificado e possibilidades de timbre.",
-                    "Fontes elétricas têm a maior participação entre as naturezas identificadas.",
-                ),
-                SoundNature.ELECTRONIC: _TemperamentIdentity(
-                    "electronic-texture",
-                    "Textura eletrônica",
-                    "Sua escuta encontra nos sons eletrônicos uma linguagem própria, feita de timbres moldados e transformados.",
-                    "Fontes eletrônicas têm a maior participação entre as naturezas identificadas.",
-                ),
-                SoundNature.SAMPLED: _TemperamentIdentity(
-                    "memory-in-cuts",
-                    "Memória em recortes",
-                    "Sua escuta encontra identidade nos recortes: sons que carregam outros contextos e ganham novas leituras.",
-                    "Sons sampleados têm a maior participação entre as naturezas identificadas.",
-                ),
-                SoundNature.HYBRID: _TemperamentIdentity(
-                    "organic-and-electronic",
-                    "Orgânica e eletrônica",
-                    "Sua escuta aproxima fontes orgânicas e processos eletrônicos, fazendo da mistura uma marca própria.",
-                    "Fontes híbridas têm a maior participação entre as naturezas identificadas.",
-                ),
-            }
-            identity = fallback_identities[primary_nature]
-
-        summary = (
-            f"{identity.invitation} {identity.basis} "
-            "A família com maior participação na paleta é a de "
-            f"{family_names[primary_family.slug].lower()}."
-        )
         return Temperament(
-            title=identity.title,
-            summary=summary,
-            disclaimer=SCIENTIFIC_DISCLAIMER,
+            rule=rule or f"dominant-{primary_nature.value}",
+            primary_family_slug=primary_family.slug,
+            primary_nature=primary_nature,
         )

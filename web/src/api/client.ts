@@ -1,10 +1,12 @@
+import { PaletteApiError } from "./errors";
+import { isProfileAnalysisV3 } from "./report-validation";
+export { PaletteApiError } from "./errors";
+export { isProfileAnalysisV3 } from "./report-validation";
 import { t } from "../i18n/runtime";
 import type {
   InstrumentResource,
   ListeningPeriod,
-  PaletteReport,
-  ProfileSummary,
-  ProfileAnalysisV2,
+  ProfileAnalysisV3,
 } from "./types";
 import { retryAfterSeconds } from "./retry-after";
 import {
@@ -35,66 +37,11 @@ export async function getCatalogSize(signal: AbortSignal): Promise<number> {
   return value.recordings_with_evidence;
 }
 
-export class PaletteApiError extends Error {
-  readonly code: string;
-  readonly status: number;
-  constructor(
-    message: string,
-    status: number,
-    code: string,
-    readonly retryAfter?: number,
-  ) {
-    super(message);
-    this.name = "PaletteApiError";
-    this.code = code;
-    this.status = status;
-  }
-}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function isFiniteNumber(value: unknown): value is number {
-  return typeof value === "number" && Number.isFinite(value);
-}
-
-function isCount(value: unknown, max = Number.MAX_SAFE_INTEGER): value is number {
-  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0 && value <= max;
-}
-
-function isUnitFraction(value: unknown): value is number {
-  return isFiniteNumber(value) && value >= 0 && value <= 1;
-}
-
-function isOptionalText(value: unknown, maxLength = 512): value is string | null | undefined {
-  return value === undefined || value === null ||
-    (typeof value === "string" && value.length <= maxLength && !value.includes("\u0000"));
-}
-
-function isProfileSummary(value: unknown): value is ProfileSummary {
-  if (!isRecord(value)) return false;
-  return (
-    boundedText(value.username, 64) !== null &&
-    ["overall", "7day", "1month", "3month", "6month", "12month"].includes(value.period as string) &&
-    isCount(value.tracks_analyzed, 200) &&
-    isCount(value.total_plays) &&
-    isOptionalText(value.profile_url, 2_048) &&
-    isOptionalText(value.avatar_url, 2_048) &&
-    isOptionalText(value.realname, 256) &&
-    isOptionalText(value.registered, 64)
-  );
-}
-
-function isAvailability(value: unknown): boolean {
-  return [
-    "available",
-    "insufficient_coverage",
-    "insufficient_diversity",
-    "insufficient_nature_evidence",
-    "no_candidate",
-  ].includes(value as string);
-}
 
 function parseApiError(value: unknown, status: number): PaletteApiError {
   if (isRecord(value) && typeof value.message === "string") {
@@ -112,124 +59,6 @@ function parseApiError(value: unknown, status: number): PaletteApiError {
   );
 }
 
-function isPaletteReport(value: unknown): value is PaletteReport {
-  if (!isRecord(value)) return false;
-  const profile = value.profile;
-  const analysis = value.analysis;
-  const availability = isRecord(analysis)
-    ? analysis.section_availability
-    : null;
-  const vocalPresence = isRecord(analysis) ? analysis.vocal_presence : null;
-  const families = value.families;
-  const recordings = value.recordings;
-  return (
-    isProfileSummary(profile) &&
-    isRecord(analysis) &&
-    (analysis.status === "partial" ||
-      analysis.status === "ready" ||
-      analysis.status === "insufficient") &&
-    isUnitFraction(analysis.coverage_tracks) &&
-    isUnitFraction(analysis.coverage_plays) &&
-    isRecord(vocalPresence) &&
-    isFiniteNumber(vocalPresence.documented_tracks) &&
-    isFiniteNumber(vocalPresence.documented_artists) &&
-    isFiniteNumber(vocalPresence.documented_plays) &&
-    isUnitFraction(vocalPresence.track_ratio) &&
-    isUnitFraction(vocalPresence.play_ratio) &&
-    isRecord(availability) &&
-    [
-      "families",
-      "sound_balance",
-      "discovery",
-      "temperament",
-    ].every((key) => isAvailability(availability[key])) &&
-    Array.isArray(families) && families.length <= 50 &&
-    families.every(
-      (family) =>
-        isRecord(family) &&
-        boundedText(family.name, 256) !== null &&
-        isUnitFraction(family.share),
-    ) &&
-    Array.isArray(recordings) && recordings.length <= 200 &&
-    recordings.every(
-      (recording) =>
-        isRecord(recording) &&
-        boundedText(recording.title, 512) !== null &&
-        boundedText(recording.artist, 256) !== null,
-    )
-  );
-}
-
-export function isProfileAnalysisV2(value: unknown): value is ProfileAnalysisV2 {
-  if (!isRecord(value)) return false;
-  const snapshot = value.snapshot;
-  const hydration = value.hydration;
-  const vocabulary = value.artist_vocabulary;
-  const reach = isRecord(vocabulary) ? vocabulary.reach : null;
-  const vocabularyAvailability = isRecord(vocabulary) ? vocabulary.availability : null;
-  const availableViews = value.available_views;
-  const defaultView = value.default_view;
-  return (
-    typeof value.is_example === "boolean" &&
-    isOptionalText(value.example_id) &&
-    isProfileSummary(value.profile) &&
-    isRecord(snapshot) &&
-    typeof snapshot.snapshot_version === "string" &&
-    typeof snapshot.schema_version === "string" &&
-    typeof snapshot.manifest_hash === "string" &&
-    typeof snapshot.object_prefix === "string" &&
-    typeof snapshot.methodology_version === "string" &&
-    isPaletteReport(value.track_palette) &&
-    isRecord(vocabulary) &&
-    ["available", "pending", "insufficient"].includes(vocabulary.status as string) &&
-    typeof vocabulary.notice === "string" &&
-    typeof vocabulary.methodology_version === "string" &&
-    isRecord(vocabularyAvailability) &&
-    typeof vocabularyAvailability.reason === "string" &&
-    isRecord(reach) &&
-    ["track_reach", "play_reach"].every((key) => isUnitFraction(reach[key])) &&
-    ["qualified_artists", "total_artists", "qualified_tracks", "total_tracks",
-      "qualified_plays", "total_plays", "unresolved_artists", "unresolved_tracks"]
-      .every((key) => isCount(reach[key])) &&
-    isUnitFraction(vocabulary.concentration) &&
-    Array.isArray(vocabulary.families) && vocabulary.families.length <= 50 &&
-    vocabulary.families.every((family) => isRecord(family) &&
-      typeof family.name === "string" && isUnitFraction(family.share) &&
-      isCount(family.supporting_artists) && Array.isArray(family.instruments) &&
-      family.instruments.length <= 100 &&
-      (family.tone === null || (isRecord(family.tone) &&
-        typeof family.tone.shadow === "string" &&
-        typeof family.tone.highlight === "string")) &&
-      family.instruments.every((instrument) => isRecord(instrument) &&
-        typeof instrument.name === "string" &&
-        isFiniteNumber(instrument.distinct_recordings) &&
-        isRecord(instrument.evidence) &&
-        (instrument.evidence.scope === "recording" || instrument.evidence.scope === "track"))) &&
-    Array.isArray(vocabulary.featured_artists) &&
-    vocabulary.featured_artists.length <= 3 &&
-    vocabulary.featured_artists.every((artist) => isRecord(artist) &&
-      typeof artist.mbid === "string" && typeof artist.name === "string" &&
-      Array.isArray(artist.families) && artist.families.every((family) =>
-        isRecord(family) && typeof family.slug === "string" &&
-        typeof family.name === "string" && Array.isArray(family.instruments) &&
-        family.instruments.every((name) => typeof name === "string") &&
-        (family.tone === null || (isRecord(family.tone) &&
-          typeof family.tone.shadow === "string" &&
-          typeof family.tone.highlight === "string")))) &&
-    Array.isArray(availableViews) &&
-    availableViews.every((view) =>
-      view === "track_palette" || view === "artist_vocabulary",
-    ) &&
-    (defaultView === null ||
-      defaultView === "track_palette" ||
-      defaultView === "artist_vocabulary") &&
-    isRecord(hydration) &&
-    (hydration.status === "complete" || hydration.status === "pending") &&
-    isCount(hydration.pending_recordings, 50) &&
-    isCount(hydration.pending_artists, 200) &&
-    isCount(hydration.pending_aliases, 50)
-  );
-}
 
 function isInstrumentResource(value: unknown): value is InstrumentResource {
   return (
@@ -329,14 +158,14 @@ export async function getAnalysis(
   username: string,
   period: ListeningPeriod,
   signal: AbortSignal,
-): Promise<ProfileAnalysisV2> {
+): Promise<ProfileAnalysisV3> {
   const encodedUsername = encodeURIComponent(username);
   const result = await getJson<unknown>(
-    `/v2/profiles/${encodedUsername}/analysis?period=${encodeURIComponent(period)}`,
+    `/v3/profiles/${encodedUsername}/analysis?period=${encodeURIComponent(period)}`,
     signal,
     analysisApiBaseUrl(),
   );
-  if (!isProfileAnalysisV2(result.data)) {
+  if (!isProfileAnalysisV3(result.data)) {
     throw new PaletteApiError(
       t("errors.invalidReport"),
       result.response.status,
@@ -350,15 +179,15 @@ export async function getExampleAnalysis(
   period: ListeningPeriod,
   signal: AbortSignal,
   sampleId?: string,
-): Promise<ProfileAnalysisV2> {
+): Promise<ProfileAnalysisV3> {
   const params = new URLSearchParams({ period });
   if (sampleId) params.set("sample_id", sampleId);
   const result = await getJson<unknown>(
-    `/v2/examples/analysis?${params.toString()}`,
+    `/v3/examples/analysis?${params.toString()}`,
     signal,
     analysisApiBaseUrl(),
   );
-  if (!isProfileAnalysisV2(result.data) || !result.data.is_example) {
+  if (!isProfileAnalysisV3(result.data) || !result.data.is_example) {
     throw new PaletteApiError(
       t("errors.invalidExampleReport"),
       result.response.status,
@@ -389,6 +218,25 @@ export async function getInstrument(
 export function getApiErrorMessage(error: unknown): string {
   if (error instanceof PaletteApiError) {
     const localized: Record<string, string> = {
+      network_error: t("errors.network"),
+      invalid_json: t("errors.invalidJson"),
+      invalid_report: t("errors.invalidReport"),
+      invalid_example_report: t("errors.invalidExampleReport"),
+      invalid_instrument: t("errors.invalidInstrument"),
+      invalid_evidence: t("errors.invalidEvidence"),
+      snapshot_changed: t("errors.snapshotChanged"),
+      invalid_example_id: t("errors.invalidExampleId"),
+      analysis_in_progress: t("errors.analysisInProgress"),
+      lastfm_not_configured: t("errors.lastfmKeyMissing"),
+      empty_listening_history: t("errors.emptyHistory"),
+      invalid_request: t("errors.invalidUsernameOrPeriod"),
+      invalid_browser_report: t("errors.invalidBrowserReport"),
+      hydration_unavailable: t("errors.hydrationUnavailable"),
+      invalid_snapshot_version: t("errors.invalidSnapshotVersion"),
+      invalid_mbid_list: t("errors.invalidMbidList"),
+      request_too_large: t("errors.requestTooLarge"),
+      invalid_lastfm_response: t("errors.invalidLastfmResponse"),
+      empty_history: t("errors.emptyHistory"),
       invalid_username: t("errors.invalidUsername"),
       invalid_username_or_period: t("errors.invalidUsernameOrPeriod"),
       invalid_page_or_limit: t("errors.invalidPageOrLimit"),
@@ -411,11 +259,11 @@ export function getApiErrorMessage(error: unknown): string {
       instrument_not_found: t("errors.instrumentNotFound"),
       invalid_slug: t("errors.invalidSlug"),
     };
-    return localized[error.code] ?? error.message;
+    return localized[error.code] ?? t("errors.analysisFailed");
   }
   if (error instanceof DOMException && error.name === "AbortError") return "";
   if (isRecord(error) && typeof error.message === "string") {
-    return error.message;
+    return t("errors.analysisFailed");
   }
   return t("errors.analysisFailed");
 }

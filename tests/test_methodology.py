@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from palette_api.application import PaletteService
+from palette_api.legacy_presentation import legacy_palette
 from palette_api.domain import (
     ClaimLevel,
     Confidence,
@@ -269,8 +270,9 @@ async def test_temperament_recognizes_recurrent_movement_with_atmosphere() -> No
     report = await _report(tracks)
 
     assert report.temperament is not None
-    assert report.temperament.title == "Movimento com atmosfera"
-    assert "Percussão e sintetizadores" in report.temperament.summary
+    assert report.temperament.rule == "recurring-percussion-synthesizers"
+    assert legacy_palette(report).temperament.title == "Movimento com atmosfera"
+    assert "Percussão e sintetizadores" in legacy_palette(report).temperament.summary
 
 
 @pytest.mark.anyio
@@ -291,22 +293,24 @@ async def test_temperament_falls_back_to_acoustic_identity() -> None:
     report = await _report(tracks)
 
     assert report.temperament is not None
-    assert report.temperament.title == "Acústica com presença"
-    assert "fontes acústicas" in report.temperament.summary
+    assert report.temperament.rule == "dominant-acoustic"
+    assert legacy_palette(report).temperament.title == "Acústica com presença"
+    assert "fontes acústicas" in legacy_palette(report).temperament.summary
 
 
 @pytest.mark.parametrize(
-    ("nature", "expected_title"),
+    ("nature", "expected_rule", "expected_title"),
     (
-        ("electric", "Corpo elétrico"),
-        ("electronic", "Textura eletrônica"),
-        ("sampled", "Memória em recortes"),
-        ("hybrid", "Orgânica e eletrônica"),
+        ("electric", "dominant-electric", "Corpo elétrico"),
+        ("electronic", "recurring-electronic", "Textura eletrônica"),
+        ("sampled", "recurring-sampled", "Memória em recortes"),
+        ("hybrid", "dominant-hybrid", "Orgânica e eletrônica"),
     ),
 )
 @pytest.mark.anyio
 async def test_temperament_has_a_nature_identity_fallback(
     nature: str,
+    expected_rule: str,
     expected_title: str,
 ) -> None:
     tracks = tuple(
@@ -325,7 +329,8 @@ async def test_temperament_has_a_nature_identity_fallback(
     report = await _report(tracks)
 
     assert report.temperament is not None
-    assert report.temperament.title == expected_title
+    assert report.temperament.rule == expected_rule
+    assert legacy_palette(report).temperament.title == expected_title
 
 
 @pytest.mark.anyio
@@ -347,4 +352,4 @@ async def test_temperament_does_not_call_movement_without_pair_recurrence() -> N
     report = await _report(tracks)
 
     assert report.temperament is not None
-    assert report.temperament.title != "Movimento com atmosfera"
+    assert report.temperament.rule != "recurring-percussion-synthesizers"

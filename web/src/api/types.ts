@@ -70,7 +70,6 @@ export interface AnalysisSummary {
   coverage_tracks: number;
   coverage_plays: number;
   recording_status_counts: RecordingStatusCounts;
-  notice: string;
   section_availability: SectionAvailabilitySummary;
   vocal_presence: VocalPresence;
   image_catalog_version: string;
@@ -109,7 +108,7 @@ export interface FamilyPresence {
   share: number;
   evidence_count: number;
   confidence: Confidence;
-  image: InstrumentImage | null;
+  image: AnalysisImage | null;
   tone: { shadow: string; highlight: string } | null;
 }
 
@@ -124,15 +123,27 @@ export interface SoundBalance {
 
 export interface Discovery {
   instrument_slug: string;
-  title: string;
-  summary: string;
-  image: InstrumentImage | null;
+  instrument_name: string;
+  image: AnalysisImage | null;
 }
 
+export type SoundNature = "acoustic" | "electric" | "electronic" | "sampled" | "hybrid";
+export const TEMPERAMENT_RULES = [
+  "recurring-percussion-synthesizers", "electric-plucked-strings",
+  "recurring-sampled", "recurring-electronic", "dominant-acoustic",
+  "dominant-electric", "dominant-electronic", "dominant-sampled", "dominant-hybrid",
+] as const;
 export interface Temperament {
-  title: string;
-  summary: string;
-  disclaimer: string;
+  rule: (typeof TEMPERAMENT_RULES)[number];
+  primary_family_slug: string;
+  primary_nature: SoundNature;
+}
+
+/** Published image metadata, without generated presentation prose. */
+export interface AnalysisImage extends Omit<InstrumentImage, "alt" | "caption"> {
+  alt: string | null;
+  depicted_name: string;
+  family_name: string;
 }
 
 export interface RecordingAnalysis {
@@ -142,7 +153,6 @@ export interface RecordingAnalysis {
   mbid: string | null;
   lastfm_url: string | null;
   status: RecordingStatus;
-  status_detail: string | null;
 }
 
 export interface PaletteReport {
@@ -197,7 +207,6 @@ export interface ArtistVocabulary {
   concentration: number;
   families: VocabularyFamily[];
   featured_artists: VocabularyFeaturedArtist[];
-  notice: string;
 }
 
 export interface VocabularyFeaturedArtist {
@@ -237,7 +246,10 @@ export interface VocabularyFamily {
   tone: { shadow: string; highlight: string } | null;
 }
 
-export interface ProfileAnalysisV2 {
+export const REPORT_SCHEMA_VERSION = "profile-analysis-v3";
+
+export interface ProfileAnalysisV3 {
+  report_schema_version: typeof REPORT_SCHEMA_VERSION;
   is_example: boolean;
   example_id: string | null;
   profile: ProfileSummary;

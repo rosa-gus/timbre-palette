@@ -60,6 +60,9 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
+      - name: Validate locale types
+        run: yarn locales:check
+
       - name: Type-check API Worker
         run: yarn typecheck:api
 

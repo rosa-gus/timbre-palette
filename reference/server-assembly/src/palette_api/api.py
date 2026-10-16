@@ -1,3 +1,5 @@
+from palette_api.report import ProfileAnalysisV3
+from palette_api.legacy_presentation import legacy_profile
 import json
 from typing import Annotated
 from uuid import uuid4
@@ -317,6 +319,7 @@ async def handle_unexpected_error(request: Request, error: Exception) -> JSONRes
     return JSONResponse(status_code=500, content=response.model_dump(), headers=NO_STORE_HEADERS)
 
 
+@app.get("/v3/profiles/{username}/analysis", operation_id="getProfileAnalysisV3", response_model=ProfileAnalysisV3)
 @app.get(
     "/v2/profiles/{username}/analysis",
     operation_id="getProfileAnalysisV2",
@@ -329,6 +332,7 @@ async def handle_unexpected_error(request: Request, error: Exception) -> JSONRes
     },
 )
 async def get_profile_analysis_v2(
+    request: Request,
     username: Annotated[str, Path(min_length=1, max_length=64)],
     analysis_service: Annotated[V2AnalysisService, Depends(get_v2_analysis_service)],
     response: Response,
@@ -336,7 +340,7 @@ async def get_profile_analysis_v2(
         ListeningPeriod,
         Query(description="Listening-history period to analyze."),
     ] = ListeningPeriod.SEVEN_DAYS,
-) -> ProfileAnalysisV2 | JSONResponse:
+) -> ProfileAnalysisV2 | ProfileAnalysisV3 | JSONResponse:
     normalized_username = username.strip()
     if not normalized_username:
         raise ApiProblem(
@@ -351,9 +355,10 @@ async def get_profile_analysis_v2(
         if report.hydration.status == "pending"
         else PALETTE_CACHE_CONTROL
     )
-    return report
+    return legacy_profile(report) if request.url.path.startswith("/v2/") else report
 
 
+@app.get("/v3/examples/analysis", operation_id="getExampleAnalysisV3", response_model=ProfileAnalysisV3)
 @app.get(
     "/v2/examples/analysis",
     operation_id="getExampleAnalysisV2",
@@ -364,6 +369,7 @@ async def get_profile_analysis_v2(
     },
 )
 async def get_example_analysis_v2(
+    request: Request,
     response: Response,
     image_catalog: Annotated[InstrumentImageCatalog, Depends(get_image_catalog)],
     period: Annotated[
@@ -378,7 +384,7 @@ async def get_example_analysis_v2(
             description="Identifier that keeps the same example selection reproducible.",
         ),
     ] = None,
-) -> ProfileAnalysisV2:
+) -> ProfileAnalysisV2 | ProfileAnalysisV3:
     resolved_sample_id = sample_id or uuid4().hex
     analysis_service = V2AnalysisService(
         history_provider=CuratedExampleListeningHistoryProvider(resolved_sample_id),
@@ -387,9 +393,10 @@ async def get_example_analysis_v2(
     )
     report = await analysis_service.analyze("eu adoro beatles!", period)
     response.headers["Cache-Control"] = NO_STORE_HEADERS["Cache-Control"]
-    return report.model_copy(
+    report = report.model_copy(
         update={"is_example": True, "example_id": resolved_sample_id}
     )
+    return legacy_profile(report) if request.url.path.startswith("/v2/") else report
 
 
 @app.get(

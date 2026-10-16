@@ -32,12 +32,10 @@ from palette_api.domain import (
     Track,
 )
 from palette_api.image_catalog import DEFAULT_IMAGE_CATALOG, InstrumentImageCatalog
+from palette_api.report import ArtistVocabulary, PaletteReport, ProfileAnalysisV3
 from palette_api.schemas import (
-    ArtistVocabulary,
     HydrationSummary,
     ImageTone,
-    PaletteReport,
-    ProfileAnalysisV2,
     SnapshotInfo,
     VocabularyAvailability,
     VocabularyArtistFamily,
@@ -1084,10 +1082,6 @@ class VocabularyAnalyzer:
             concentration=round(concentration, 4),
             families=families,
             featured_artists=featured_artists,
-            notice=(
-                "Recorre em gravações documentadas destes artistas; não descreve "
-                "necessariamente cada faixa ou a presença de um instrumento no áudio."
-            ),
         )
 
     def _gate_result(
@@ -1174,7 +1168,7 @@ class V2AnalysisService:
         self,
         username: str,
         period: ListeningPeriod,
-    ) -> ProfileAnalysisV2:
+    ) -> ProfileAnalysisV3:
         trace_profile = isinstance(self._snapshot_provider, D1SnapshotProjectionProvider)
         history = await self._history_provider.get_history(username, period)
         if not history.tracks:
@@ -1252,7 +1246,7 @@ class V2AnalysisService:
         )
         pending_aliases = sum(target.kind == "track" for target in preparation.targets)
         pending_artists = sum(target.kind == "artist" for target in preparation.targets)
-        report = ProfileAnalysisV2(
+        report = ProfileAnalysisV3(
             profile=palette.profile,
             snapshot=preparation.snapshot,
             track_palette=palette,

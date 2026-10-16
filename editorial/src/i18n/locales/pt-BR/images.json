@@ -1,0 +1,22 @@
+{
+  "images": {
+    "add": "Associar imagem",
+    "alt": "Descrição acessível",
+    "asset": "Asset",
+    "caption": "Legenda",
+    "depictedInstrument": "Instrumento fotografado",
+    "exact": "Instrumento exato",
+    "heading": "Imagem e créditos",
+    "license": "Licença",
+    "licenseUrl": "URL da licença",
+    "originalUrl": "URL da fotografia original",
+    "photographer": "Fotógrafo",
+    "photographerUrl": "URL do fotógrafo",
+    "provider": "Provedor",
+    "related": "Instrumento relacionado",
+    "remove": "Remover imagem da ficha",
+    "resolution": "Correspondência",
+    "unavailable": "Sem imagem associada.",
+    "url": "URL da imagem"
+  }
+}

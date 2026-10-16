@@ -1,0 +1,27 @@
+{
+  "reading": {
+    "add": "Adicionar artigo",
+    "hint": "Artigos para aprofundamento. Estes links não substituem as fontes dos textos.",
+    "publisher": "Instituição ou autor",
+    "remove": "Remover link",
+    "title": "Saiba mais"
+  },
+  "sources": {
+    "accessed": "Consultada em",
+    "add": "Adicionar fonte",
+    "descriptionTitle": "Fontes da descrição",
+    "heading": "Fontes dos textos",
+    "locator": "Localizador",
+    "locatorPlaceholder": "Página, seção ou verbete",
+    "locatorWithTitle": "Localizador — {title}",
+    "notes": "Observações",
+    "publisher": "Instituição ou editora",
+    "remove": "Remover fonte",
+    "soundProductionTitle": "Fontes da produção do som",
+    "title": "Título",
+    "untitled": "Fonte sem título",
+    "url": "URL",
+    "verified": "Metadados bibliográficos verificados",
+    "verifiedAt": "Metadados verificados em"
+  }
+}

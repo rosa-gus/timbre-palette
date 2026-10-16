@@ -1,0 +1,22 @@
+{
+  "curiosity": {
+    "add": "Adicionar curiosidade",
+    "optional": "opcional",
+    "optionalHint": "A ficha pode ser publicada sem curiosidade.",
+    "remove": "Remover curiosidade",
+    "sourcesTitle": "Fontes da curiosidade",
+    "supportReviewed": "Suporte da curiosidade revisado",
+    "text": "Texto breve",
+    "title": "Curiosidade"
+  },
+  "sheet": {
+    "briefTitle": "Ficha breve",
+    "description": "Descrição",
+    "editLabel": "Editar ficha",
+    "family": "Família",
+    "name": "Nome",
+    "selfFamily": "A própria família",
+    "soundProduction": "Como produz som",
+    "writingHint": "Prefira duas ou três frases. História e origem não fazem parte da ficha."
+  }
+}

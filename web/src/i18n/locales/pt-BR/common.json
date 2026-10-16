@@ -1,0 +1,70 @@
+{
+  "actions": {
+    "exploreInstrument": "Explorar instrumento",
+    "open": "[abrir]",
+    "openInstrument": "Abrir ficha de {name}",
+    "resume": "Retomar consulta",
+    "search": "Buscar",
+    "share": "Compartilhar"
+  },
+  "colors": {
+    "copied": "Código copiado",
+    "copy": "Copiar código",
+    "copyFailed": "Falha ao copiar",
+    "copyLabel": "Copiar código {hex}",
+    "detailsLabel": "Detalhes de {label}",
+    "label": "Cor da paleta",
+    "triggerLabel": "{label}: {hex}. Abrir detalhes da cor",
+    "variation": "Variação de tom de {name}",
+    "variations": "Variações do tom de {name}"
+  },
+  "controls": {
+    "chooseOption": "Escolha uma opção",
+    "closeNotice": "Fechar aviso",
+    "explanation": "Abrir explicação"
+  },
+  "dates": {
+    "month1": "jan.",
+    "month2": "fev.",
+    "month3": "mar.",
+    "month4": "abr.",
+    "month5": "mai.",
+    "month6": "jun.",
+    "month7": "jul.",
+    "month8": "ago.",
+    "month9": "set.",
+    "month10": "out.",
+    "month11": "nov.",
+    "month12": "dez."
+  },
+  "footer": {
+    "by": "por",
+    "code": "Código",
+    "credits": "<upper>Créditos</upper>",
+    "history": "<upper>Histórico</upper>"
+  },
+  "navigation": {
+    "backUpper": "<upper>Voltar</upper>",
+    "home": "Timbre Palette, início"
+  },
+  "product": {
+    "apiLabel": "API",
+    "beta": "Beta",
+    "detailsLabel": "Informações do projeto",
+    "development": "Em desenvolvimento",
+    "editionLabel": "Edição",
+    "methodLabel": "Método",
+    "pilot": "Piloto",
+    "prototype": "Protótipo",
+    "stable": "Estável",
+    "statusLabel": "Status",
+    "triggerLabel": "Informações do Timbre Palette, {status}, produto {product}"
+  },
+  "theme": {
+    "dark": "<upper>Escuro</upper>",
+    "light": "<upper>Claro</upper>",
+    "system": "<upper>Sistema</upper>",
+    "systemLabel": "Sistema ({theme})",
+    "toggleLabel": "Tema {theme}. Clique para alternar."
+  }
+}
