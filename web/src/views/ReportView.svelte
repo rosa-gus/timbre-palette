@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { formatPercent } from "../i18n/formatters";
+  import Message from "../i18n/Message.svelte";
+  import { t } from "../i18n/runtime";
   import Arrow from "../components/Arrow.svelte";
   import Badge from "../components/Badge.svelte";
   import Button from "../components/Button.svelte";
@@ -46,7 +49,7 @@
   const homePath = normalizePathname();
 
   function percent(value: number): string {
-    return `${Math.round(value * 100)}%`;
+    return formatPercent(value);
   }
 
   type Rgb = [number, number, number];
@@ -107,14 +110,17 @@
   export let onDownloadShare: () => void = () => undefined;
   export let onShareImage: () => void = () => undefined;
   const natureLabels: Record<string, string> = {
-    acoustic: "Acústica",
-    electric: "Elétrica",
-    electronic: "Eletrônica",
-    sampled: "Sampleada",
-    hybrid: "Híbrida",
-    unknown: "Ainda não identificada",
+    acoustic: t("nature.acoustic"),
+    electric: t("nature.electric"),
+    electronic: t("nature.electronic"),
+    sampled: t("nature.sampled"),
+    hybrid: t("nature.hybrid"),
+    unknown: t("nature.unknown"),
   };
 </script>
+
+{#snippet sourceValue(text: string)}<span class="source-value">{text}</span>{/snippet}
+{#snippet nextLine(text: string)}<br />{text}{/snippet}
 
 <section
   class="report-view"
@@ -123,33 +129,31 @@
   style={`--report-tone:${report.families[0]?.tone?.highlight ?? fallbackTone};--report-tone-text:${toneText(report.families[0]?.tone?.highlight ?? fallbackTone)}`}
 >
   {#if !embedded}<div class="report-back">
-      <a class="back-link" href={homePath}><Arrow direction="left" />Voltar</a>
+      <a class="back-link" href={homePath}><Arrow direction="left" />{t("navigation.back")}</a>
     </div>{/if}
   {#if !embedded}<div class="archive-header">
-      <p class="eyebrow">
-        ESCUTA DE {isExample
-          ? report.profile.realname || "Besouro Hércules"
-          : `@${report.profile.username}`}
-        {#if isExample}<Badge tone="accent">EXEMPLO</Badge>{/if}
+      <p class="eyebrow">{t("report.listener", { listener: isExample
+          ? report.profile.realname || t("example.displayName")
+          : `@${report.profile.username}` })} {#if isExample}<Badge tone="accent">{t("example.badge")}</Badge>{/if}
       </p>
       <div class="archive-period">
         <span
           >{periodLabels[report.profile.period]}<span
             class="separator-indicator"
             aria-hidden="true">·</span
-          >Análise {statusLabels[report.analysis.status]}</span
+          >{t("report.status", { status: statusLabels[report.analysis.status] })}</span
         >{#if report.analysis.data_source !== "catalog"}<span
-            >Dados {report.analysis.data_source === "mock"
-              ? "demonstrativos"
-              : "híbridos"}</span
+            >{t("report.dataSource", { source: report.analysis.data_source === "mock"
+              ? t("report.demoData")
+              : t("report.hybridData") })}</span
           >{/if}
       </div>
       <a class="image-link" href="#share"
-        >{isExample ? "Visualizar imagem do exemplo" : "Visualizar minha imagem"}
+        >{isExample ? t("sharing.viewExample") : t("sharing.viewOwn")}
         <Arrow direction="up-right" /></a
       >
     </div>{/if}
-  <nav class="report-index" aria-label="Índice do retrato">
+  <nav class="report-index" aria-label={t("report.indexLabel")}>
     {#each sectionOptions as option, index}
       <a
         href={`#${option.value}`}
@@ -161,7 +165,7 @@
   </nav>
   <section id="portrait" class="portrait" aria-labelledby="report-title">
     <div class="portrait-copy">
-      <p class="eyebrow">01 / SEU RETRATO INSTRUMENTAL</p>
+      <p class="eyebrow">{t("report.portraitHeading")}</p>
       {#if embedded}<h2 class="portrait-title" id="report-title">
           {portrait.title}
         </h2>
@@ -174,25 +178,21 @@
         </p>{/if}
     </div>
     <div class="portrait-caption">
-      <span>{report.profile.tracks_analyzed} faixas</span><span
-        >{report.profile.total_plays} reproduções</span
+      <span>{t("report.trackCount", { tracks_analyzed: report.profile.tracks_analyzed })}</span><span
+        >{t("report.playCount", { total_plays: report.profile.total_plays })}</span
       ><span
-        >{percent(report.analysis.coverage_tracks)} das faixas cobertas
-          <Tooltip ariaLabel="O que significa a cobertura?" triggerLabel="[?]">
-            <p>
-              Cobertura é a proporção das faixas analisadas com evidências
-              instrumentais suficientes para contribuir para sua paleta.
-            </p>
-            <p>Faixas sem essas evidências ficam fora do cálculo.</p>
+        >{t("report.trackCoverage", { coverage: percent(report.analysis.coverage_tracks) })} <Tooltip ariaLabel={t("report.coverageTitle")} triggerLabel="[?]">
+            <p>{t("report.coverageDescription")} </p>
+            <p>{t("report.excludedTracks")}</p>
             {#if hydrationPending}<p class="tooltip-note">
                 <span class="loading-indicator" aria-hidden="true"></span>
-                <span>Mais dados podem chegar depois.</span>
+                <span>{t("report.hydrationNotice")}</span>
               </p>{/if}
           </Tooltip>
         </span
       >
     </div>
-    <div class="composition" aria-label="Composição da paleta instrumental">
+    <div class="composition" aria-label={t("report.compositionLabel")}>
       {#each report.families as family}<ColorSwatch
           color={family.tone?.highlight ?? fallbackTone}
           label={`${family.name} (${percent(family.share)})`}
@@ -201,9 +201,7 @@
           style={`flex-grow:${family.share};`}
         />{/each}
     </div>
-    <p class="color-hint">
-      Selecione uma cor para copiá-la.
-    </p>
+    <p class="color-hint">{t("report.copyHint")} </p>
     <div class="instrument-grid">
       {#each report.families.slice(0, 3) as family, index}
         <figure
@@ -213,14 +211,14 @@
           <figcaption>
             <div class="instrument-heading">
               <span class="eyebrow"
-                >{String(index + 1).padStart(2, "0")} / PRESENÇA DOMINANTE</span
+                >{t("report.dominantPresence", { index: String(index + 1).padStart(2, "0") })}</span
               >
               <button
                 type="button"
                 class="family-card-link"
-                aria-label={`Abrir ficha de ${family.name}`}
+                aria-label={t("actions.openInstrument", { name: family.name })}
                 on:click={() => onOpenInstrumentSlug(family.slug)}
-              >[abrir]</button>
+              >{t("actions.open")}</button>
             </div>
             <div class="instrument-name">
               <h2>{family.name}</h2>
@@ -237,21 +235,21 @@
             </div>{:else}<div class="image-placeholder">{family.name}</div>{/if}
           <div
             class="tone-strip"
-            aria-label={`Variações do tom de ${family.name}`}
+            aria-label={t("colors.variations", { name: family.name })}
           >
             {#each toneSwatches(family) as swatch}<ColorSwatch
                 color={swatch}
-                label={`Variação de tom de ${family.name}`}
+                label={t("colors.variation", { name: family.name })}
               />{/each}
           </div>
           {#if family.image?.variants.length}<p class="photo-caption">
               <span class="photo-caption-text"
-                >FOTO · {imageCaption(family.image.caption)}</span
+                >{t("images.photoCaption", { caption: imageCaption(family.image.caption) })}</span
               >{#if family.image.credit.photographer_url}<a
                   href={family.image.credit.photographer_url}
                   target="_blank"
                   rel="noreferrer"
-                  >{family.image.credit.photographer ?? "Ver crédito"}<Arrow
+                  >{family.image.credit.photographer ?? t("images.viewCredit")}<Arrow
                     direction="up-right"
                   /></a
                 >{:else if family.image.credit.photographer}<span
@@ -264,12 +262,12 @@
   </section>
   <section id="palette" class="archive-section" aria-labelledby="palette-title">
     <div class="section-heading">
-      <p class="eyebrow">02 / PALETA</p>
-      <h2 id="palette-title">As presenças da sua escuta.</h2>
-      <p class="palette-scope">Entre as fontes identificadas</p>
+      <p class="eyebrow">{t("report.paletteHeading")}</p>
+      <h2 id="palette-title">{t("report.paletteTitle")}</h2>
+      <p class="palette-scope">{t("report.identifiedSources")}</p>
     </div>
     <div class="palette-layout">
-      <div class="family-list" aria-label="Famílias instrumentais">
+      <div class="family-list" aria-label={t("report.familiesLabel")}>
         {#each report.families as family}<div
             class="family-row"
             style={`--family-tone:${family.tone?.highlight ?? fallbackTone};--family-tone-text:${toneText(family.tone?.highlight ?? fallbackTone)}`}
@@ -278,7 +276,7 @@
               <button
                 type="button"
                 class="family-link"
-                aria-label={`Abrir ficha de ${family.name}`}
+                aria-label={t("actions.openInstrument", { name: family.name })}
                 on:click={() => onOpenInstrumentSlug(family.slug)}
                 >{family.name}</button
               ><Badge tone="neutral"
@@ -307,7 +305,7 @@
           </div>{/each}
       </div>
       <aside>
-        <p class="eyebrow">NATUREZA SONORA</p>
+        <p class="eyebrow">{t("report.natureHeading")}</p>
         {#if report.sound_balance}<ul class="compact-list">
             {#each Object.entries(report.sound_balance)
               .filter(([, value]) => Math.round(value * 100) > 0)
@@ -316,28 +314,29 @@
                   >{percent(value)}</strong
                 >
               </li>{/each}
-          </ul>{:else}<p>A natureza sonora ainda está sendo apurada.</p>{/if}
+          </ul>{:else}<p>{t("report.naturePending")}</p>{/if}
       </aside>
     </div>
     <div class="analysis-details">
-      <Dropdown title="Sobre os dados desta leitura">
+      <Dropdown title={t("report.dataTitle")}>
         <p>{report.analysis.notice}</p>
-        <p>
-          Cobertura: <span class="source-value">{percent(report.analysis.coverage_tracks)}</span> das faixas / <span class="source-value">{percent(
-            report.analysis.coverage_plays,
-          )}</span> das reproduções.
-        </p>
-        <p>
-          Voz documentada: <span class="source-value">{report.analysis.vocal_presence.documented_tracks}</span> faixas,
-          <span class="source-value">{report.analysis.vocal_presence.documented_artists}</span> artistas e
-          <span class="source-value">{report.analysis.vocal_presence.documented_plays}</span> reproduções (<span class="source-value">{percent(
-            report.analysis.vocal_presence.play_ratio,
-          )}</span> das reproduções).
-        </p>
-        <p>
-          Catálogo {#if report.analysis.catalog_version}<code class="source-value">{report.analysis.catalog_version}</code>{:else}não publicado{/if}
-          <span class="separator-indicator" aria-hidden="true">·</span>
-          Método <code class="source-value">{report.analysis.methodology_version}</code>
+        <p><Message
+          message="report.coverage"
+          values={{ tracks: percent(report.analysis.coverage_tracks), plays: percent(report.analysis.coverage_plays) }}
+          wrappers={{ value: sourceValue }}
+        /></p>
+        <p><Message
+          message="report.vocals"
+          values={{
+            tracks: report.analysis.vocal_presence.documented_tracks,
+            artists: report.analysis.vocal_presence.documented_artists,
+            plays: report.analysis.vocal_presence.documented_plays,
+            ratio: percent(report.analysis.vocal_presence.play_ratio),
+          }}
+          wrappers={{ value: sourceValue }}
+        /></p>
+        <p>{t("report.catalogLabel")} {#if report.analysis.catalog_version}<code class="source-value">{report.analysis.catalog_version}</code>{:else}{t("report.unpublished")}{/if}
+          <span class="separator-indicator" aria-hidden="true">·</span>{t("report.methodLabel")} <code class="source-value">{report.analysis.methodology_version}</code>
         </p>
       </Dropdown>
     </div>
@@ -350,8 +349,8 @@
   >
     {#if discoveryAvailable && report.discovery}
       <div class="section-heading">
-        <p class="eyebrow">03 / DESCOBERTA</p>
-        <h2 id="discovery-title">Uma presença inesperada.</h2>
+        <p class="eyebrow">{t("report.discoveryHeading")}</p>
+        <h2 id="discovery-title">{t("report.discoveryTitle")}</h2>
       </div>
       <div class="discovery-layout">
         {#if report.discovery.image?.variants.length}<figure
@@ -366,13 +365,13 @@
             />
             <figcaption class="photo-caption">
               <span class="photo-caption-text"
-                >FOTO · {imageCaption(report.discovery.image.caption)}</span
+                >{t("images.photoCaption", { caption: imageCaption(report.discovery.image.caption) })}</span
               >{#if report.discovery.image.credit.photographer_url}
                 <a
                   href={report.discovery.image.credit.photographer_url}
                   target="_blank"
                   rel="noreferrer"
-                  >{report.discovery.image.credit.photographer ?? "Ver crédito"}<Arrow
+                  >{report.discovery.image.credit.photographer ?? t("images.viewCredit")}<Arrow
                     direction="up-right"
                   /></a
               >{:else if report.discovery.image.credit.photographer}<span
@@ -384,15 +383,13 @@
           <h3>{report.discovery.title}</h3>
           <p class="large-copy">{report.discovery.summary}</p>
           <Button variant="secondary" on:click={onOpenInstrument}
-            >Explorar instrumento <Arrow direction="right" /></Button
+            >{t("actions.exploreInstrument")} <Arrow direction="right" /></Button
           >
         </div>
       </div>
     {:else}
-      <p class="eyebrow">03 / DESCOBERTA</p>
-      <p id="discovery-title">
-        Nenhuma descoberta para destacar neste período.
-      </p>
+      <p class="eyebrow">{t("report.discoveryHeading")}</p>
+      <p id="discovery-title">{t("report.noDiscovery")} </p>
     {/if}
   </section>
   <section
@@ -401,42 +398,40 @@
     aria-labelledby="share-title"
   >
     <div class="share-copy">
-      <p class="eyebrow">04 / {isExample ? "RETRATO DE EXEMPLO" : "SEU RETRATO PARA COMPARTILHAR"}</p>
+      <p class="eyebrow">04 / {isExample ? t("sharing.exampleHeading") : t("sharing.ownHeading")}</p>
       <h2 id="share-title">
-        {isExample ? "Leve esta paleta" : "Leve sua paleta"}<br />com você.
-      </h2>
+        <Message message={isExample ? "sharing.exampleLead" : "sharing.ownLead"} wrappers={{ line: nextLine }} /> </h2>
       <p class="large-copy">
         {isExample
-          ? "As cores, os instrumentos e o retrato da escuta do Besouro Hércules em uma imagem para guardar ou compartilhar."
-          : "As cores, os instrumentos e o retrato da sua escuta em uma imagem para guardar ou compartilhar."}
+          ? t("sharing.exampleIntro")
+          : t("sharing.ownIntro")}
       </p>
       <Button variant="primary" disabled={shareBusy} on:click={onGenerateShare}
         >{sharePreviewUrl
-          ? "Atualizar imagem"
+          ? t("sharing.update")
           : isExample
-            ? "Preparar imagem do exemplo"
-            : "Preparar minha imagem"}
+            ? t("sharing.prepareExample")
+            : t("sharing.prepareOwn")}
         <Arrow direction="right" /></Button
       >{#if sharePreviewUrl}{#if canShareImage}<Button
           variant="secondary"
-          on:click={onShareImage}>Compartilhar</Button
+          on:click={onShareImage}>{t("actions.share")}</Button
         >{/if}<Button
           variant="secondary"
-          on:click={onDownloadShare}>Baixar imagem</Button
+          on:click={onDownloadShare}>{t("sharing.download")}</Button
         >{/if}
       <p class="share-feedback" aria-live="polite">{shareFeedback}</p>
     </div>
     <div class="share-preview">
       {#if sharePreviewUrl}<img
           src={sharePreviewUrl}
-          alt={`Imagem pronta para compartilhar: paleta de ${isExample ? report.profile.realname || "Besouro Hércules" : report.profile.username}`}
+          alt={t("sharing.previewAlt", { listener: isExample ? report.profile.realname || t("example.displayName") : report.profile.username })}
         />{:else}<div class="share-card-preview">
           <span class="eyebrow"
-            >TIMBRE PALETTE / {isExample
-              ? report.profile.realname || "Besouro Hércules"
-              : `@${report.profile.username}`}
-            <span class="separator-indicator" aria-hidden="true">·</span>
-            {#if isExample}EXEMPLO <span class="separator-indicator" aria-hidden="true">·</span> {/if}
+            >{t("sharing.previewIdentity", { listener: isExample
+              ? report.profile.realname || t("example.displayName")
+              : `@${report.profile.username}` })} <span class="separator-indicator" aria-hidden="true">·</span>
+            {#if isExample}{t("example.badge")} <span class="separator-indicator" aria-hidden="true">·</span> {/if}
             {periodLabels[report.profile.period]}</span
           ><strong>{portrait.title}</strong>
           <p class="preview-summary">{portrait.summary}</p>
@@ -462,7 +457,7 @@
               </div>{/each}
           </div>
           <span class="preview-note"
-            >Interpretação musical <span
+            >{t("sharing.interpretation")} <span
               class="separator-indicator"
               aria-hidden="true">·</span
             > TIMBRE PALETTE</span

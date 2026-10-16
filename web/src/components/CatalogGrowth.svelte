@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { formatNumber } from "../i18n/formatters";
+  import { t } from "../i18n/runtime";
   import { Popover } from "bits-ui";
   export let percent: number;
   export let added: number;
@@ -6,9 +8,7 @@
   $: percentage =
     percent < 0.1
       ? "<0,1"
-      : new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(
-          percent,
-        );
+      : formatNumber(percent, { maximumFractionDigits: 1 });
   function alignStem(node: HTMLDivElement) {
     const content = node.parentElement!;
     const wrapper = content.parentElement!;
@@ -46,7 +46,7 @@
     openDelay={200}
     closeDelay={0}
     class="catalog-growth"
-    aria-label={`Crescimento do catálogo: +${percentage}% desde sua última visita neste navegador`}
+    aria-label={t("growth.triggerLabel", { percentage: percentage })}
     >+{percentage}%</Popover.Trigger
   >
   <Popover.Content
@@ -58,19 +58,12 @@
     trapFocus={false}
     onOpenAutoFocus={preventAutoFocus}
     onCloseAutoFocus={preventAutoFocus}
-    aria-label="Crescimento do catálogo"
+    aria-label={t("growth.title")}
   >
     <div use:alignStem>
-      <p class="catalog-title">Nosso catálogo cresceu {percentage}%.</p>
-      <p>
-        Mais {added.toLocaleString("pt-BR")} gravações com instrumentos documentados
-        desde sua última visita neste navegador.
-      </p>
-      <p>
-        Ao consultar um perfil, faixas e artistas ainda não materializados podem
-        ser consultados em segundo plano no snapshot MusicBrainz publicado.
-        Novas evidências podem aparecer em uma visita futura.
-      </p>
+      <p class="catalog-title">{t("growth.summary", { percentage: percentage })}</p>
+      <p>{t("growth.recordings", { count: formatNumber(added) })} </p>
+      <p>{t("growth.hydration")} </p>
     </div>
   </Popover.Content>
 </Popover.Root>

@@ -1,11 +1,12 @@
 <script lang="ts">
+  import { t } from "../i18n/runtime";
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex (A região rolável precisa receber foco para permitir rolagem pelo teclado.) -->
 <div
   class="ui-scroll-area"
   role="region"
-  aria-label="Conteúdo da ficha instrumental"
+  aria-label={t("instrument.scrollLabel")}
   tabindex="0"
 >
   <slot />

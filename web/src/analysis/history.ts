@@ -1,3 +1,4 @@
+import { t } from "../i18n/runtime";
 import { STORAGE_KEYS } from "../utils/storage-keys";
 import type { ListeningPeriod } from "../api/types";
 import { PaletteApiError } from "../api/client";
@@ -157,10 +158,10 @@ export async function loadHistory(
   const saved = checkpoint();
   const matches = saved && saved.baseUrl === baseUrl && identity(saved.username) === identity(username) && saved.period === period;
   if (saved?.baseUrl === baseUrl && saved.retryAt > Date.now()) {
-    throw new PaletteApiError("Aguarde antes de retomar a consulta.", 503, saved.retryCode,
+    throw new PaletteApiError(t("errors.resumeWait"), 503, saved.retryCode,
       Math.ceil((saved.retryAt - Date.now()) / 1000));
   }
-  if (active && !active.signal.aborted) throw new PaletteApiError("Uma consulta já está em andamento.", 409, "analysis_in_progress");
+  if (active && !active.signal.aborted) throw new PaletteApiError(t("errors.analysisInProgress"), 409, "analysis_in_progress");
   const state: Checkpoint = resume && matches && saved.pages.length && Date.now() < saved.startedAt + HISTORY_TTL_MS
     ? { ...saved, id: crypto.randomUUID(), pages: [...saved.pages] } : { version: 1, id: crypto.randomUUID(), baseUrl, username, period, startedAt: Date.now(), pageCount: 1,
       pages: [], metadata: null, retryAt: 0, retryCode: "lastfm_busy" };
@@ -195,7 +196,7 @@ export async function loadHistory(
       }
       signal.throwIfAborted();
       if (page === 1) {
-        if (!result.tracks.length) throw new PaletteApiError("Não foram encontradas faixas nesse período.", 422, "empty_history");
+        if (!result.tracks.length) throw new PaletteApiError(t("errors.emptyHistory"), 422, "empty_history");
         state.pageCount = Math.min(4, Math.max(1, result.totalPages ?? (result.tracks.length === 50 ? 4 : 1)));
       }
       // Cache only normalized fields, never upstream extras or derived evidence.

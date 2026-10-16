@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from "../i18n/runtime";
   import Arrow from "../components/Arrow.svelte";
   import { normalizePathname } from "../navigation";
 
@@ -7,10 +8,10 @@
 </script>
 
 <section class="empty-view" aria-live="polite">
-  <h1>Foi mal, o sistema ainda está meio burro.</h1>
+  <h1>{t("empty.title")}</h1>
   <p>{notice}</p>
   <a class="retry-link" href={homePath}
-    >Tentar outro período <Arrow direction="right" /></a
+    >{t("empty.tryPeriod")} <Arrow direction="right" /></a
   >
 </section>
 

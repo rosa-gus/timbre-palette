@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from "./i18n/runtime";
   import { onMount } from "svelte";
   import seedManifest from "./instruments.json";
   import type { InstrumentResource, EditorialReview, EditorialSection, FurtherReading } from "../../web/src/api/types";
@@ -42,7 +43,7 @@
       }
     } catch {
       storageAvailable = false;
-      feedback = "Não foi possível carregar as revisões locais. Os dados iniciais estão visíveis; exporte suas alterações para preservá-las.";
+      feedback = t("errors.loadRevisions");
     }
     storageReady = true;
   });
@@ -50,7 +51,7 @@
   function persist(instruments: Sheet[], _selected: Sheet) {
     if (!setStorageItem(STORAGE_KEYS.editorialInstruments, { schema_version: 1, instruments })) {
       storageAvailable = false;
-      feedback = "Armazenamento local indisponível. Exporte a revisão para preservar as alterações.";
+      feedback = t("errors.storageUnavailable");
     }
   }
   function invalidate() {
@@ -108,30 +109,30 @@
       const { resource, review } = sheet;
       const label = resource.name || resource.slug;
       if (!resource.name.trim() || !resource.description.trim() || !resource.sound_production.trim())
-        errors.push(`${label}: preencha nome, descrição e produção do som.`);
+        errors.push(t("validation.requiredText", { label: label }));
       const sourceIds = new Set(resource.sources.map((source) => source.id));
       for (const source of resource.sources) {
-        if (!source.title.trim() || (source.url && !httpUrl(source.url))) errors.push(`${label}: confira título e URL da fonte.`);
+        if (!source.title.trim() || (source.url && !httpUrl(source.url))) errors.push(t("validation.source", { label: label }));
       }
       for (const field of ["description", "sound_production"] as const) {
-        if (sheet.text_citations[field].some((id) => !sourceIds.has(id))) errors.push(`${label}: referência inexistente em ${field}.`);
+        if (sheet.text_citations[field].some((id) => !sourceIds.has(id))) errors.push(t("validation.missingReference", { label: label, field: field }));
       }
       if (review.claim_support_verified && (!review.reviewer?.trim() || !review.reviewed_at))
-        errors.push(`${label}: informe responsável e data da revisão.`);
+        errors.push(t("validation.review", { label: label }));
       for (const section of resource.sections) {
         if (!section.text.trim()) errors.push(`${label}: remova a curiosidade vazia ou escreva o texto.`);
-        if (section.citations.some((citation) => !sourceIds.has(citation.source_id))) errors.push(`${label}: referência inexistente na curiosidade.`);
-        if (section.status !== "draft" && !section.citations.length) errors.push(`${label}: curiosidade com fonte vinculada precisa de uma citação.`);
+        if (section.citations.some((citation) => !sourceIds.has(citation.source_id))) errors.push(t("validation.curiosityReference", { label: label }));
+        if (section.status !== "draft" && !section.citations.length) errors.push(t("validation.curiosityCitation", { label: label }));
         if (["reviewed", "published"].includes(section.status) && (!section.review.claim_support_verified || !section.review.reviewer?.trim() || !section.review.reviewed_at))
-          errors.push(`${label}: conclua a revisão da curiosidade antes de promovê-la.`);
+          errors.push(t("validation.curiosityReview", { label: label }));
       }
       for (const link of resource.further_reading) {
-        if (!link.title.trim() || !httpUrl(link.url)) errors.push(`${label}: confira título e URL de Saiba mais.`);
+        if (!link.title.trim() || !httpUrl(link.url)) errors.push(t("validation.readingLink", { label: label }));
         if (link.status !== "draft" && (!link.reviewer?.trim() || !link.reviewed_at))
-          errors.push(`${label}: informe a revisão do link de Saiba mais.`);
+          errors.push(t("validation.readingReview", { label: label }));
       }
       if (resource.image && (!resource.image.asset_id.trim() || !resource.image.alt.trim() || !resource.image.variants.length || !httpUrl(resource.image.variants[0].url)))
-        errors.push(`${label}: confira identificador, descrição e URL da imagem.`);
+        errors.push(t("validation.image", { label: label }));
     }
     return errors;
   }
@@ -149,62 +150,62 @@
     const anchor = document.createElement("a");
     anchor.href = url; anchor.download = "timbre-instrument-review.json"; anchor.click();
     URL.revokeObjectURL(url);
-    feedback = "Revisão exportada. A exportação não publica alterações na API.";
+    feedback = t("export.success");
   }
 </script>
 
 <div class="app-shell">
-  <header class="topbar"><a href="./" class="brand">timbre palette <span>editorial</span></a><span class="eyebrow">FICHAS DE INSTRUMENTOS</span></header>
-  <div class="page-heading"><div><p class="eyebrow">01 / CATÁLOGO EDITORIAL</p><h1>Instrumentos,<br />em poucas palavras.</h1><p class="intro">Textos breves, imagens, referências e caminhos para saber mais.</p></div><button class="primary-action" on:click={exportRevision}>Exportar revisão JSON ↗</button></div>
+  <header class="topbar"><a href="./" class="brand">timbre palette <span>{t("navigation.editorial")}</span></a><span class="eyebrow">{t("navigation.instrumentSheets")}</span></header>
+  <div class="page-heading"><div><p class="eyebrow">{t("catalog.heading")}</p><h1>{t("catalog.titleStart")}<br />{t("catalog.titleEnd")}</h1><p class="intro">{t("catalog.description")}</p></div><button class="primary-action" on:click={exportRevision}>{t("export.action")}</button></div>
   <div class="editor-layout">
-    <aside class="catalog-sidebar" aria-label="Instrumentos e famílias">
-      <label for="search">Buscar ficha</label><input id="search" type="search" bind:value={search} placeholder="Nome ou slug" />
-      <nav aria-label="Fichas"><ul class="sheet-list">{#each visible as sheet}<li><button class:selected={sheet.resource.slug === selectedSlug} on:click={() => selectedSlug = sheet.resource.slug}><strong>{sheet.resource.name}</strong><span>{sheet.resource.kind === "family" ? "Família sonora" : "Instrumento"} · {sheet.review.claim_support_verified ? "Revisado" : "Em revisão"}</span></button></li>{/each}</ul></nav>
-      {#if !visible.length}<p>Nenhuma ficha encontrada.</p>{/if}
+    <aside class="catalog-sidebar" aria-label={t("catalog.sidebarLabel")}>
+      <label for="search">{t("catalog.search")}</label><input id="search" type="search" bind:value={search} placeholder={t("catalog.searchPlaceholder")} />
+      <nav aria-label={t("catalog.listLabel")}><ul class="sheet-list">{#each visible as sheet}<li><button class:selected={sheet.resource.slug === selectedSlug} on:click={() => selectedSlug = sheet.resource.slug}><strong>{sheet.resource.name}</strong><span>{sheet.resource.kind === "family" ? t("catalog.family") : "Instrumento"} · {sheet.review.claim_support_verified ? t("review.reviewed") : t("review.pending")}</span></button></li>{/each}</ul></nav>
+      {#if !visible.length}<p>{t("catalog.empty")}</p>{/if}
     </aside>
-    <main aria-label="Editar ficha">
+    <main aria-label={t("sheet.editLabel")}>
       {#key selected.resource.slug}
         <div class="sheet-heading"><h2>{selected.resource.name}</h2><span class="eyebrow">{selected.resource.slug}</span></div>
-        <section aria-labelledby="text-title"><h3 id="text-title">Ficha breve</h3>
-          <div class="form-grid"><label>Nome<input bind:value={selected.resource.name} on:input={invalidate} /></label><label>Família<select bind:value={selected.resource.family_slug} disabled={selected.resource.kind === "family"} on:change={invalidate}><option value={null}>A própria família</option>{#each sheets.filter((sheet) => sheet.resource.kind === "family") as family}<option value={family.resource.slug}>{family.resource.name}</option>{/each}</select></label></div>
-          <label>Descrição<textarea rows="3" maxlength="600" bind:value={selected.resource.description} on:input={invalidate}></textarea></label>
-          <label>Como produz som<textarea rows="2" maxlength="400" bind:value={selected.resource.sound_production} on:input={invalidate}></textarea></label>
-          <p class="hint">Prefira duas ou três frases. História e origem não fazem parte da ficha.</p>
-          <fieldset><legend>Fontes da descrição</legend>{#each selected.resource.sources as source}<label class="check"><input type="checkbox" value={source.id} bind:group={selected.text_citations.description} on:change={invalidate} />{source.title || "Fonte sem título"}</label>{/each}</fieldset>
-          <fieldset><legend>Fontes da produção do som</legend>{#each selected.resource.sources as source}<label class="check"><input type="checkbox" value={source.id} bind:group={selected.text_citations.sound_production} on:change={invalidate} />{source.title || "Fonte sem título"}</label>{/each}</fieldset>
+        <section aria-labelledby="text-title"><h3 id="text-title">{t("sheet.briefTitle")}</h3>
+          <div class="form-grid"><label>{t("sheet.name")}<input bind:value={selected.resource.name} on:input={invalidate} /></label><label>{t("sheet.family")}<select bind:value={selected.resource.family_slug} disabled={selected.resource.kind === "family"} on:change={invalidate}><option value={null}>{t("sheet.selfFamily")}</option>{#each sheets.filter((sheet) => sheet.resource.kind === "family") as family}<option value={family.resource.slug}>{family.resource.name}</option>{/each}</select></label></div>
+          <label>{t("sheet.description")}<textarea rows="3" maxlength="600" bind:value={selected.resource.description} on:input={invalidate}></textarea></label>
+          <label>{t("sheet.soundProduction")}<textarea rows="2" maxlength="400" bind:value={selected.resource.sound_production} on:input={invalidate}></textarea></label>
+          <p class="hint">{t("sheet.writingHint")}</p>
+          <fieldset><legend>{t("sources.descriptionTitle")}</legend>{#each selected.resource.sources as source}<label class="check"><input type="checkbox" value={source.id} bind:group={selected.text_citations.description} on:change={invalidate} />{source.title || t("sources.untitled")}</label>{/each}</fieldset>
+          <fieldset><legend>{t("sources.soundProductionTitle")}</legend>{#each selected.resource.sources as source}<label class="check"><input type="checkbox" value={source.id} bind:group={selected.text_citations.sound_production} on:change={invalidate} />{source.title || t("sources.untitled")}</label>{/each}</fieldset>
         </section>
-        <section aria-labelledby="curiosity-title"><h3 id="curiosity-title">Curiosidade <span class="hint">opcional</span></h3>
-          {#if !selected.resource.sections.length}<p class="hint">A ficha pode ser publicada sem curiosidade.</p><button on:click={addCuriosity}>Adicionar curiosidade</button>{/if}
+        <section aria-labelledby="curiosity-title"><h3 id="curiosity-title">{t("curiosity.title")} <span class="hint">{t("curiosity.optional")}</span></h3>
+          {#if !selected.resource.sections.length}<p class="hint">{t("curiosity.optionalHint")}</p><button on:click={addCuriosity}>{t("curiosity.add")}</button>{/if}
           {#each selected.resource.sections as section}
-            <label>Texto breve<textarea rows="3" maxlength="600" bind:value={section.text} on:input={() => { section.review.claim_support_verified = false; section.review.reviewed_at = null; }}></textarea></label>
-            <label>Estado<select bind:value={section.status}><option value="draft">Rascunho</option><option value="sourced">Fonte vinculada</option><option value="reviewed">Revisado</option><option value="published">Publicado</option><option value="deprecated">Retirado</option></select></label>
-            <fieldset><legend>Fontes da curiosidade</legend>{#each selected.resource.sources as source}<label class="check"><input type="checkbox" checked={section.citations.some((citation) => citation.source_id === source.id)} on:change={(event) => updateCitation(section, source.id, event.currentTarget.checked)} />{source.title || "Fonte sem título"}</label>{/each}</fieldset>
-            {#each section.citations as citation}<label>Localizador — {selected.resource.sources.find((source) => source.id === citation.source_id)?.title}<input bind:value={citation.locator} placeholder="Página, seção ou verbete" /></label>{/each}
-            <label class="check"><input type="checkbox" bind:checked={section.review.claim_support_verified} />Suporte da curiosidade revisado</label>
-            <div class="form-grid"><label>Responsável<input bind:value={section.review.reviewer} /></label><label>Data da revisão<input type="date" bind:value={section.review.reviewed_at} /></label></div>
-            <button class="danger-action" on:click={removeCuriosity}>Remover curiosidade</button>
+            <label>{t("curiosity.text")}<textarea rows="3" maxlength="600" bind:value={section.text} on:input={() => { section.review.claim_support_verified = false; section.review.reviewed_at = null; }}></textarea></label>
+            <label>{t("review.status")}<select bind:value={section.status}><option value="draft">{t("review.draft")}</option><option value="sourced">{t("review.sourced")}</option><option value="reviewed">{t("review.reviewed")}</option><option value="published">{t("review.published")}</option><option value="deprecated">{t("review.deprecated")}</option></select></label>
+            <fieldset><legend>{t("curiosity.sourcesTitle")}</legend>{#each selected.resource.sources as source}<label class="check"><input type="checkbox" checked={section.citations.some((citation) => citation.source_id === source.id)} on:change={(event) => updateCitation(section, source.id, event.currentTarget.checked)} />{source.title || t("sources.untitled")}</label>{/each}</fieldset>
+            {#each section.citations as citation}<label>{t("sources.locatorWithTitle", { title: selected.resource.sources.find((source) => source.id === citation.source_id)?.title ?? "" })}<input bind:value={citation.locator} placeholder={t("sources.locatorPlaceholder")} /></label>{/each}
+            <label class="check"><input type="checkbox" bind:checked={section.review.claim_support_verified} />{t("curiosity.supportReviewed")}</label>
+            <div class="form-grid"><label>{t("review.reviewer")}<input bind:value={section.review.reviewer} /></label><label>{t("review.date")}<input type="date" bind:value={section.review.reviewed_at} /></label></div>
+            <button class="danger-action" on:click={removeCuriosity}>{t("curiosity.remove")}</button>
           {/each}
         </section>
-        <section aria-labelledby="reading-title"><h3 id="reading-title">Saiba mais</h3><p class="hint">Artigos para aprofundamento. Estes links não substituem as fontes dos textos.</p>
-          {#each selected.resource.further_reading as link, index}<div class="item-card"><label>Título<input bind:value={link.title} on:input={() => link.status = "draft"} /></label><div class="form-grid"><label>URL<input type="url" bind:value={link.url} on:input={() => link.status = "draft"} /></label><label>Instituição ou autor<input bind:value={link.publisher} on:input={() => link.status = "draft"} /></label></div><div class="form-grid"><label>Responsável pela revisão<input bind:value={link.reviewer} /></label><label>Data da revisão<input type="date" bind:value={link.reviewed_at} /></label></div><label>Estado<select bind:value={link.status}><option value="draft">Rascunho</option><option value="reviewed">Revisado</option><option value="published">Publicado</option></select></label><button on:click={() => selected.resource.further_reading = selected.resource.further_reading.filter((_, i) => i !== index)}>Remover link</button></div>{/each}
-          <button on:click={addReading}>Adicionar artigo</button>
+        <section aria-labelledby="reading-title"><h3 id="reading-title">{t("reading.title")}</h3><p class="hint">{t("reading.hint")}</p>
+          {#each selected.resource.further_reading as link, index}<div class="item-card"><label>{t("sources.title")}<input bind:value={link.title} on:input={() => link.status = "draft"} /></label><div class="form-grid"><label>{t("sources.url")}<input type="url" bind:value={link.url} on:input={() => link.status = "draft"} /></label><label>{t("reading.publisher")}<input bind:value={link.publisher} on:input={() => link.status = "draft"} /></label></div><div class="form-grid"><label>{t("review.linkReviewer")}<input bind:value={link.reviewer} /></label><label>{t("review.date")}<input type="date" bind:value={link.reviewed_at} /></label></div><label>{t("review.status")}<select bind:value={link.status}><option value="draft">{t("review.draft")}</option><option value="reviewed">{t("review.reviewed")}</option><option value="published">{t("review.published")}</option></select></label><button on:click={() => selected.resource.further_reading = selected.resource.further_reading.filter((_, i) => i !== index)}>{t("reading.remove")}</button></div>{/each}
+          <button on:click={addReading}>{t("reading.add")}</button>
         </section>
-        <section aria-labelledby="sources-title"><h3 id="sources-title">Fontes dos textos</h3>
-          {#each selected.resource.sources as source}<div class="item-card"><label>Título<input bind:value={source.title} on:input={() => { source.metadata_verified = false; invalidate(); }} /></label><div class="form-grid"><label>URL<input type="url" bind:value={source.url} on:input={() => { source.metadata_verified = false; invalidate(); }} /></label><label>Instituição ou editora<input bind:value={source.publisher} on:input={() => { source.metadata_verified = false; invalidate(); }} /></label></div><label>Localizador<input bind:value={source.locator} on:input={invalidate} /></label><label>Observações<textarea rows="2" bind:value={source.note}></textarea></label><div class="form-grid"><label>Consultada em<input type="date" bind:value={source.accessed_at} /></label><label>Metadados verificados em<input type="date" bind:value={source.verified_at} /></label></div><label class="check"><input type="checkbox" bind:checked={source.metadata_verified} />Metadados bibliográficos verificados</label><button on:click={() => removeSource(source.id)}>Remover fonte</button></div>{/each}
-          <button on:click={addSource}>Adicionar fonte</button>
+        <section aria-labelledby="sources-title"><h3 id="sources-title">{t("sources.heading")}</h3>
+          {#each selected.resource.sources as source}<div class="item-card"><label>{t("sources.title")}<input bind:value={source.title} on:input={() => { source.metadata_verified = false; invalidate(); }} /></label><div class="form-grid"><label>{t("sources.url")}<input type="url" bind:value={source.url} on:input={() => { source.metadata_verified = false; invalidate(); }} /></label><label>{t("sources.publisher")}<input bind:value={source.publisher} on:input={() => { source.metadata_verified = false; invalidate(); }} /></label></div><label>{t("sources.locator")}<input bind:value={source.locator} on:input={invalidate} /></label><label>{t("sources.notes")}<textarea rows="2" bind:value={source.note}></textarea></label><div class="form-grid"><label>{t("sources.accessed")}<input type="date" bind:value={source.accessed_at} /></label><label>{t("sources.verifiedAt")}<input type="date" bind:value={source.verified_at} /></label></div><label class="check"><input type="checkbox" bind:checked={source.metadata_verified} />{t("sources.verified")}</label><button on:click={() => removeSource(source.id)}>{t("sources.remove")}</button></div>{/each}
+          <button on:click={addSource}>{t("sources.add")}</button>
         </section>
-        <section aria-labelledby="image-title"><h3 id="image-title">Imagem e créditos</h3>
-          {#if selected.resource.image}<div class="form-grid"><label>Asset<input bind:value={selected.resource.image.asset_id} on:input={invalidate} /></label><label>Instrumento fotografado<input bind:value={selected.resource.image.depicted_instrument_slug} on:input={invalidate} /></label></div><label>Correspondência<select bind:value={selected.resource.image.resolution} on:change={invalidate}><option value="exact">Instrumento exato</option><option value="related">Instrumento relacionado</option><option value="family">Família</option></select></label>
-            {#each selected.resource.image.variants as variant}<label>URL da imagem<input type="url" bind:value={variant.url} on:input={invalidate} /></label>{/each}
-            <label>Descrição acessível<input bind:value={selected.resource.image.alt} on:input={invalidate} /></label><label>Legenda<input bind:value={selected.resource.image.caption} on:input={invalidate} /></label>
-            <div class="form-grid"><label>Fotógrafo<input bind:value={selected.resource.image.credit.photographer} on:input={invalidate} /></label><label>URL do fotógrafo<input type="url" bind:value={selected.resource.image.credit.photographer_url} on:input={invalidate} /></label><label>Provedor<input bind:value={selected.resource.image.credit.provider} on:input={invalidate} /></label><label>URL da fotografia original<input type="url" bind:value={selected.resource.image.credit.photo_url} on:input={invalidate} /></label><label>Licença<input bind:value={selected.resource.image.credit.license} on:input={invalidate} /></label><label>URL da licença<input type="url" bind:value={selected.resource.image.credit.license_url} on:input={invalidate} /></label></div>
-            <button on:click={() => { selected.resource.image = null; invalidate(); }}>Remover imagem da ficha</button>
-          {:else}<p class="hint">Sem imagem associada.</p><button on:click={addImage}>Associar imagem</button>{/if}
+        <section aria-labelledby="image-title"><h3 id="image-title">{t("images.heading")}</h3>
+          {#if selected.resource.image}<div class="form-grid"><label>{t("images.asset")}<input bind:value={selected.resource.image.asset_id} on:input={invalidate} /></label><label>{t("images.depictedInstrument")}<input bind:value={selected.resource.image.depicted_instrument_slug} on:input={invalidate} /></label></div><label>{t("images.resolution")}<select bind:value={selected.resource.image.resolution} on:change={invalidate}><option value="exact">{t("images.exact")}</option><option value="related">{t("images.related")}</option><option value="family">{t("sheet.family")}</option></select></label>
+            {#each selected.resource.image.variants as variant}<label>{t("images.url")}<input type="url" bind:value={variant.url} on:input={invalidate} /></label>{/each}
+            <label>{t("images.alt")}<input bind:value={selected.resource.image.alt} on:input={invalidate} /></label><label>{t("images.caption")}<input bind:value={selected.resource.image.caption} on:input={invalidate} /></label>
+            <div class="form-grid"><label>{t("images.photographer")}<input bind:value={selected.resource.image.credit.photographer} on:input={invalidate} /></label><label>{t("images.photographerUrl")}<input type="url" bind:value={selected.resource.image.credit.photographer_url} on:input={invalidate} /></label><label>{t("images.provider")}<input bind:value={selected.resource.image.credit.provider} on:input={invalidate} /></label><label>{t("images.originalUrl")}<input type="url" bind:value={selected.resource.image.credit.photo_url} on:input={invalidate} /></label><label>{t("images.license")}<input bind:value={selected.resource.image.credit.license} on:input={invalidate} /></label><label>{t("images.licenseUrl")}<input type="url" bind:value={selected.resource.image.credit.license_url} on:input={invalidate} /></label></div>
+            <button on:click={() => { selected.resource.image = null; invalidate(); }}>{t("images.remove")}</button>
+          {:else}<p class="hint">{t("images.unavailable")}</p><button on:click={addImage}>{t("images.add")}</button>{/if}
         </section>
-        <section aria-labelledby="review-title"><h3 id="review-title">Revisão da ficha</h3><label class="check"><input type="checkbox" bind:checked={selected.review.claim_support_verified} />Descrição e produção do som revisadas</label><div class="form-grid"><label>Responsável<input bind:value={selected.review.reviewer} /></label><label>Data da revisão<input type="date" bind:value={selected.review.reviewed_at} /></label></div><label>Nota editorial<textarea rows="2" bind:value={selected.review.editorial_note}></textarea></label></section>
+        <section aria-labelledby="review-title"><h3 id="review-title">{t("review.title")}</h3><label class="check"><input type="checkbox" bind:checked={selected.review.claim_support_verified} />{t("review.textVerified")}</label><div class="form-grid"><label>{t("review.reviewer")}<input bind:value={selected.review.reviewer} /></label><label>{t("review.date")}<input type="date" bind:value={selected.review.reviewed_at} /></label></div><label>{t("review.note")}<textarea rows="2" bind:value={selected.review.editorial_note}></textarea></label></section>
       {/key}
     </main>
   </div>
   <p class="feedback" role="status">{feedback}</p>
-  <footer><span>Revisões salvas neste navegador · exportação manual</span><span>timbre palette / editorial</span></footer>
+  <footer><span>{t("storage.notice")}</span><span>timbre palette / editorial</span></footer>
 </div>

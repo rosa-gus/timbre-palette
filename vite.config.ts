@@ -1,3 +1,4 @@
+import messages from "./web/src/i18n/locales/pt-BR";
 import { defineConfig } from "vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { readFileSync } from "node:fs";
@@ -35,7 +36,23 @@ export default defineConfig({
       api: sourceVersion("./workers/api/src/version.ts"),
     }),
   },
-  plugins: [svelte({ configFile: "../svelte.config.js" })],
+  plugins: [
+    {
+      name: "localized-html",
+      transformIndexHtml: {
+        order: "pre",
+        handler(html) {
+          return html.replace(/\{\{i18n:(metadata\.[a-zA-Z]+)\}\}/g, (_, key: string) => {
+            if (!Object.hasOwn(messages, key)) throw new Error(`Unknown HTML message: ${key}`);
+            return messages[key as keyof typeof messages]
+              .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+              .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+          });
+        },
+      },
+    },
+    svelte({ configFile: "../svelte.config.js" }),
+  ],
   root: "web",
   envDir: "..",
   publicDir: "../public",

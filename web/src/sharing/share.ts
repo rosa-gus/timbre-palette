@@ -1,28 +1,11 @@
+import { formatPercent, formatShareDate } from "../i18n/formatters";
+import { t } from "../i18n/runtime";
 import type { PaletteReport } from "../api/types";
 import { getPortraitCopy } from "../portrait";
 import { createAsciiArtwork, type AsciiDrawings } from "./ascii";
 
-const monthLabels = [
-  "JAN.",
-  "FEV.",
-  "MAR.",
-  "ABR.",
-  "MAI.",
-  "JUN.",
-  "JUL.",
-  "AGO.",
-  "SET.",
-  "OUT.",
-  "NOV.",
-  "DEZ.",
-];
-
-function currentDateLabel(date = new Date()): string {
-  return `${date.getDate()} DE ${monthLabels[date.getMonth()]} ${date.getFullYear()}`;
-}
-
 function shortPercent(value: number): string {
-  return `${Math.round(value * 100)}%`;
+  return formatPercent(value);
 }
 
 function drawWrappedText(
@@ -99,33 +82,33 @@ export async function createShareImage(
   canvas.width = 1200;
   canvas.height = 1500;
   const context = canvas.getContext("2d");
-  if (!context) throw new Error("Canvas indisponível");
+  if (!context) throw new Error(t("sharing.canvasUnavailable"));
   const brandPink = "#f29191";
   const accent = report.families[0]?.tone?.highlight ?? brandPink;
   const periodLabels: Record<string, string> = {
-    "7day": "7 dias",
-    "1month": "1 mês",
-    "3month": "3 meses",
-    "6month": "6 meses",
-    "12month": "12 meses",
-    overall: "Histórico",
+    "7day": t("periods.week"),
+    "1month": t("periods.month"),
+    "3month": t("periods.threeMonths"),
+    "6month": t("periods.sixMonths"),
+    "12month": t("periods.year"),
+    overall: t("periods.overall"),
   };
   context.fillStyle = "#000000";
   context.fillRect(0, 0, canvas.width, canvas.height);
   context.fillStyle = "#b5adaa";
   context.font = "500 20px 'IBM Plex Mono', monospace";
-  const dateLabel = currentDateLabel();
+  const dateLabel = formatShareDate();
   context.fillText(dateLabel, 72, 82);
   context.fillStyle = brandPink;
   context.fillText(
-    "/ PALETA INSTRUMENTAL",
+    t("sharing.paletteHeading"),
     72 + context.measureText(dateLabel).width + 24,
     82,
   );
   context.fillStyle = "#f3efec";
   context.font = "400 24px 'IBM Plex Mono', monospace";
   context.fillText(
-    `${options.isExample ? options.displayName || "Besouro Hércules" : `@${report.profile.username}`} / ${periodLabels[report.profile.period] ?? report.profile.period}${options.isExample ? " / EXEMPLO" : ""}`,
+    `${options.isExample ? options.displayName || t("example.displayName") : `@${report.profile.username}`} / ${periodLabels[report.profile.period] ?? report.profile.period}${options.isExample ? t("sharing.exampleSuffix") : ""}`,
     72,
     140,
     1056,
@@ -214,26 +197,26 @@ export async function createShareImage(
   context.fillStyle = "#b5adaa";
   context.font = "400 21px 'Instrument Sans', sans-serif";
   context.fillText(
-    "Interpretação lúdica da escuta, não teste de personalidade.",
+    t("sharing.disclaimer"),
     72,
     1338,
   );
   context.fillText(
-    `Informação instrumental em ${shortPercent(report.analysis.coverage_tracks)} das faixas analisadas.`,
+    t("sharing.coverage", { coverage: shortPercent(report.analysis.coverage_tracks) }),
     72,
     1370,
   );
   if (options.isExample) {
     context.fillText(
-      "Escuta fictícia com gravações e créditos reais do catálogo.",
+      t("sharing.exampleNotice"),
       72,
       1402,
     );
   } else if (report.analysis.data_source !== "catalog") {
     context.fillText(
       report.analysis.data_source === "mock"
-        ? "Dados demonstrativos."
-        : "Histórico real com instrumentação demonstrativa.",
+        ? t("sharing.demoNotice")
+        : t("sharing.hybridNotice"),
       72,
       1402,
     );
@@ -256,7 +239,7 @@ export async function createShareImage(
       (blob) =>
         blob
           ? resolve(blob)
-          : reject(new Error("Não foi possível gerar a imagem")),
+          : reject(new Error(t("sharing.encodeFailed"))),
       "image/png",
     );
   });

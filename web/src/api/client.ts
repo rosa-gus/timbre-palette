@@ -1,3 +1,4 @@
+import { t } from "../i18n/runtime";
 import type {
   InstrumentResource,
   ListeningPeriod,
@@ -105,7 +106,7 @@ function parseApiError(value: unknown, status: number): PaletteApiError {
     );
   }
   return new PaletteApiError(
-    "Não foi possível obter a análise.",
+    t("errors.analysisUnavailable"),
     status,
     "api_error",
   );
@@ -279,7 +280,7 @@ async function getJson<T>(
     if (error instanceof DOMException && error.name === "AbortError")
       throw error;
     throw new PaletteApiError(
-      "Não foi possível conectar à API da paleta.",
+      t("errors.network"),
       0,
       "network_error",
     );
@@ -291,7 +292,7 @@ async function getJson<T>(
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") throw error;
     throw new PaletteApiError(
-      "A API devolveu uma resposta inválida.",
+      t("errors.invalidJson"),
       response.status,
       "invalid_json",
     );
@@ -337,7 +338,7 @@ export async function getAnalysis(
   );
   if (!isProfileAnalysisV2(result.data)) {
     throw new PaletteApiError(
-      "A API devolveu uma análise incompatível com o contrato.",
+      t("errors.invalidReport"),
       result.response.status,
       "invalid_report",
     );
@@ -359,7 +360,7 @@ export async function getExampleAnalysis(
   );
   if (!isProfileAnalysisV2(result.data) || !result.data.is_example) {
     throw new PaletteApiError(
-      "A API devolveu uma análise de exemplo incompatível com o contrato.",
+      t("errors.invalidExampleReport"),
       result.response.status,
       "invalid_example_report",
     );
@@ -377,7 +378,7 @@ export async function getInstrument(
   );
   if (!isInstrumentResource(result.data)) {
     throw new PaletteApiError(
-      "A API devolveu uma ficha incompatível com o contrato.",
+      t("errors.invalidInstrument"),
       result.response.status,
       "invalid_instrument",
     );
@@ -388,27 +389,27 @@ export async function getInstrument(
 export function getApiErrorMessage(error: unknown): string {
   if (error instanceof PaletteApiError) {
     const localized: Record<string, string> = {
-      invalid_username: "Informe um perfil válido do Last.fm.",
-      invalid_username_or_period: "O perfil ou período informado é inválido.",
-      invalid_page_or_limit: "A página solicitada é inválida.",
-      lastfm_key_missing: "A consulta do histórico não está configurada.",
-      lastfm_unavailable: "Não foi possível consultar o Last.fm agora.",
-      lastfm_profile_not_found: "Esse perfil não foi encontrado no Last.fm.",
-      rate_limited: "Você fez muitas consultas. Aguarde um minuto antes de tentar novamente.",
-      lastfm_busy: "As consultas de histórico estão no limite agora. Aguarde um pouco e tente novamente.",
-      hydration_busy: "O registro de novas evidências está pausado temporariamente.",
-      hydration_daily_budget: "O limite diário de novas evidências foi atingido.",
-      d1_busy: "O catálogo está ocupado no momento. Aguarde alguns segundos e retome a consulta.",
-      d1_daily_budget: "O limite diário de consultas ao catálogo foi atingido. Tente novamente mais tarde.",
-      protection_unavailable: "O serviço de análise está temporariamente indisponível. Tente novamente em instantes.",
-      lastfm_rate_limited: "O Last.fm está recebendo muitas consultas. Tente novamente em instantes.",
-      snapshot_unavailable: "O catálogo de créditos está indisponível agora.",
-      unsupported_snapshot_schema: "A versão do catálogo não é compatível com esta análise.",
-      database_unavailable: "O catálogo de evidências está indisponível.",
-      example_data_unavailable: "O exemplo do catálogo não está disponível.",
-      catalog_unavailable: "O catálogo está indisponível no momento.",
-      instrument_not_found: "Esse instrumento não foi encontrado no catálogo.",
-      invalid_slug: "O identificador do instrumento é inválido.",
+      invalid_username: t("errors.invalidUsername"),
+      invalid_username_or_period: t("errors.invalidUsernameOrPeriod"),
+      invalid_page_or_limit: t("errors.invalidPageOrLimit"),
+      lastfm_key_missing: t("errors.lastfmKeyMissing"),
+      lastfm_unavailable: t("errors.lastfmUnavailable"),
+      lastfm_profile_not_found: t("errors.lastfmProfileNotFound"),
+      rate_limited: t("errors.rateLimited"),
+      lastfm_busy: t("errors.lastfmBusy"),
+      hydration_busy: t("errors.hydrationBusy"),
+      hydration_daily_budget: t("errors.hydrationDailyBudget"),
+      d1_busy: t("errors.d1Busy"),
+      d1_daily_budget: t("errors.d1DailyBudget"),
+      protection_unavailable: t("errors.protectionUnavailable"),
+      lastfm_rate_limited: t("errors.lastfmRateLimited"),
+      snapshot_unavailable: t("errors.snapshotUnavailable"),
+      unsupported_snapshot_schema: t("errors.unsupportedSnapshotSchema"),
+      database_unavailable: t("errors.databaseUnavailable"),
+      example_data_unavailable: t("errors.exampleDataUnavailable"),
+      catalog_unavailable: t("errors.catalogUnavailable"),
+      instrument_not_found: t("errors.instrumentNotFound"),
+      invalid_slug: t("errors.invalidSlug"),
     };
     return localized[error.code] ?? error.message;
   }
@@ -416,5 +417,5 @@ export function getApiErrorMessage(error: unknown): string {
   if (isRecord(error) && typeof error.message === "string") {
     return error.message;
   }
-  return "Não foi possível concluir a análise.";
+  return t("errors.analysisFailed");
 }

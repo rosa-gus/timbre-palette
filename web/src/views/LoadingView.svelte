@@ -1,7 +1,8 @@
 <script lang="ts">
-  export let title = "Lendo seu histórico.";
-  export let description = "As primeiras relações estão sendo reunidas.";
-  export let detail = "Consultando o Last.fm";
+  import { t } from "../i18n/runtime";
+  export let title = t("loading.historyTitle");
+  export let description = t("loading.historyDescription");
+  export let detail = t("loading.historyDetail");
 </script>
 
 <section class="loading-view" role="status" aria-live="polite">

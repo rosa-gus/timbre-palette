@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { formatWaitDuration } from "../i18n/formatters";
+  import Message from "../i18n/Message.svelte";
+  import { t } from "../i18n/runtime";
   import { onMount } from "svelte";
   import chladniHeroImage from "../../../assets/treated/chladni-hero.png";
   import chladniHeroVideo from "../../../assets/treated/chladni-hero.webm";
@@ -21,9 +24,9 @@
   export let waitSeconds = 0;
   export let onResume: () => void = () => undefined;
   export let loading = false;
-  export let loadingTitle = "Lendo seu histórico.";
-  export let loadingDescription = "As primeiras relações estão sendo reunidas.";
-  export let loadingDetail = "Consultando o Last.fm";
+  export let loadingTitle = t("loading.historyTitle");
+  export let loadingDescription = t("loading.historyDescription");
+  export let loadingDetail = t("loading.historyDetail");
   export let onUsernameChange: (value: string) => void = () => undefined;
   export let onPeriodChange: (value: ListeningPeriod) => void = () => undefined;
   export let onSubmit: () => void = () => undefined;
@@ -84,6 +87,8 @@
   }
 </script>
 
+{#snippet titleEmphasis(text: string)}<span>{text}</span>{/snippet}
+
 <section
   class:loading
   class="entry-view"
@@ -91,20 +96,16 @@
   aria-busy={loading}
 >
   <div class="entry-intro">
-    <h1 id="entry-title" class="entry-tagline">
-      Descubra do que <span>sua escuta é feita.</span>
+    <h1 id="entry-title" class="entry-tagline"><Message message="entry.title" wrappers={{ emphasis: titleEmphasis }} />
     </h1>
-    <p class="entry-description">
-      Uma paleta de cores para os instrumentos documentados nas músicas que você
-      ouviu.
-    </p>
+    <p class="entry-description">{t("entry.description")} </p>
   </div>
 
   <div class="entry-stage">
     <div class="hero-frame">
       <img
         src={chladniHeroImage}
-        alt="Experimento histórico de Chladni tratado em duotone rosa e preto"
+        alt={t("entry.heroAlt")}
       />
       <video
         bind:this={heroVideo}
@@ -122,25 +123,19 @@
       </video>
     </div>
     <div class="hero-controls">
-      <Tooltip ariaLabel="Sobre o experimento de Chladni" align="start">
-        <p>
-          No experimento de Chladni, a vibração de uma placa faz os grãos se
-          acumularem nas regiões que menos vibram, formando padrões. Uma maneira
-          de tornar o som visível.
-        </p>
+      <Tooltip ariaLabel={t("entry.heroAbout")} align="start">
+        <p>{t("entry.heroExplanation")} </p>
       </Tooltip>
       <button
         class:playing={videoPlaying}
         class="hero-play"
         type="button"
         disabled={videoFailed}
-        aria-label={videoPlaying ? "Pausar vídeo" : "Reproduzir vídeo"}
+        aria-label={videoPlaying ? t("entry.pauseVideo") : t("entry.playVideo")}
         on:click={toggleHero}
       >
-        {#if videoPlaying}
-          Reproduzindo <span aria-hidden="true">||</span>
-        {:else}
-          Reproduzir <span aria-hidden="true">&gt;</span>
+        {#if videoPlaying}{t("entry.playing")} <span aria-hidden="true">||</span>
+        {:else}{t("entry.play")} <span aria-hidden="true">&gt;</span>
         {/if}
       </button>
     </div>
@@ -155,15 +150,14 @@
     >
       <div class="field-block">
         <div class="field-heading">
-          <label for="username">Seu perfil do Last.fm</label>
+          <label for="username">{t("entry.profileLabel")}</label>
           <button
             class="example-button"
             type="button"
             disabled={loading}
-            aria-label="Ver uma escuta de exemplo"
+            aria-label={t("entry.exampleLabel")}
             on:click={onExample}
-          >
-            Ver exemplo<Arrow direction="right" />
+          >{t("entry.example")}<Arrow direction="right" />
           </button>
         </div>
         <div class="username-field">
@@ -177,7 +171,7 @@
             on:input={(event) => onUsernameChange(event.currentTarget.value)}
             autocomplete="username"
             spellcheck="false"
-            placeholder="nome de usuário"
+            placeholder={t("entry.usernamePlaceholder")}
             aria-invalid={formError ? "true" : undefined}
             aria-errormessage={formError ? "profile-error" : undefined}
             required
@@ -187,16 +181,16 @@
       </div>
       <div class="form-row">
         <div class="field-block period-field">
-          <span class="field-label">Período</span>
+          <span class="field-label">{t("periods.label")}</span>
           <SegmentedControl
-            label="Período de escuta"
+            label={t("periods.listeningLabel")}
             options={periods}
             value={period}
             onChange={(value) => onPeriodChange(value as ListeningPeriod)}
           />
         </div>
         <Button variant="primary" type="submit" disabled={waitSeconds > 0}>
-          <span>{resumeProgress?.pages ? "Retomar consulta" : "Buscar"}</span>
+          <span>{resumeProgress?.pages ? t("actions.resume") : t("actions.search")}</span>
           <Kbd hideOnMobile>{submitKey}</Kbd>
           <span class="submit-arrow" aria-hidden="true"><Arrow direction="right" /></span>
         </Button>
@@ -205,7 +199,7 @@
       {#if !loading && resumeProgress}
         <HistoryResumeNotice progress={resumeProgress} {waitSeconds} showResume={false} />
       {:else if !loading && waitSeconds > 0}
-        <p class="form-error">Aguarde {waitSeconds >= 60 ? `${Math.ceil(waitSeconds / 60)} min` : `${waitSeconds} s`} para tentar novamente.</p>
+        <p class="form-error">{t("history.wait", { duration: formatWaitDuration(waitSeconds) })}</p>
       {/if}
     </form>
     {#if loading}

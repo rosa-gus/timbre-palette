@@ -1,8 +1,9 @@
 <script lang="ts">
+  import { t } from "../i18n/runtime";
   import { Popover } from "bits-ui";
 
   export let color: string;
-  export let label = "Cor da paleta";
+  export let label = t("colors.label");
   export let className = "";
   export let style = "";
   export let presenceName = "";
@@ -96,7 +97,7 @@
     bind:ref={trigger}
     class={`color-swatch ${className}`}
     style={`--swatch-color:${color};${style}`}
-    aria-label={`${label}: ${hex}. Abrir detalhes da cor`}
+    aria-label={t("colors.triggerLabel", { label: label, hex: hex })}
   >
     <span class="visually-hidden">{label}: {hex}</span>
   </Popover.Trigger>
@@ -107,7 +108,7 @@
       align="center"
       sideOffset={12}
       collisionPadding={12}
-      aria-label={`Detalhes de ${label}`}
+      aria-label={t("colors.detailsLabel", { label: label })}
     >
       <div use:alignStem>
         {#if presenceName}
@@ -121,13 +122,13 @@
         <button
           type="button"
           class="color-copy"
-          aria-label={`Copiar código ${hex}`}
+          aria-label={t("colors.copyLabel", { hex: hex })}
           onclick={copyColor}
           >{copied
-            ? "Código copiado"
+            ? t("colors.copied")
             : copyFailed
-              ? "Falha ao copiar"
-              : "Copiar código"}</button
+              ? t("colors.copyFailed")
+              : t("colors.copy")}</button
         >
       </div>
     </Popover.Content>

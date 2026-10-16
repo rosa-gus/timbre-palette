@@ -1,13 +1,14 @@
 <script lang="ts">
+  import { t } from "../i18n/runtime";
   import { Popover } from "bits-ui";
 
   const metadata = __PRODUCT_METADATA__;
   const statusLabels = {
-    prototype: "Protótipo",
-    development: "Em desenvolvimento",
-    beta: "Beta",
-    pilot: "Piloto",
-    stable: "Estável",
+    prototype: t("product.prototype"),
+    development: t("product.development"),
+    beta: t("product.beta"),
+    pilot: t("product.pilot"),
+    stable: t("product.stable"),
   } as const;
   let open = false;
   let trigger: HTMLButtonElement | null = null;
@@ -43,7 +44,7 @@
   <Popover.Trigger
     bind:ref={trigger}
     class="version-badge"
-    aria-label={`Informações do Timbre Palette, ${statusLabels[metadata.status]}, produto ${metadata.product}`}
+    aria-label={t("product.triggerLabel", { status: statusLabels[metadata.status], product: metadata.product })}
   >
     v{metadata.product}<span aria-hidden="true">{open ? "▴" : "▾"}</span>
   </Popover.Trigger>
@@ -53,24 +54,24 @@
     align="start"
     sideOffset={18}
     collisionPadding={20}
-    aria-label="Informações do projeto"
+    aria-label={t("product.detailsLabel")}
   >
     <div use:alignStem>
       <dl>
         <div>
-          <dt>Status</dt>
+          <dt>{t("product.statusLabel")}</dt>
           <dd>{statusLabels[metadata.status]}</dd>
         </div>
         <div>
-          <dt>Edição</dt>
+          <dt>{t("product.editionLabel")}</dt>
           <dd>v{metadata.product}</dd>
         </div>
         <div>
-          <dt>Método</dt>
+          <dt>{t("product.methodLabel")}</dt>
           <dd>{metadata.method}</dd>
         </div>
         <div>
-          <dt>API</dt>
+          <dt>{t("product.apiLabel")}</dt>
           <dd>{metadata.api}</dd>
         </div>
       </dl>

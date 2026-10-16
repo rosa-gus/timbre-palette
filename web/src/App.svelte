@@ -1,4 +1,6 @@
 <script lang="ts">
+  import Message from "./i18n/Message.svelte";
+  import { t } from "./i18n/runtime";
   import { onMount, onDestroy, tick } from "svelte";
   import bayer75 from "./assets/bayer-mask-75.svg";
   import bayer50 from "./assets/bayer-mask-50.svg";
@@ -40,21 +42,21 @@
 
   type SectionId = "portrait" | "palette" | "discovery" | "share";
   const periods: { value: ListeningPeriod; label: string }[] = [
-    { value: "7day", label: "7 dias" },
-    { value: "1month", label: "1 mês" },
-    { value: "3month", label: "3 meses" },
-    { value: "6month", label: "6 meses" },
-    { value: "12month", label: "12 meses" },
-    { value: "overall", label: "Histórico" },
+    { value: "7day", label: t("periods.week") },
+    { value: "1month", label: t("periods.month") },
+    { value: "3month", label: t("periods.threeMonths") },
+    { value: "6month", label: t("periods.sixMonths") },
+    { value: "12month", label: t("periods.year") },
+    { value: "overall", label: t("periods.overall") },
   ];
   const periodLabels: Record<ListeningPeriod, string> = Object.fromEntries(
     periods.map((item) => [item.value, item.label]),
   ) as Record<ListeningPeriod, string>;
   const sectionLabels: Record<SectionId, string> = {
-    portrait: "Retrato",
-    palette: "Paleta",
-    discovery: "Descoberta",
-    share: "Compartilhar",
+    portrait: t("sections.portrait"),
+    palette: t("sections.palette"),
+    discovery: t("sections.discovery"),
+    share: t("actions.share"),
   };
   const availabilityKeys: Record<
     SectionId,
@@ -66,28 +68,28 @@
     share: "families",
   };
   const availabilityLabels: Record<SectionAvailability, string> = {
-    available: "disponível",
-    insufficient_coverage: "cobertura insuficiente",
-    insufficient_diversity: "diversidade insuficiente",
-    insufficient_nature_evidence: "evidência sonora insuficiente",
-    no_candidate: "sem candidato",
+    available: t("availability.available"),
+    insufficient_coverage: t("availability.insufficientCoverage"),
+    insufficient_diversity: t("availability.insufficientDiversity"),
+    insufficient_nature_evidence: t("availability.insufficientNature"),
+    no_candidate: t("availability.noCandidate"),
   };
   const statusLabels: Record<AnalysisStatus, string> = {
-    partial: "parcial",
-    ready: "pronta",
-    insufficient: "insuficiente",
+    partial: t("status.partial"),
+    ready: t("status.ready"),
+    insufficient: t("status.insufficient"),
   };
   const confidenceLabels: Record<Confidence, string> = {
-    documented: "Documentada",
-    strongly_associated: "Fortemente associada",
-    estimated: "Estimada",
+    documented: t("confidence.documented"),
+    strongly_associated: t("confidence.associated"),
+    estimated: t("confidence.estimated"),
   };
   type Theme = "dark" | "light" | "system";
   type ResolvedTheme = Exclude<Theme, "system">;
   const themeLabels: Record<Theme, string> = {
-    dark: "ESCURO",
-    light: "CLARO",
-    system: "SISTEMA",
+    dark: t("theme.dark"),
+    light: t("theme.light"),
+    system: t("theme.system"),
   };
   const headerMarks: Record<ResolvedTheme, { src: string; srcset: string }> = {
     dark: {
@@ -170,9 +172,9 @@
   let result: ProfileAnalysisV2 | null = null;
   let activeAnalysisView: AnalysisView = "track_palette";
   let formError = "";
-  let loadingTitle = "Lendo seu histórico.";
-  let loadingDescription = "As primeiras relações estão sendo reunidas.";
-  let loadingDetail = "Consultando o Last.fm";
+  let loadingTitle = t("loading.historyTitle");
+  let loadingDescription = t("loading.historyDescription");
+  let loadingDetail = t("loading.historyDetail");
   let periodLoading = false;
   let periodError = "";
   let savedHistory: HistoryResume | null = null;
@@ -316,12 +318,12 @@
           ? await getBrowserAnalysis(username, period, signal, (phase, current, total) => {
               if (signal.aborted) return;
               loadingDetail = phase === "tracks"
-                ? `Carregando faixas (${current}/${total})`
+                ? t("loading.tracksProgress", { current: current, total: total })
                 : phase === "profile"
-                  ? "Carregando perfil (1/1)"
+                  ? t("loading.profileProgress")
                   : phase === "evidence"
-                    ? `Consultando evidências (${current}/${total})`
-                    : "Montando resultado...";
+                    ? t("loading.evidenceProgress", { current: current, total: total })
+                    : t("loading.assembly");
             }, resume)
           : await getAnalysis(username, period, signal);
       signal.throwIfAborted();
@@ -342,7 +344,7 @@
       activeAnalysisView = resolveAnalysisView(next, requestedAnalysisView);
       if (!preserveReport) {
         preparingReport = true;
-        loadingDetail = "Preparando sua paleta…";
+        loadingDetail = t("loading.palette");
         await prepareReport(signal);
         if (controller !== request) return;
       }
@@ -376,12 +378,12 @@
   function submit(): void {
     isExample = false;
     exampleId = "";
-    loadingTitle = "Lendo seu histórico.";
-    loadingDescription = "As primeiras relações estão sendo reunidas.";
-    loadingDetail = "Consultando o Last.fm";
+    loadingTitle = t("loading.historyTitle");
+    loadingDescription = t("loading.historyDescription");
+    loadingDetail = t("loading.historyDetail");
     username = normalizeUsername(username);
     if (!username) {
-      formError = "Informe um perfil do Last.fm para começar.";
+      formError = t("errors.usernameRequired");
       return;
     }
     if (view === "loading") return;
@@ -399,9 +401,9 @@
     isExample = true;
     exampleId = createExampleId();
     username = "";
-    loadingTitle = "Preparando o exemplo.";
-    loadingDescription = "Selecionando gravações e créditos do catálogo.";
-    loadingDetail = "Consultando o catálogo";
+    loadingTitle = t("loading.exampleTitle");
+    loadingDescription = t("loading.exampleDescription");
+    loadingDetail = t("loading.catalog");
     formError = "";
     void loadReport();
   }
@@ -434,23 +436,23 @@
     if (!result || shareBusy) return;
     const sourceReport = result.track_palette;
     shareBusy = true;
-    shareFeedback = "Preparando sua imagem…";
+    shareFeedback = t("sharing.preparing");
     try {
       const blob = await createShareImage(sourceReport, undefined, {
         isExample: result.is_example,
-        displayName: result.profile.realname || "Besouro Hércules",
+        displayName: result.profile.realname || t("example.displayName"),
       });
       if (result?.track_palette !== sourceReport || view !== "report") return;
       if (sharePreviewUrl) URL.revokeObjectURL(sharePreviewUrl);
       shareBlob = blob;
       sharePreviewUrl = URL.createObjectURL(blob);
       shareFeedback =
-        "Sua imagem está pronta. Confira a prévia antes de baixar.";
+        t("sharing.ready");
     } catch (error) {
       shareFeedback =
         error instanceof Error
           ? error.message
-          : "Não foi possível gerar a imagem.";
+          : t("sharing.failed");
     } finally {
       shareBusy = false;
     }
@@ -461,7 +463,7 @@
       shareBlob,
       result.is_example ? "besouro-hercules" : result.profile.username,
     );
-    shareFeedback = "Imagem baixada para guardar ou compartilhar.";
+    shareFeedback = t("sharing.downloaded");
   }
   async function shareImage(): Promise<void> {
     if (!shareBlob || !result || !canShareImage) return;
@@ -479,20 +481,20 @@
       await navigator.share({
         files: [file],
         title: result.is_example
-          ? "Escuta de exemplo do Besouro Hércules"
-          : "Minha escuta em cores",
+          ? t("sharing.exampleTitle")
+          : t("sharing.title"),
         text: result.is_example
-          ? "Uma escuta fictícia montada com gravações e créditos reais do catálogo."
-          : "Os instrumentos encontrados nas músicas que ouvi formaram esta paleta.",
+          ? t("sharing.exampleDescription")
+          : t("sharing.description"),
       });
-      shareFeedback = "Compartilhamento concluído.";
+      shareFeedback = t("sharing.completed");
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") {
-        shareFeedback = "Compartilhamento cancelado.";
+        shareFeedback = t("sharing.cancelled");
         return;
       }
       shareFeedback =
-        "Não foi possível compartilhar agora. Você ainda pode baixar a imagem.";
+        t("sharing.unavailable");
     }
   }
   onDestroy(() => {
@@ -586,10 +588,12 @@
   });
 </script>
 
+{#snippet sourceCode(text: string)}<code class="source-value">{text}</code>{/snippet}
+
 <div class="site-shell" data-view={view} data-theme={resolvedTheme}>
   <header class="site-header">
     <div class="header-identity">
-      <a class="wordmark" href={homePath} aria-label="Timbre Palette, início">
+      <a class="wordmark" href={homePath} aria-label={t("navigation.home")}>
         <img
           src={headerMarks[resolvedTheme].src}
           srcset={headerMarks[resolvedTheme].srcset}
@@ -608,9 +612,9 @@
       <button
         class="theme-toggle"
         type="button"
-        aria-label={`Tema ${themeLabels[theme].toLowerCase()}. Clique para alternar.`}
+        aria-label={t("theme.toggleLabel", { theme: themeLabels[theme].toLowerCase() })}
         title={theme === "system"
-          ? `Sistema (${themeLabels[resolvedTheme].toLowerCase()})`
+          ? t("theme.systemLabel", { theme: themeLabels[resolvedTheme].toLowerCase() })
           : themeLabels[theme]}
         on:click={toggleTheme}>{themeLabels[theme]}</button
       >
@@ -684,22 +688,23 @@
         {#if result}
           <div class="footer-explainer footer-explainer--source">
             <Dropdown
-              title="Fonte dos créditos e versões"
+              title={t("sources.versionsTitle")}
               align="end"
               mobileStart
             >
-              <p>
-                Os instrumentos vêm de créditos publicados no MusicBrainz. Usamos
-                o snapshot <code class="source-value">{result.snapshot.snapshot_version}</code>, uma cópia desses
-                dados. O projeto ainda pode consultar mais gravações dessa cópia;
-                por isso, uma próxima visita pode trazer novos créditos.
-              </p>
-              <p>
-                Esta leitura usa as regras da versão <code class="source-value">{result.track_palette
-                  .analysis.methodology_version}</code> para a paleta das faixas e <code class="source-value">{result
-                  .artist_vocabulary.methodology_version}</code> para o vocabulário dos artistas.
-                Se o snapshot ou essas regras mudarem, o resultado também pode mudar.
-              </p>
+              <p><Message
+                message="sources.snapshot"
+                values={{ snapshot: result.snapshot.snapshot_version }}
+                wrappers={{ version: sourceCode }}
+              /></p>
+              <p><Message
+                message="sources.method"
+                values={{
+                  tracks: result.track_palette.analysis.methodology_version,
+                  artists: result.artist_vocabulary.methodology_version,
+                }}
+                wrappers={{ version: sourceCode }}
+              /></p>
             </Dropdown>
           </div>
         {/if}
@@ -712,11 +717,11 @@
           <span class="footer-signature" aria-hidden="true"># + : *</span>
         </div>
         <p class="footer-byline">
-          por <a
+          {t("footer.by")} <a
             href="https://rosa-gus.github.io/portfolio"
             target="_blank"
             rel="noreferrer noopener">rosa gus</a
-          > <span class="separator-indicator" aria-hidden="true">·</span> Código
+          > <span class="separator-indicator" aria-hidden="true">·</span> {t("footer.code")}
           <a
             href="https://www.gnu.org/licenses/gpl-3.0.html"
             target="_blank"
@@ -725,13 +730,13 @@
         </p>
       </div>
       <div class="footer-source">
-        <span class="footer-label">HISTÓRICO</span>
+        <span class="footer-label">{t("footer.history")}</span>
         <a href="https://www.last.fm/" target="_blank" rel="noreferrer noopener"
           >Last.fm</a
         >
       </div>
       <div class="footer-source">
-        <span class="footer-label">CRÉDITOS</span>
+        <span class="footer-label">{t("footer.credits")}</span>
         <a
           href="https://musicbrainz.org/"
           target="_blank"

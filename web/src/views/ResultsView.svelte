@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { formatNumber, formatPercent, formatRegisteredDate } from "../i18n/formatters";
+  import { t } from "../i18n/runtime";
   import { Tabs } from "bits-ui";
   import { tick } from "svelte";
   import { normalizePathname } from "../navigation";
@@ -61,20 +63,6 @@
   let selectedPeriodButton: HTMLButtonElement | null = null;
   let dismissedLowCoveragePeriod: ListeningPeriod | null = null;
   const homePath = normalizePathname();
-  const registeredMonthLabels = [
-    "jan.",
-    "fev.",
-    "mar.",
-    "abr.",
-    "mai.",
-    "jun.",
-    "jul.",
-    "ago.",
-    "set.",
-    "out.",
-    "nov.",
-    "dez.",
-  ];
   const bayer4 = [
     [0, 8, 2, 10],
     [12, 4, 14, 6],
@@ -93,10 +81,10 @@
     vocabulary.status === "pending" ||
     (vocabulary.status === "available" && !vocabularyAvailable);
   $: vocabularyStatusLabel = vocabularyAvailable
-    ? "disponível"
+    ? t("availability.available")
     : vocabularyPending
-      ? "em preparação"
-      : "insuficiente";
+      ? t("vocabulary.pending")
+      : t("status.insufficient");
   $: predominantFamily = vocabulary.families.reduce<
     (typeof vocabulary.families)[number] | null
   >(
@@ -132,13 +120,13 @@
     dismissedLowCoveragePeriod !== period;
 
   function percent(value: number): string {
-    return `${Math.round(value * 100)}%`;
+    return formatPercent(value);
   }
   function coveragePercent(value: number): string {
-    return `${Number((value * 100).toFixed(1)).toLocaleString("pt-BR")}%`;
+    return formatPercent(value, 1);
   }
   function count(value: number): string {
-    return value.toLocaleString("pt-BR");
+    return formatNumber(value);
   }
   function artistArtStyle(artist: VocabularyFeaturedArtist): string {
     const primary = artistArtColors(artist)[0];
@@ -254,14 +242,6 @@
       })
       .slice(0, 3);
   }
-  function formatRegisteredDate(
-    value: string | null | undefined,
-  ): string | null {
-    if (!value) return null;
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return null;
-    return `${registeredMonthLabels[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
-  }
   function lastFmAvatarFallbackUrl(source: string): string | null {
     try {
       const url = new URL(source);
@@ -283,19 +263,19 @@
   function reasonText(reason: string): string {
     const reasons: Record<string, string> = {
       no_mapped_evidence:
-        "Ainda não há instrumentos recorrentes documentados para esta leitura.",
+        t("vocabulary.noRecurringInstruments"),
       insufficient_track_reach:
-        "Os artistas qualificados ainda representam poucas faixas deste histórico.",
+        t("vocabulary.lowTrackReach"),
       insufficient_play_reach:
-        "Os artistas qualificados ainda representam poucas reproduções deste histórico.",
+        t("vocabulary.lowPlayReach"),
       insufficient_artist_diversity:
-        "Ainda há poucos artistas qualificados para uma leitura diversa.",
+        t("vocabulary.lowArtistDiversity"),
       excessive_artist_concentration:
-        "A evidência está concentrada demais em um único artista.",
+        t("vocabulary.highConcentration"),
     };
     return (
       reasons[reason] ??
-      "Ainda não há evidência suficiente para apresentar esta leitura."
+      t("vocabulary.insufficientEvidence")
     );
   }
   function handleTabChange(value: string): void {
@@ -333,18 +313,18 @@
 
 <div class="results-view">
   <div class="results-opening" class:reveal-ready={revealReady}>
-  <a class="back-link" href={homePath}><Arrow direction="left" />VOLTAR</a>
+  <a class="back-link" href={homePath}><Arrow direction="left" />{t("navigation.backUpper")}</a>
   <section
     class="profile-card"
     aria-labelledby="profile-title"
   >
     <div class="profile-avatar">
       {#if result.is_example}
-        <pre class="profile-avatar-drawing" role="img" aria-label="ascii de um besouro">{HERCULES_BEETLE_ASCII}</pre>
+        <pre class="profile-avatar-drawing" role="img" aria-label={t("example.avatarAlt")}>{HERCULES_BEETLE_ASCII}</pre>
       {:else if result.profile.avatar_url}
         <img
           src={result.profile.avatar_url}
-          alt={`Foto de perfil de @${result.profile.username}`}
+          alt={t("profile.avatarAlt", { username: result.profile.username })}
           on:error={handleAvatarError}
         />
       {:else}
@@ -355,15 +335,13 @@
       <div class="profile-identity">
         <div class="profile-label">
           {#if !result.is_example}
-          <p class="eyebrow">
-            PERFIL LAST.FM
-          </p>
+          <p class="eyebrow">{t("profile.heading")} </p>
           {/if}
-          {#if result.is_example}<Badge tone="accent">EXEMPLO</Badge>{/if}
+          {#if result.is_example}<Badge tone="accent">{t("example.badge")}</Badge>{/if}
         </div>
         <h1 id="profile-title">
           {result.is_example
-            ? result.profile.realname || "Besouro Hércules"
+            ? result.profile.realname || t("example.displayName")
             : result.profile.realname || `@${result.profile.username}`}
         </h1>
         {#if result.is_example}<p class="profile-username">
@@ -374,14 +352,14 @@
       </div>
       <div class="profile-footer">
         <div class="profile-meta">
-          {#if registeredLabel}<span>SCROBBLANDO DESDE {registeredLabel}</span
+          {#if registeredLabel}<span>{t("profile.registered", { registeredLabel: registeredLabel })}</span
             >{/if}
-          {#if result.is_example}<span>ESCUTA FICTÍCIA COM GRAVAÇÕES DO CATÁLOGO</span>{/if}
+          {#if result.is_example}<span>{t("profile.exampleNotice")}</span>{/if}
           {#if palette.analysis.data_source !== "catalog"}
             <span
               >{palette.analysis.data_source === "mock"
-                ? "dados demonstrativos"
-                : "dados híbridos"}</span
+                ? t("profile.demoData")
+                : t("profile.hybridData")}</span
             >
           {/if}
         </div>
@@ -390,7 +368,7 @@
              class="profile-link"
              href="#share"
              on:click={showShareSection}
-              >{result.is_example ? "VER IMAGEM DO EXEMPLO" : "VER MINHA IMAGEM"}
+              >{result.is_example ? t("sharing.viewExampleUpper") : t("sharing.viewOwnUpper")}
               <Arrow direction="right" /></a
             >{/if}
           {#if !result.is_example}<a
@@ -398,16 +376,15 @@
             href={lastFmUrl}
             target="_blank"
             rel="noreferrer"
-          >
-            VER NO LAST.FM <Arrow direction="up-right" />
+          >{t("profile.openLastFm")} <Arrow direction="up-right" />
           </a>{/if}
         </div>
       </div>
     </div>
     <div class="period-controls" aria-busy={periodLoading}>
-      <span class="period-label">PERÍODO DE ANÁLISE</span>
+      <span class="period-label">{t("periods.analysisHeading")}</span>
       <SegmentedControl
-        label="Período de análise"
+        label={t("periods.analysisLabel")}
         options={periodOptions}
         value={period}
         bind:selectedButton={selectedPeriodButton}
@@ -416,7 +393,7 @@
       {#if periodLoading}
         <p class="period-loading" role="status" aria-live="polite">
           <span class="loading-indicator" aria-hidden="true"></span>
-          <span>Atualizando análise de {periodLabels[period]}…</span>
+          <span>{t("periods.updating", { period: periodLabels[period] })}</span>
         </p>
       {:else if periodError}
         <p class="period-error" role="alert">{periodError}</p>
@@ -425,9 +402,7 @@
         <HistoryResumeNotice progress={resumeProgress} {waitSeconds} periodLabel={periodLabels[resumeProgress.period]} {onResume} />
       {/if}
       {#if periodRevealKey > 0 && !periodLoading && !periodError}
-        <p class="visually-hidden" role="status">
-          Análise de {periodLabels[period]} atualizada.
-        </p>
+        <p class="visually-hidden" role="status">{t("periods.updated", { period: periodLabels[period] })} </p>
       {/if}
       {#if showLowCoverageNotice}
         <Tooltip
@@ -436,12 +411,9 @@
           align="center"
           onClose={dismissLowCoverageNotice}
         >
-          <p aria-live="polite">
-            No período selecionado ({periodLabels[period]}), a cobertura de
-            faixas foi de apenas {coveragePercent(
+          <p aria-live="polite">{t("periods.lowCoverage", { period: periodLabels[period], coverage: coveragePercent(
               palette.analysis.coverage_tracks,
-            )}. Escolha outro período para tentar encontrar uma cobertura maior.
-          </p>
+            ) })} </p>
         </Tooltip>
       {/if}
     </div>
@@ -460,10 +432,10 @@
   >
     <Tabs.List
       class={`view-switch${vocabulary.status === "insufficient" ? " view-switch-single" : ""}`}
-      aria-label="Leituras da escuta"
+      aria-label={t("results.viewsLabel")}
     >
       <Tabs.Trigger value="track_palette" class="view-tab view-tab-palette">
-        <span>01 / PALETA DAS FAIXAS</span>
+        <span>{t("results.trackPaletteTab")}</span>
         <small>{statusLabels[palette.analysis.status]}</small>
       </Tabs.Trigger>
       {#if vocabulary.status !== "insufficient"}
@@ -471,7 +443,7 @@
           value="artist_vocabulary"
           class="view-tab view-tab-vocabulary"
         >
-          <span>02 / VOCABULÁRIO DOS ARTISTAS</span>
+          <span>{t("results.artistVocabularyTab")}</span>
           <small>{vocabularyStatusLabel}</small>
         </Tabs.Trigger>
       {/if}
@@ -501,27 +473,17 @@
         />
       {:else}
         <section class="unavailable-reading" aria-labelledby="direct-title">
-          <p class="eyebrow">
-            01 / PALETA DAS FAIXAS <span
+          <p class="eyebrow">{t("results.trackPaletteHeading")} <span
               class="separator-indicator"
               aria-hidden="true">·</span
-            > INSUFICIENTE
-          </p>
-          <h2 id="direct-title">Ainda não há um retrato das suas faixas.</h2>
-          <p>
-            Não encontramos créditos instrumentais diretos aceitos em uma
-            amostra suficiente deste histórico. Isso não significa que esses
-            instrumentos estejam ausentes das músicas.
-          </p>
-          <p class="reading-measure">
-            {percent(palette.analysis.coverage_tracks)} das faixas
-            <span class="separator-indicator" aria-hidden="true">·</span>
-            {percent(palette.analysis.coverage_plays)} das reproduções cobertas
-          </p>
+            > {t("results.insufficientBadge")} </p>
+          <h2 id="direct-title">{t("results.noPortraitTitle")}</h2>
+          <p>{t("results.noPortraitDescription")} </p>
+          <p class="reading-measure">{t("results.trackCoverage", { coverage: percent(palette.analysis.coverage_tracks) })} <span class="separator-indicator" aria-hidden="true">·</span>{t("results.playCoverage", { coverage: percent(palette.analysis.coverage_plays) })} </p>
           {#if vocabularyAvailable}<button
               type="button"
               on:click={() => onSelectView("artist_vocabulary")}
-              >VER VOCABULÁRIO DOS ARTISTAS →</button
+              >{t("results.openVocabulary")}</button
             >{/if}
         </section>
       {/if}
@@ -531,31 +493,23 @@
         <section class="vocabulary-reading" aria-labelledby="vocabulary-title">
           <div class="vocabulary-lead">
             <div>
-              <p class="eyebrow">
-                02 / VOCABULÁRIO DOS ARTISTAS <span
+              <p class="eyebrow">{t("vocabulary.heading")} <span
                   class="separator-indicator"
                   aria-hidden="true">·</span
                 >
                 {vocabularyStatusLabel.toUpperCase()}
               </p>
-              <h2 id="vocabulary-title">
-                Os sons documentados ao redor dos artistas.
-              </h2>
-              <p class="lead-copy">
-                Instrumentos que recorrem em gravações documentadas dos artistas
-                presentes na sua escuta.
-              </p>
+              <h2 id="vocabulary-title">{t("vocabulary.title")} </h2>
+              <p class="lead-copy">{t("vocabulary.description")} </p>
               <p class="scope-note">{vocabulary.notice}</p>
             </div>
             {#if predominantDrawing && predominantFamily}
               <figure
                 class="type-art"
-                aria-label={`Desenho ASCII da família ${predominantFamily.name}, predominante no vocabulário`}
+                aria-label={t("vocabulary.drawingAlt", { name: predominantFamily.name })}
               >
                 <pre aria-hidden="true">{predominantDrawing}</pre>
-                <figcaption>
-                  {predominantFamily.name} / família predominante
-                </figcaption>
+                <figcaption>{t("vocabulary.predominantFamily", { name: predominantFamily.name })} </figcaption>
               </figure>
             {/if}
           </div>
@@ -564,7 +518,7 @@
             <div
               class="vocabulary-color-strip"
               role="img"
-              aria-label={`Cores das famílias no vocabulário: ${vocabulary.families.map((family) => `${family.name} ${percent(family.share)}`).join(", ")}`}
+              aria-label={t("vocabulary.colorsLabel", { families: vocabulary.families.map((family) => `${family.name} ${percent(family.share)}`).join(", ") })}
             >
               {#each vocabulary.families as family (family.slug)}
                 <span
@@ -579,8 +533,8 @@
                 aria-labelledby="featured-artists-title"
               >
                 <div class="featured-heading">
-                  <h3 id="featured-artists-title">Artistas em destaque</h3>
-                  <p>São os que mais contribuem para este vocabulário.</p>
+                  <h3 id="featured-artists-title">{t("vocabulary.featuredArtists")}</h3>
+                  <p>{t("vocabulary.featuredArtistsDescription")}</p>
                 </div>
                 <div class="artist-cards">
                   {#each vocabulary.featured_artists as artist, index (artist.mbid)}
@@ -599,7 +553,7 @@
                       </div>
                       <div class="artist-card-copy">
                         <span class="artist-card-index"
-                          >{String(index + 1).padStart(2, "0")} / ARTISTA</span
+                          >{t("vocabulary.artistIndex", { index: String(index + 1).padStart(2, "0") })}</span
                         >
                         <h4>{artist.name}</h4>
                         <p class="artist-families">
@@ -626,45 +580,42 @@
                             </span>
                           {/each}
                         </p>
-                        <p class="artist-card-note">
-                          Instrumentos recorrentes em gravações documentadas
-                          deste artista.
-                        </p>
+                        <p class="artist-card-note">{t("vocabulary.artistDescription")} </p>
                       </div>
                     </article>
                   {/each}
                 </div>
               </section>
             {/if}
-            <div class="reach-grid" aria-label="Alcance do vocabulário">
+            <div class="reach-grid" aria-label={t("vocabulary.reachLabel")}>
               <div>
-                <span>FAIXAS LIGADAS A ARTISTAS QUALIFICADOS</span><strong
+                <span>{t("vocabulary.qualifiedTracksHeading")}</span><strong
                   >{count(vocabulary.reach.qualified_tracks)} / {count(
                     vocabulary.reach.total_tracks,
                   )}</strong
                 ><small
-                  >{percent(vocabulary.reach.track_reach)} das faixas</small
+                  >{t("vocabulary.trackReach", { coverage: percent(vocabulary.reach.track_reach) })}</small
                 >
               </div>
               <div>
-                <span>REPRODUÇÕES</span><strong
+                <span>{t("vocabulary.playsHeading")}</span><strong
                   >{percent(vocabulary.reach.play_reach)}</strong
                 ><small
-                  >{count(vocabulary.reach.qualified_plays)} / {count(
+                  >{t("vocabulary.playReach", { qualified: count(vocabulary.reach.qualified_plays), total: count(
                     vocabulary.reach.total_plays,
-                  )} reproduções</small
+                  ) })}</small
                 >
               </div>
               <div>
-                <span>ARTISTAS QUALIFICADOS</span><strong
+                <span>{t("vocabulary.qualifiedArtistsHeading")}</span><strong
                   >{count(vocabulary.reach.qualified_artists)} / {count(
                     vocabulary.reach.total_artists,
                   )}</strong
-                ><small>com instrumentos recorrentes</small>
+                ><small>{t("vocabulary.recurringInstruments")}</small>
               </div>
             </div>
             <div class="family-heading">
-              <span>FAMÍLIAS NO VOCABULÁRIO</span>
+              <span>{t("vocabulary.familiesHeading")}</span>
             </div>
             <div class="vocabulary-families">
               {#each vocabulary.families as family, index}
@@ -680,9 +631,9 @@
                     <button
                       type="button"
                       class="family-ficha"
-                      aria-label={`Abrir ficha de ${family.name}`}
+                      aria-label={t("actions.openInstrument", { name: family.name })}
                       on:click={() => onOpenInstrumentSlug(family.slug)}
-                    >[abrir]</button>
+                    >{t("actions.open")}</button>
                   </div>
                   <div class="family-top">
                     <h3>{family.name}</h3>
@@ -691,7 +642,7 @@
                   <div
                     class="vocabulary-bar"
                     role="img"
-                    aria-label={`${family.name}: ${percent(family.share)} de participação no modelo`}
+                    aria-label={t("vocabulary.familyShareLabel", { name: family.name, share: percent(family.share) })}
                   >
                     <span
                       class="vocabulary-texture"
@@ -707,12 +658,8 @@
                       : "artistas com suporte"}
                   </p>
                   <div class="family-evidence">
-                    <Dropdown title="Critérios e evidências">
-                      <p>
-                        Os instrumentos abaixo recorrem em pelo menos três
-                        gravações distintas documentadas de um artista. Eles não
-                        são créditos atribuídos às faixas deste histórico.
-                      </p>
+                    <Dropdown title={t("vocabulary.evidenceTitle")}>
+                      <p>{t("vocabulary.evidenceDescription")} </p>
                       <ul>
                         {#each family.instruments as instrument}<li>
                             <button
@@ -722,15 +669,12 @@
                                 onOpenInstrumentSlug(instrument.slug)}
                               >{instrument.name}</button
                             ><span
-                              >{count(instrument.distinct_recordings)} gravações
-                              distintas
-                              <span
+                              >{t("vocabulary.recordingCount", { count: count(instrument.distinct_recordings) })} <span
                                 class="separator-indicator"
                                 aria-hidden="true">·</span
-                              >
-                              crédito de {instrument.evidence.scope === "track"
-                                ? "faixa"
-                                : "gravação"}</span
+                              >{t("vocabulary.creditScope", { scope: instrument.evidence.scope === "track"
+                                ? t("vocabulary.trackScope")
+                                : t("vocabulary.recordingScope") })}</span
                             >
                           </li>{/each}
                       </ul>
@@ -747,12 +691,12 @@
                 ></span>{/if}
               <h3>
                 {vocabularyPending
-                  ? "Esta leitura ainda está em preparação."
-                  : "Ainda não há um vocabulário para mostrar."}
+                  ? t("vocabulary.pendingTitle")
+                  : t("vocabulary.unavailableTitle")}
               </h3>
               <p>
                 {vocabularyPending
-                  ? "Estamos reunindo informações sobre artistas deste histórico. Isso pode levar horas; volte mais tarde para consultar novamente."
+                  ? t("vocabulary.pendingDescription")
                   : reasonText(vocabulary.availability.reason)}
               </p>
             </div>
@@ -760,32 +704,16 @@
 
           {#if vocabularyAvailable}
             <div class="vocabulary-method">
-              <Dropdown title="O que estes números significam">
-                <p>
-                  O alcance mostra a parte do histórico ligada a artistas com
-                  instrumentos recorrentes documentados. Ele não é a cobertura
-                  da paleta das faixas.
-                </p>
-                <p>
-                  A participação mostra o peso relativo calculado entre as
-                  famílias deste vocabulário. Não mede volume, duração ou
-                  presença do instrumento nas faixas ouvidas.
-                </p>
-                <p>
-                  Maior contribuição de um único artista para a pontuação: {percent(
+              <Dropdown title={t("vocabulary.metricsTitle")}>
+                <p>{t("vocabulary.reachDescription")} </p>
+                <p>{t("vocabulary.shareDescription")} </p>
+                <p>{t("vocabulary.concentration", { share: percent(
                     vocabulary.concentration,
-                  )}.
-                </p>
-                <p>
-                  {count(vocabulary.reach.unresolved_artists)} artistas e {count(
+                  ) })} </p>
+                <p>{t("vocabulary.unresolvedIdentities", { artists: count(vocabulary.reach.unresolved_artists), tracks: count(
                     vocabulary.reach.unresolved_tracks,
-                  )} faixas sem identidade MusicBrainz não entram na consulta pendente.
-                </p>
-                <p>
-                  Snapshot MusicBrainz {result.snapshot.snapshot_version}
-                  <span class="separator-indicator" aria-hidden="true">·</span>
-                  Método do vocabulário {vocabulary.methodology_version}
-                </p>
+                  ) })} </p>
+                <p>{t("vocabulary.snapshot", { snapshot_version: result.snapshot.snapshot_version })} <span class="separator-indicator" aria-hidden="true">·</span>{t("vocabulary.methodology", { methodology_version: vocabulary.methodology_version })} </p>
               </Dropdown>
             </div>
           {/if}
@@ -822,6 +750,8 @@
   }
   .results-opening {
     position: relative;
+    /* Keep the coverage popover above the following reading-content layer. */
+    z-index: 1;
     isolation: isolate;
   }
   .results-opening::after {

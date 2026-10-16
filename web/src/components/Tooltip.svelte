@@ -1,11 +1,12 @@
 <script lang="ts">
+  import { t } from "../i18n/runtime";
   import { Popover as BitsPopover } from "bits-ui";
 
   export let frozen = false;
   export let anchor: HTMLElement | null = null;
   export let triggerLabel = "[?]";
-  export let ariaLabel = "Abrir explicação";
-  export let closeLabel = "Fechar aviso";
+  export let ariaLabel = t("controls.explanation");
+  export let closeLabel = t("controls.closeNotice");
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
   export let align: "start" | "center" | "end" = "end";
   export let sideOffset = 18;
