@@ -1,25 +1,121 @@
-import messages from "./catalog.generated";
+import defaultMessages from "./catalog.generated";
+import { writable, derived } from "svelte/store";
+import { STORAGE_KEYS } from "../utils/storage-keys";
 import type { MessageParameters } from "./message-parameters.generated";
 
-export const locale = "pt-BR";
-export const supportedLocales = [locale] as const;
+export const supportedLocales = ["pt-BR", "en-US"] as const;
+export type Locale = (typeof supportedLocales)[number];
+export let locale: Locale = "pt-BR";
+let messages = defaultMessages;
+const activeLocale = writable<Locale>(locale);
+export const localeStore = { subscribe: activeLocale.subscribe };
+export const translation = derived<typeof localeStore, typeof t>(
+  localeStore,
+  () => t,
+);
+const preferenceKey = STORAGE_KEYS.webLocale;
+let selection = 0;
+
+export function matchLocale(value: string | null | undefined): Locale | null {
+  if (!value) return null;
+  try {
+    const tag = Intl.getCanonicalLocales(value)[0];
+    if (supportedLocales.includes(tag as Locale)) return tag as Locale;
+    const language = tag.split("-")[0];
+    return language === "en" ? "en-US" : language === "pt" ? "pt-BR" : null;
+  } catch {
+    return null;
+  }
+}
+
+export function resolveLocale(
+  query: string | null,
+  saved: string | null,
+  languages: readonly string[],
+): Locale {
+  return (
+    matchLocale(query) ??
+    matchLocale(saved) ??
+    languages.map(matchLocale).find((value) => value !== null) ??
+    "pt-BR"
+  );
+}
+
+export async function setLocale(
+  next: Locale,
+  options: { persist?: boolean; updateUrl?: boolean } = {},
+): Promise<void> {
+  const request = ++selection;
+  const catalog =
+    next === "en-US"
+      ? (await import("./catalog.en-US.generated")).default
+      : defaultMessages;
+  if (request !== selection) return;
+  messages = catalog;
+  locale = next;
+  updateDocument();
+  activeLocale.set(next);
+  if (options.persist !== false) {
+    try {
+      localStorage.setItem(preferenceKey, next);
+    } catch {
+      /* Optional preference. */
+    }
+  }
+  if (options.updateUrl !== false && typeof window !== "undefined") {
+    const url = new URL(window.location.href);
+    url.searchParams.set("lang", next);
+    window.history.replaceState(window.history.state, "", url);
+  }
+}
+
+function updateDocument(): void {
+  if (typeof document === "undefined") return;
+  document.documentElement.lang = locale;
+  document.documentElement.dir = "ltr";
+  if (typeof document.querySelector !== "function") return;
+  document.title = t("metadata.title");
+  const metadata: Record<string, string> = {
+    'meta[name="description"]': t("metadata.description"),
+    'meta[property="og:locale"]': locale.replace("-", "_"),
+    'meta[property="og:title"]': t("metadata.socialTitle"),
+    'meta[property="og:description"]': t("metadata.description"),
+    'meta[property="og:image:alt"]': t("metadata.imageAlt"),
+    'meta[name="twitter:title"]': t("metadata.socialTitle"),
+    'meta[name="twitter:description"]': t("metadata.description"),
+    'meta[name="twitter:image:alt"]': t("metadata.imageAlt"),
+  };
+  for (const [selector, content] of Object.entries(metadata))
+    document.querySelector(selector)?.setAttribute("content", content);
+}
 type MessageKeys<Value> = {
-  [Key in keyof Value & string]: Value[Key] extends string ? Key
-    : Value[Key] extends Record<string, unknown> ? `${Key}.${MessageKeys<Value[Key]>}` : never;
+  [Key in keyof Value & string]: Value[Key] extends string
+    ? Key
+    : Value[Key] extends Record<string, unknown>
+      ? `${Key}.${MessageKeys<Value[Key]>}`
+      : never;
 }[keyof Value & string];
 export type MessageKey = MessageKeys<typeof messages>;
 
-type MessageArguments<Key extends MessageKey> =
-  [MessageParameters[Key]] extends [never]
-    ? []
-    : [values: Record<MessageParameters[Key], string | number>];
+type MessageArguments<Key extends MessageKey> = [
+  MessageParameters[Key],
+] extends [never]
+  ? []
+  : [values: Record<MessageParameters[Key], string | number>];
 
 /** Resolve catalog transforms without parsing external values as tags. */
-export function t<Key extends MessageKey>(key: Key, ...args: MessageArguments<Key>): string {
+export function t<Key extends MessageKey>(
+  key: Key,
+  ...args: MessageArguments<Key>
+): string {
   return interpolateUpper(messageText(key), args[0], key);
 }
 
-function interpolate(text: string, values: Record<string, string | number> | undefined, key: MessageKey): string {
+function interpolate(
+  text: string,
+  values: Record<string, string | number> | undefined,
+  key: MessageKey,
+): string {
   return text.replace(/\{([^{}]+)\}/g, (_, name: string) => {
     if (!values || !Object.hasOwn(values, name)) {
       throw new Error(`Missing message parameter: ${key}.${name}`);
@@ -28,30 +124,60 @@ function interpolate(text: string, values: Record<string, string | number> | und
   });
 }
 
-function interpolateUpper(text: string, values: Record<string, string | number> | undefined, key: MessageKey): string {
-  return text.split(/<upper>(.*?)<\/upper>/gs).map((part, index) => {
-    const rendered = interpolate(part, values, key);
-    return index % 2 ? rendered.toLocaleUpperCase(locale) : rendered;
-  }).join("");
+function interpolateUpper(
+  text: string,
+  values: Record<string, string | number> | undefined,
+  key: MessageKey,
+): string {
+  return text
+    .split(/<upper>(.*?)<\/upper>/gs)
+    .map((part, index) => {
+      const rendered = interpolate(part, values, key);
+      return index % 2 ? rendered.toLocaleUpperCase(locale) : rendered;
+    })
+    .join("");
 }
 
-export function initializeLocale(): void {
-  document.documentElement.lang = locale;
-  document.documentElement.dir = "ltr";
+export async function initializeLocale(): Promise<void> {
+  let saved: string | null = null;
+  try {
+    saved = localStorage.getItem(preferenceKey);
+  } catch {
+    /* Optional preference. */
+  }
+  const query =
+    typeof window === "undefined"
+      ? null
+      : new URL(window.location.href).searchParams.get("lang");
+  const languages = typeof navigator === "undefined" ? [] : navigator.languages;
+  const selected = resolveLocale(query, saved, languages);
+  try {
+    await setLocale(selected, { persist: false, updateUrl: false });
+  } catch {
+    await setLocale("pt-BR", { persist: false, updateUrl: false });
+  }
 }
 
 /** Named wrappers preserve component-owned markup without rendering HTML. */
-export function messageParts(key: MessageKey, values: Record<string, string | number> = {}): { text: string; wrapper?: string }[] {
+export function messageParts(
+  key: MessageKey,
+  values: Record<string, string | number> = {},
+  language: Locale = locale,
+): { text: string; wrapper?: string }[] {
   const parts: { text: string; wrapper?: string }[] = [];
   const source = messageText(key);
   const wrappers = /<([a-z]+)>(.*?)<\/\1>/gs;
   let start = 0;
   for (const match of source.matchAll(wrappers)) {
-    parts.push({ text: interpolate(source.slice(start, match.index), values, key) });
+    parts.push({
+      text: interpolate(source.slice(start, match.index), values, key),
+    });
     const text = interpolate(match[2], values, key);
-    parts.push(match[1] === "upper"
-      ? { text: text.toLocaleUpperCase(locale) }
-      : { text, wrapper: match[1] });
+    parts.push(
+      match[1] === "upper"
+        ? { text: text.toLocaleUpperCase(language) }
+        : { text, wrapper: match[1] },
+    );
     start = match.index + match[0].length;
   }
   parts.push({ text: interpolate(source.slice(start), values, key) });

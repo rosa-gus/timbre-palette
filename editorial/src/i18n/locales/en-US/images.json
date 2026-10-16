@@ -1,0 +1,22 @@
+{
+  "images": {
+    "add": "Link image",
+    "alt": "Accessible description",
+    "asset": "Asset",
+    "caption": "Caption",
+    "depictedInstrument": "Photographed instrument",
+    "exact": "Exact instrument",
+    "heading": "Image and credits",
+    "license": "License",
+    "licenseUrl": "License URL",
+    "originalUrl": "Original photograph URL",
+    "photographer": "Photographer",
+    "photographerUrl": "Photographer URL",
+    "provider": "Provider",
+    "related": "Related instrument",
+    "remove": "Remove image from profile",
+    "resolution": "Match",
+    "unavailable": "No image linked.",
+    "url": "Image URL"
+  }
+}

@@ -1,14 +1,14 @@
 <script lang="ts">
   import { formatNumber } from "../i18n/formatters";
-  import { t } from "../i18n/runtime";
+  import { translation as t, localeStore } from "../i18n/runtime";
   import { Popover } from "bits-ui";
   export let percent: number;
   export let added: number;
   let trigger: HTMLButtonElement | null = null;
   $: percentage =
     percent < 0.1
-      ? "<0,1"
-      : formatNumber(percent, { maximumFractionDigits: 1 });
+      ? `<${formatNumber(0.1, undefined, $localeStore)}`
+      : formatNumber(percent, { maximumFractionDigits: 1 }, $localeStore);
   function alignStem(node: HTMLDivElement) {
     const content = node.parentElement!;
     const wrapper = content.parentElement!;
@@ -46,7 +46,7 @@
     openDelay={200}
     closeDelay={0}
     class="catalog-growth"
-    aria-label={t("growth.triggerLabel", { percentage: percentage })}
+    aria-label={$t("growth.triggerLabel", { percentage: percentage })}
     >+{percentage}%</Popover.Trigger
   >
   <Popover.Content
@@ -58,12 +58,12 @@
     trapFocus={false}
     onOpenAutoFocus={preventAutoFocus}
     onCloseAutoFocus={preventAutoFocus}
-    aria-label={t("growth.title")}
+    aria-label={$t("growth.title")}
   >
     <div use:alignStem>
-      <p class="catalog-title">{t("growth.summary", { percentage: percentage })}</p>
-      <p>{t("growth.recordings", { count: formatNumber(added) })} </p>
-      <p>{t("growth.hydration")} </p>
+      <p class="catalog-title">{$t("growth.summary", { percentage: percentage })}</p>
+      <p>{$t("growth.recordings", { count: formatNumber(added) })} </p>
+      <p>{$t("growth.hydration")} </p>
     </div>
   </Popover.Content>
 </Popover.Root>

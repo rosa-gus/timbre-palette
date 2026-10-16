@@ -1,0 +1,849 @@
+[
+  {
+    "slug": "acoustic-keys",
+    "name": "Acoustic keys",
+    "description": "Acoustic instruments played through a system of keys.",
+    "sound_production": "A key transfers the player's gesture to another resonating mechanism.",
+    "common_roles": [
+      "harmony",
+      "melody",
+      "accompaniment"
+    ],
+    "sections": [
+      {
+        "id": "family-acoustic-keys-curiosity",
+        "text": "The same key can pluck a string in a harpsichord, launch a hammer in a piano, or open an air passage in an organ.",
+        "status": "reviewed",
+        "review": {
+          "source_metadata_verified": true,
+          "claim_support_verified": true,
+          "reviewer": "Codex (translation review)",
+          "reviewed_at": "2026-10-16",
+          "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+        }
+      }
+    ],
+    "image": {
+      "alt": "Close-up of the white and black keys of a piano.",
+      "caption": "Illustrative image of the Acoustic keys family: piano.",
+      "asset_id": "piano-alin-gavriliuc-01"
+    },
+    "review": {
+      "source_metadata_verified": true,
+      "claim_support_verified": true,
+      "reviewer": "Codex (translation review)",
+      "reviewed_at": "2026-10-16",
+      "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+    },
+    "status": "reviewed",
+    "source_revision": "a13c9d41456e1b5f634f1add475029bacc064db390283700d255c2c89e3aafc4"
+  },
+  {
+    "slug": "bowed-strings",
+    "name": "Bowed strings",
+    "description": "Strings kept vibrating primarily through friction from a bow.",
+    "sound_production": "The bow repeatedly grips and releases the string, sustaining the sound.",
+    "common_roles": [
+      "melody",
+      "sustain",
+      "texture"
+    ],
+    "sections": [
+      {
+        "id": "family-bowed-strings-curiosity",
+        "text": "A bow sustains vibration and allows a note to be prolonged; fingers can also pluck the string, in a technique called pizzicato.",
+        "status": "reviewed",
+        "review": {
+          "source_metadata_verified": true,
+          "claim_support_verified": true,
+          "reviewer": "Codex (translation review)",
+          "reviewed_at": "2026-10-16",
+          "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+        }
+      }
+    ],
+    "image": {
+      "alt": "Black-and-white close-up of a bowed string instrument being played with a bow.",
+      "caption": "Illustrative image of the Bowed strings family: Cello.",
+      "asset_id": "cello-jon-tyson-01"
+    },
+    "review": {
+      "source_metadata_verified": true,
+      "claim_support_verified": true,
+      "reviewer": "Codex (translation review)",
+      "reviewed_at": "2026-10-16",
+      "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+    },
+    "status": "reviewed",
+    "source_revision": "edee0e61d988c0e19a6eb77c52bc04874dda20ced74419875fea6ec957794c12"
+  },
+  {
+    "slug": "cello",
+    "name": "Cello",
+    "description": "A bowed string instrument with a low and middle register.",
+    "sound_production": "A bow or the fingers set its strings vibrating.",
+    "common_roles": [
+      "bass line",
+      "melody",
+      "sustain"
+    ],
+    "sections": [
+      {
+        "id": "instrument-cello-curiosity",
+        "text": "Some early cellos had three, four, or five strings. Smaller examples could be supported by a strap and played standing or while moving.",
+        "status": "reviewed",
+        "review": {
+          "source_metadata_verified": true,
+          "claim_support_verified": true,
+          "reviewer": "Codex (translation review)",
+          "reviewed_at": "2026-10-16",
+          "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+        }
+      }
+    ],
+    "image": {
+      "alt": "Black-and-white close-up of a bowed string instrument being played with a bow.",
+      "caption": "Image of the instrument Cello.",
+      "asset_id": "cello-jon-tyson-01"
+    },
+    "review": {
+      "source_metadata_verified": true,
+      "claim_support_verified": true,
+      "reviewer": "Codex (translation review)",
+      "reviewed_at": "2026-10-16",
+      "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+    },
+    "status": "reviewed",
+    "source_revision": "5583e7bbb4e4661216721bf07833145f4c5d22d92f9501b077db87d5f22534f7"
+  },
+  {
+    "slug": "drums",
+    "name": "Drum kit",
+    "description": "A set of drums and cymbals arranged for a single performer.",
+    "sound_production": "Sticks, pedals, and hands activate surfaces made of different materials.",
+    "common_roles": [
+      "pulse",
+      "dynamics",
+      "formal articulation"
+    ],
+    "sections": [
+      {
+        "id": "instrument-drums-curiosity",
+        "text": "A single drum kit can articulate pulse, offbeat accents, syncopation, and texture across the ensemble.",
+        "status": "reviewed",
+        "review": {
+          "source_metadata_verified": true,
+          "claim_support_verified": true,
+          "reviewer": "Codex (translation review)",
+          "reviewed_at": "2026-10-16",
+          "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+        }
+      }
+    ],
+    "image": {
+      "alt": "Close-up of hands playing drums with sticks in a black-and-white photograph.",
+      "caption": "Image of the instrument Drum kit.",
+      "asset_id": "drums-laura-rivera-01"
+    },
+    "review": {
+      "source_metadata_verified": true,
+      "claim_support_verified": true,
+      "reviewer": "Codex (translation review)",
+      "reviewed_at": "2026-10-16",
+      "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+    },
+    "status": "reviewed",
+    "source_revision": "72e37e19747c6b4c6339e92d5e55fd5ea3d3d84928382b63f947febccb30cb6d"
+  },
+  {
+    "slug": "electric-bass",
+    "name": "Electric bass",
+    "description": "A low-register electric instrument linked to pulse and harmony.",
+    "sound_production": "Pickups turn the vibration of low-pitched strings into an electrical signal.",
+    "common_roles": [
+      "rhythmic foundation",
+      "harmonic foundation",
+      "countermelody"
+    ],
+    "sections": [
+      {
+        "id": "instrument-electric-bass-curiosity",
+        "text": "The Fender Precision Bass, introduced in 1951, helped make the fretted bass a central part of the pulse in electric bands.",
+        "status": "reviewed",
+        "review": {
+          "source_metadata_verified": true,
+          "claim_support_verified": true,
+          "reviewer": "Codex (translation review)",
+          "reviewed_at": "2026-10-16",
+          "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+        }
+      }
+    ],
+    "image": {
+      "alt": "A dark electric guitar with bluish reflections against a black background.",
+      "caption": "Illustrative image of the Plucked strings family: Electric guitar.",
+      "asset_id": "electric-guitar-nikolas-mitsiggas-01"
+    },
+    "review": {
+      "source_metadata_verified": false,
+      "claim_support_verified": true,
+      "reviewer": "Codex (translation review)",
+      "reviewed_at": "2026-10-16",
+      "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+    },
+    "status": "reviewed",
+    "source_revision": "04257bb03360386991480ae588417ac9b0a2d00031a8ff8ba19a383948d5f1f1"
+  },
+  {
+    "slug": "electric-guitar",
+    "name": "Electric guitar",
+    "description": "An amplified string instrument open to extensive sound processing.",
+    "sound_production": "Pickups convert string vibration into an electrical signal.",
+    "common_roles": [
+      "harmony",
+      "melody",
+      "texture"
+    ],
+    "sections": [
+      {
+        "id": "instrument-electric-guitar-curiosity",
+        "text": "The pickup does not produce the sound on its own: it converts string vibration into a signal that can then be filtered, distorted, and spatially processed.",
+        "status": "reviewed",
+        "review": {
+          "source_metadata_verified": true,
+          "claim_support_verified": true,
+          "reviewer": "Codex (translation review)",
+          "reviewed_at": "2026-10-16",
+          "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+        }
+      }
+    ],
+    "image": {
+      "alt": "A dark electric guitar with bluish reflections against a black background.",
+      "caption": "Image of the instrument Electric guitar.",
+      "asset_id": "electric-guitar-nikolas-mitsiggas-01"
+    },
+    "review": {
+      "source_metadata_verified": false,
+      "claim_support_verified": true,
+      "reviewer": "Codex (translation review)",
+      "reviewed_at": "2026-10-16",
+      "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+    },
+    "status": "reviewed",
+    "source_revision": "06b28f557bddfdd4cae5553754ba58b318e59acaa353175a36174e85154a9e90"
+  },
+  {
+    "slug": "percussion",
+    "name": "Percussion",
+    "description": "A family of instruments activated mainly by striking, shaking, or scraping.",
+    "sound_production": "A surface or body resonates after receiving energy.",
+    "common_roles": [
+      "pulse",
+      "texture",
+      "accents"
+    ],
+    "sections": [
+      {
+        "id": "family-percussion-curiosity",
+        "text": "Percussion instruments do not always serve only to keep time. Among the Mexica, the teponaztli took part in religious ceremonies, royal events, military activities, and forms of communication.",
+        "status": "reviewed",
+        "review": {
+          "source_metadata_verified": true,
+          "claim_support_verified": true,
+          "reviewer": "Codex (translation review)",
+          "reviewed_at": "2026-10-16",
+          "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+        }
+      }
+    ],
+    "image": {
+      "alt": "Close-up of hands playing drums with sticks in a black-and-white photograph.",
+      "caption": "Illustrative image of the Percussion family: Drum kit.",
+      "asset_id": "drums-laura-rivera-01"
+    },
+    "review": {
+      "source_metadata_verified": false,
+      "claim_support_verified": true,
+      "reviewer": "Codex (translation review)",
+      "reviewed_at": "2026-10-16",
+      "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+    },
+    "status": "reviewed",
+    "source_revision": "1ef3c3133079b28d67406c4c5859853929a157982d4ab05dfeb88c71b0de1171"
+  },
+  {
+    "slug": "piano",
+    "name": "Piano",
+    "description": "A keyboard instrument in which hammers strike tuned strings.",
+    "sound_production": "Each key launches a hammer against a string and releases its damper.",
+    "common_roles": [
+      "harmony",
+      "melody",
+      "accompaniment"
+    ],
+    "sections": [
+      {
+        "id": "instrument-piano-curiosity",
+        "text": "Only three pianos built by Cristofori are known today. The 1720 example preserved by the Metropolitan Museum is the oldest of them.",
+        "status": "reviewed",
+        "review": {
+          "source_metadata_verified": true,
+          "claim_support_verified": true,
+          "reviewer": "Codex (translation review)",
+          "reviewed_at": "2026-10-16",
+          "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+        }
+      }
+    ],
+    "image": {
+      "alt": "Close-up of the white and black keys of a piano.",
+      "caption": "Image of the instrument piano.",
+      "asset_id": "piano-alin-gavriliuc-01"
+    },
+    "review": {
+      "source_metadata_verified": true,
+      "claim_support_verified": true,
+      "reviewer": "Codex (translation review)",
+      "reviewed_at": "2026-10-16",
+      "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+    },
+    "status": "reviewed",
+    "source_revision": "d34867a94f1cf95df4fa21cc3706d89a58f1bd4677611208647254fce845e8dd"
+  },
+  {
+    "slug": "plucked-strings",
+    "name": "Plucked strings",
+    "description": "A family in which a string vibrates after being pulled by fingers, a pick, or an equivalent mechanism.",
+    "sound_production": "The string is displaced and released, starting a free vibration.",
+    "common_roles": [
+      "harmony",
+      "melody",
+      "rhythmic foundation"
+    ],
+    "sections": [
+      {
+        "id": "family-plucked-strings-curiosity",
+        "text": "Plucking a string does not require direct finger contact: in a harpsichord, pressing a key raises a small plectrum that plucks the string.",
+        "status": "reviewed",
+        "review": {
+          "source_metadata_verified": true,
+          "claim_support_verified": true,
+          "reviewer": "Codex (translation review)",
+          "reviewed_at": "2026-10-16",
+          "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+        }
+      }
+    ],
+    "image": {
+      "alt": "A dark electric guitar with bluish reflections against a black background.",
+      "caption": "Illustrative image of the Plucked strings family: Electric guitar.",
+      "asset_id": "electric-guitar-nikolas-mitsiggas-01"
+    },
+    "review": {
+      "source_metadata_verified": false,
+      "claim_support_verified": true,
+      "reviewer": "Codex (translation review)",
+      "reviewed_at": "2026-10-16",
+      "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+    },
+    "status": "reviewed",
+    "source_revision": "5810abdbc3fb7512c29d5e70a03d3ac5abd4545edece5666ea749533e25e921a"
+  },
+  {
+    "slug": "sampled-sounds",
+    "name": "Sampled sounds",
+    "description": "Recordings reused as material for a new composition.",
+    "sound_production": "A recorded excerpt is cut, triggered, and transformed.",
+    "common_roles": [
+      "rhythm",
+      "texture",
+      "sonic memory"
+    ],
+    "sections": [
+      {
+        "id": "family-sampled-sounds-curiosity",
+        "text": "A sample can come from music, speech, soundscapes, noise, or public archives; the Library of Congress brings these possibilities together in the Citizen DJ project.",
+        "status": "reviewed",
+        "review": {
+          "source_metadata_verified": true,
+          "claim_support_verified": true,
+          "reviewer": "Codex (translation review)",
+          "reviewed_at": "2026-10-16",
+          "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+        }
+      }
+    ],
+    "image": {
+      "alt": "A woman examining a vinyl record in a store with shelves of records.",
+      "caption": "Illustrative image of the Sampled sounds family: Vinyl records in a store.",
+      "asset_id": "sampled-sounds-christian-agbede-01"
+    },
+    "review": {
+      "source_metadata_verified": true,
+      "claim_support_verified": true,
+      "reviewer": "Codex (translation review)",
+      "reviewed_at": "2026-10-16",
+      "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+    },
+    "status": "reviewed",
+    "source_revision": "e48a3b6ecf96902b915170a8c40582389a12511e5cecafbf588376142a760d59"
+  },
+  {
+    "slug": "sampler",
+    "name": "Sampler",
+    "description": "An instrument that records or plays controllable sound excerpts.",
+    "sound_production": "Stored audio is triggered, cut, repeated, or transformed.",
+    "common_roles": [
+      "rhythm",
+      "texture",
+      "collage"
+    ],
+    "sections": [
+      {
+        "id": "instrument-sampler-curiosity",
+        "text": "The breaking-glass sound in Kate Bush's “Babooshka” came from a Fairlight CMI and is cited as one of the instrument's early notable uses.",
+        "status": "reviewed",
+        "review": {
+          "source_metadata_verified": true,
+          "claim_support_verified": true,
+          "reviewer": "Codex (translation review)",
+          "reviewed_at": "2026-10-16",
+          "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+        }
+      }
+    ],
+    "image": {
+      "alt": "A black controller with a grid of illuminated pads, a display, buttons, and cables, viewed from above.",
+      "caption": "Image related to the instrument Pad controller.",
+      "asset_id": "sampler-ricardo-abreu-01"
+    },
+    "review": {
+      "source_metadata_verified": false,
+      "claim_support_verified": true,
+      "reviewer": "Codex (translation review)",
+      "reviewed_at": "2026-10-16",
+      "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+    },
+    "status": "reviewed",
+    "source_revision": "405ec2a4bf00400f65f44215aa7e5c9c4900711bb9174ad06f7f3176664d2b1f"
+  },
+  {
+    "slug": "synthesizer",
+    "name": "Synthesizer",
+    "description": "An electronic instrument for creating and transforming timbres.",
+    "sound_production": "Signals are generated or played back, then shaped through controls.",
+    "common_roles": [
+      "texture",
+      "harmony",
+      "melody",
+      "effects"
+    ],
+    "sections": [
+      {
+        "id": "instrument-synthesizer-curiosity",
+        "text": "The Minimoog popularized the pitch-bend wheel, one of modern music's most notable inventions. It was created specifically so keyboard players could bend the pitch of notes in real time and rival the expressiveness and solos of electric guitars on stage.",
+        "status": "reviewed",
+        "review": {
+          "source_metadata_verified": true,
+          "claim_support_verified": true,
+          "reviewer": "Codex (translation review)",
+          "reviewed_at": "2026-10-16",
+          "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+        }
+      }
+    ],
+    "image": {
+      "alt": "Synthesizers with knobs, lights, and cables on a table.",
+      "caption": "Image of the instrument Synthesizers.",
+      "asset_id": "synthesizer-anton-shuvalov-01"
+    },
+    "review": {
+      "source_metadata_verified": false,
+      "claim_support_verified": true,
+      "reviewer": "Codex (translation review)",
+      "reviewed_at": "2026-10-16",
+      "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+    },
+    "status": "reviewed",
+    "source_revision": "9e68689038bf86899a7899c0567a486e1911419ba97bddcba8371eb0cb4b4993"
+  },
+  {
+    "slug": "synthesizers",
+    "name": "Synthesizers",
+    "description": "Electronic instruments that build or transform sound signals.",
+    "sound_production": "Oscillators, samples, or other signals are shaped electronically.",
+    "common_roles": [
+      "texture",
+      "harmony",
+      "melody",
+      "effects"
+    ],
+    "sections": [
+      {
+        "id": "family-synthesizers-curiosity",
+        "text": "A synthesizer does not need a keyboard. The theremin is controlled through gestures, while other systems use touch plates, sequencers, or modules connected by cables.",
+        "status": "reviewed",
+        "review": {
+          "source_metadata_verified": true,
+          "claim_support_verified": true,
+          "reviewer": "Codex (translation review)",
+          "reviewed_at": "2026-10-16",
+          "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+        }
+      }
+    ],
+    "image": {
+      "alt": "Synthesizers with knobs, lights, and cables on a table.",
+      "caption": "Illustrative image of the Synthesizers family: Synthesizers.",
+      "asset_id": "synthesizer-anton-shuvalov-01"
+    },
+    "review": {
+      "source_metadata_verified": false,
+      "claim_support_verified": true,
+      "reviewer": "Codex (translation review)",
+      "reviewed_at": "2026-10-16",
+      "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+    },
+    "status": "reviewed",
+    "source_revision": "9afc96ca011800c45ed9e5a6d7820025249400550db7274a11ac3b66e34bc7ad"
+  },
+  {
+    "slug": "woodwinds",
+    "name": "Woodwinds",
+    "description": "Instruments in which a column of air vibrates inside a tube, with holes, keys, or a reed.",
+    "sound_production": "Blowing sets the air vibrating; the tube's geometry and the way it is excited define the sound's color.",
+    "common_roles": [
+      "melody",
+      "countermelody",
+      "texture"
+    ],
+    "sections": [],
+    "image": {
+      "alt": "Light and dark recorders on a white surface.",
+      "caption": "Illustrative image of the Woodwinds family: Recorders.",
+      "asset_id": "woodwinds-dorothee-kraemer-01"
+    },
+    "review": {
+      "source_metadata_verified": false,
+      "claim_support_verified": true,
+      "reviewer": "Codex (translation review)",
+      "reviewed_at": "2026-10-16",
+      "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+    },
+    "status": "reviewed",
+    "source_revision": "05ed130ec6c5617afaa1ead4c554c48a89ab957cbd3c9e1b1605356a0fb15281"
+  },
+  {
+    "slug": "brass",
+    "name": "Brass",
+    "description": "Wind instruments in which the performer's lips excite the air column inside a tube.",
+    "sound_production": "Lip vibration is amplified by the tube, while valves or slides change its acoustic length.",
+    "common_roles": [
+      "melody",
+      "attack",
+      "sustain"
+    ],
+    "sections": [],
+    "image": {
+      "alt": "Close-up of the bell and tubing of a golden trumpet against a dark background.",
+      "caption": "Illustrative image of the Brass family: Trumpet.",
+      "asset_id": "brass-miguel-alcantara-01"
+    },
+    "review": {
+      "source_metadata_verified": false,
+      "claim_support_verified": true,
+      "reviewer": "Codex (translation review)",
+      "reviewed_at": "2026-10-16",
+      "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+    },
+    "status": "reviewed",
+    "source_revision": "0e4b46dc5187c593cf2d4f39b3c91d2422c741a902dc9b3c2ee6ac84dc054794"
+  },
+  {
+    "slug": "voice",
+    "name": "Voice",
+    "description": "Vocal presence documented in a recording, treated as its own family in the editorial catalog.",
+    "sound_production": "Vocal fold vibration is shaped by the vocal tract and articulated as speech, singing, or a choir.",
+    "common_roles": [
+      "melody",
+      "lyrics",
+      "layer"
+    ],
+    "sections": [],
+    "image": {
+      "alt": "A woman singing into a microphone on stage, with lights in the background.",
+      "caption": "Illustrative image of the Voice family: Singer at a microphone.",
+      "asset_id": "voice-josh-rocklage-01"
+    },
+    "review": {
+      "source_metadata_verified": false,
+      "claim_support_verified": true,
+      "reviewer": "Codex (translation review)",
+      "reviewed_at": "2026-10-16",
+      "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+    },
+    "status": "reviewed",
+    "source_revision": "bf5a15098c3be37676773e27f3c7cdac8e51afedb380162ea47092207e2ce1c0"
+  },
+  {
+    "slug": "electric-keys",
+    "name": "Electric and electronic keys",
+    "description": "Keyboard instruments in which pickup systems, amplification, or synthesis help form the sound.",
+    "sound_production": "Key gestures trigger, modulate, or amplify an electric or electronic source.",
+    "common_roles": [
+      "harmony",
+      "melody",
+      "layer"
+    ],
+    "sections": [],
+    "image": {
+      "alt": "Close-up of a person’s hands playing an electronic keyboard with a display and controls.",
+      "caption": "Illustrative image of the Electric and electronic keys family: Electronic keyboard.",
+      "asset_id": "electric-keys-seth-gerak-01"
+    },
+    "review": {
+      "source_metadata_verified": false,
+      "claim_support_verified": true,
+      "reviewer": "Codex (translation review)",
+      "reviewed_at": "2026-10-16",
+      "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+    },
+    "status": "reviewed",
+    "source_revision": "19f56fdf23c8bebb9a0bd45ae7df356f39bc6c4a10749057fa9cc7b1d4365bc6"
+  },
+  {
+    "slug": "acoustic-guitar",
+    "name": "Acoustic guitar",
+    "description": "A plucked string instrument with an acoustic resonating body.",
+    "sound_production": "Strings vibrate when plucked with fingers or a pick; the soundboard and resonating body radiate the sound.",
+    "common_roles": [
+      "harmony",
+      "melody",
+      "accompaniment"
+    ],
+    "sections": [
+      {
+        "id": "instrument-acoustic-guitar-curiosity",
+        "text": "The LABEET collection records the acoustic guitar in the ensemble that accompanied lambada in Pará between 1975 and 1978, alongside the carimbó drum, pandeiro, reco-reco, marimba, and banjo. Its presence in the collection extends beyond samba and MPB.",
+        "status": "reviewed",
+        "review": {
+          "source_metadata_verified": true,
+          "claim_support_verified": true,
+          "reviewer": "Codex (translation review)",
+          "reviewed_at": "2026-10-16",
+          "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+        }
+      }
+    ],
+    "image": {
+      "alt": "Close-up of the strings, sound hole, and wooden soundboard of an acoustic guitar.",
+      "caption": "Image of the instrument Acoustic guitar.",
+      "asset_id": "acoustic-guitar-tom-analogicus-01"
+    },
+    "review": {
+      "source_metadata_verified": false,
+      "claim_support_verified": true,
+      "reviewer": "Codex (translation review)",
+      "reviewed_at": "2026-10-16",
+      "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+    },
+    "status": "reviewed",
+    "source_revision": "8992909bc667b505ccdff583122dae97aa5e211a2cdf09d187f65fbf037d3bfa"
+  },
+  {
+    "slug": "cavaquinho",
+    "name": "Cavaquinho",
+    "description": "A small plucked string instrument with an acoustic resonating body.",
+    "sound_production": "Strings plucked with fingers or a pick transmit vibration to the soundboard and resonating body.",
+    "common_roles": [
+      "harmony",
+      "rhythm",
+      "accompaniment"
+    ],
+    "sections": [
+      {
+        "id": "instrument-cavaquinho-curiosity",
+        "text": "In the recording of Lapinha de Valdemar from December 8, 1972, cataloged by LABEET, the cavaquinho accompanies the pastoras singers alongside mandolin, acoustic guitar, and pandeiro. The recording documents its use in pastoril, beyond samba and choro settings.",
+        "status": "draft",
+        "review": {
+          "source_metadata_verified": true,
+          "claim_support_verified": false,
+          "reviewer": null,
+          "reviewed_at": null,
+          "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+        }
+      }
+    ],
+    "image": {
+      "alt": "A dark electric guitar with bluish reflections against a black background.",
+      "caption": "Illustrative image of the Plucked strings family: Electric guitar.",
+      "asset_id": "electric-guitar-nikolas-mitsiggas-01"
+    },
+    "review": {
+      "source_metadata_verified": false,
+      "claim_support_verified": true,
+      "reviewer": "Codex (translation review)",
+      "reviewed_at": "2026-10-16",
+      "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+    },
+    "status": "reviewed",
+    "source_revision": "76dac31ce61757993274565a82485dde058df6fd9bac11d42701c1b8d64d551e"
+  },
+  {
+    "slug": "pandeiro",
+    "name": "Pandeiro",
+    "description": "A frame drum with a membrane and small metal jingles called soalhas.",
+    "sound_production": "Strikes and friction excite the membrane; movement of the frame also makes the jingles vibrate.",
+    "common_roles": [
+      "rhythm",
+      "accents",
+      "texture"
+    ],
+    "sections": [
+      {
+        "id": "instrument-pandeiro-curiosity",
+        "text": "The pandeiro can function as a membranophone when its head is played, or as an idiophone when only its jingles sound as it is shaken. A single instrument brings together two ways of producing sound: a hybrid instrument.",
+        "status": "reviewed",
+        "review": {
+          "source_metadata_verified": false,
+          "claim_support_verified": true,
+          "reviewer": "Codex (translation review)",
+          "reviewed_at": "2026-10-16",
+          "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+        }
+      }
+    ],
+    "image": {
+      "alt": "A musician playing a pandeiro by hand in low light, in black and white.",
+      "caption": "Image of the instrument Pandeiro.",
+      "asset_id": "pandeiro-sebastian-brito-01"
+    },
+    "review": {
+      "source_metadata_verified": false,
+      "claim_support_verified": true,
+      "reviewer": "Codex (translation review)",
+      "reviewed_at": "2026-10-16",
+      "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+    },
+    "status": "reviewed",
+    "source_revision": "fd99a3420138140edccd98a9d8451eafa82342881c1798ead2310fc882e3fa38"
+  },
+  {
+    "slug": "surdo",
+    "name": "Surdo",
+    "description": "A low-register drum used to mark rhythm in percussion ensembles.",
+    "sound_production": "Striking the membrane sets the head and the air inside the resonating body vibrating; damping controls the sound's duration.",
+    "common_roles": [
+      "rhythm",
+      "timekeeping",
+      "bass line"
+    ],
+    "sections": [
+      {
+        "id": "instrument-surdo-curiosity",
+        "text": "The surdo is placed in ensembles associated with carnival, samba, marchinhas, and samba de morro in Rio de Janeiro. It appears alongside caixa, repique, tamborim, pandeiro, and cuíca, forming a group of membranophones.",
+        "status": "reviewed",
+        "review": {
+          "source_metadata_verified": true,
+          "claim_support_verified": true,
+          "reviewer": "Codex (translation review)",
+          "reviewed_at": "2026-10-16",
+          "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+        }
+      }
+    ],
+    "image": {
+      "alt": "Close-up of hands playing drums with sticks in a black-and-white photograph.",
+      "caption": "Illustrative image of the Percussion family: Drum kit.",
+      "asset_id": "drums-laura-rivera-01"
+    },
+    "review": {
+      "source_metadata_verified": false,
+      "claim_support_verified": true,
+      "reviewer": "Codex (translation review)",
+      "reviewed_at": "2026-10-16",
+      "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+    },
+    "status": "reviewed",
+    "source_revision": "a517713b26f17b71e9351c93d928e7d94f33b63cf6aecf496038c7ef1ab83cfe"
+  },
+  {
+    "slug": "tamborim",
+    "name": "Tamborim",
+    "description": "A small single-headed frame drum played with a stick.",
+    "sound_production": "The stick strikes the membrane stretched over the frame, producing short, defined attacks.",
+    "common_roles": [
+      "rhythm",
+      "accents",
+      "countermelody"
+    ],
+    "sections": [
+      {
+        "id": "instrument-tamborim-curiosity",
+        "text": "Two types of tamborim are distinguished: a handmade type with a deeper wooden body, used in congada and moçambique, and a commercial type with a shallow metal or acrylic frame, common in samba school drum sections.",
+        "status": "reviewed",
+        "review": {
+          "source_metadata_verified": true,
+          "claim_support_verified": true,
+          "reviewer": "Codex (translation review)",
+          "reviewed_at": "2026-10-16",
+          "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+        }
+      }
+    ],
+    "image": {
+      "alt": "Close-up of hands playing drums with sticks in a black-and-white photograph.",
+      "caption": "Illustrative image of the Percussion family: Drum kit.",
+      "asset_id": "drums-laura-rivera-01"
+    },
+    "review": {
+      "source_metadata_verified": false,
+      "claim_support_verified": true,
+      "reviewer": "Codex (translation review)",
+      "reviewed_at": "2026-10-16",
+      "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+    },
+    "status": "reviewed",
+    "source_revision": "600e19bcadcbb978a95ceb2017b4457e8b0a933b5be5589fc9b160c7294ed313"
+  },
+  {
+    "slug": "cuica",
+    "name": "Cuíca",
+    "description": "A friction drum with a rod attached to the membrane on the inside.",
+    "sound_production": "Rubbing the rod transmits vibration to the membrane; finger pressure on the head changes the sound.",
+    "common_roles": [
+      "rhythm",
+      "phrasing",
+      "texture"
+    ],
+    "sections": [
+      {
+        "id": "instrument-cuica-curiosity",
+        "text": "The cuíca appears among the membranophones that accompany the industrially made reco-reco in carnival, samba, marchinhas, and Rio's samba de morro. The record shows its place in ensembles alongside surdo, caixa, and repique.",
+        "status": "reviewed",
+        "review": {
+          "source_metadata_verified": true,
+          "claim_support_verified": true,
+          "reviewer": "Codex (translation review)",
+          "reviewed_at": "2026-10-16",
+          "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+        }
+      }
+    ],
+    "image": {
+      "alt": "Close-up of hands playing drums with sticks in a black-and-white photograph.",
+      "caption": "Illustrative image of the Percussion family: Drum kit.",
+      "asset_id": "drums-laura-rivera-01"
+    },
+    "review": {
+      "source_metadata_verified": false,
+      "claim_support_verified": true,
+      "reviewer": "Codex (translation review)",
+      "reviewed_at": "2026-10-16",
+      "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+    },
+    "status": "reviewed",
+    "source_revision": "7151800dbdb251513d66086cd5449428d6716bf2d8db2f1c1d23708bb6f6c30b"
+  }
+]

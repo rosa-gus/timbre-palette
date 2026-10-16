@@ -44,8 +44,15 @@ def split_snapshot(sheets: list[dict[str, Any]]) -> dict[str, Any]:
                           sound_production=resource["sound_production"], common_roles=resource["common_roles"],
                           sections=[{key: block[key] for key in ("id", "text", "status", "review")} for block in resource["sections"]],
                           image=image_text, review=sheet["review"], status="published"))
+    locales = {DEFAULT_LOCALE: texts}
+    for sheet in sheets:
+        for translation in sheet.get("translations", []):
+            text = split_snapshot([translation])["locales"][DEFAULT_LOCALE][0]
+            text["status"] = translation["status"]
+            text["source_revision"] = translation["source_revision"]
+            locales.setdefault(translation["locale"], []).append(text)
     return dict(schema_version=2, source_locale=DEFAULT_LOCALE, entities=entities,
-                sources=list(sources.values()), locales={DEFAULT_LOCALE: texts})
+                sources=list(sources.values()), locales=locales)
 
 
 def read_snapshot(path: Path) -> dict[str, Any]:

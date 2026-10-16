@@ -1,9 +1,9 @@
 <script lang="ts">
   import { formatDate, formatLanguage } from "../i18n/formatters";
-  import { t } from "../i18n/runtime";
+  import { translation as t, localeStore } from "../i18n/runtime";
   import { onDestroy } from "svelte";
   import { Dialog } from "bits-ui";
-  import { getInstrument } from "../api/client";
+  import { localizedInstrument as getInstrument } from "../i18n/resources";
   import type { InstrumentResource } from "../api/types";
   import ScrollArea from "./ScrollArea.svelte";
   import Arrow from "./Arrow.svelte";
@@ -24,26 +24,27 @@
   let relationsError = "";
   let contextResource: InstrumentResource | null = null;
   let relationsController: AbortController | null = null;
-  const cache = new Map<string, InstrumentResource>();
   function imageCaption(value: string): string {
     return value
       .replace(/^Imagem ilustrativa da família [^:]+:\s*/i, "")
       .replace(/^Imagem do instrumento\s*/i, "")
       .trim();
   }
-  const statusLabels: Record<string, string> = {
-    sourced: t("editorialStatus.sourced"),
-    reviewed: t("editorialStatus.reviewed"),
-    published: t("editorialStatus.published"),
+  let statusLabels: Record<string, string>;
+  $: statusLabels = {
+    sourced: $t("editorialStatus.sourced"),
+    reviewed: $t("editorialStatus.reviewed"),
+    published: $t("editorialStatus.published"),
   };
-  const sourceTypeLabels: Record<string, string> = {
-    book: t("sourceTypes.book"),
-    article: t("sourceTypes.article"),
-    website: t("sourceTypes.website"),
-    web: t("sourceTypes.website"),
-    journal: t("sourceTypes.journal"),
-    encyclopedia: t("sourceTypes.encyclopedia"),
-    institution: t("sourceTypes.institution"),
+  let sourceTypeLabels: Record<string, string>;
+  $: sourceTypeLabels = {
+    book: $t("sourceTypes.book"),
+    article: $t("sourceTypes.article"),
+    website: $t("sourceTypes.website"),
+    web: $t("sourceTypes.website"),
+    journal: $t("sourceTypes.journal"),
+    encyclopedia: $t("sourceTypes.encyclopedia"),
+    institution: $t("sourceTypes.institution"),
   };
 
   $: sections =
@@ -58,14 +59,14 @@
     contextResource = null;
   }
 
-  function date(value: string | null): string {
+  $: date = (value: string | null): string => {
     if (!value) return "";
     const parsed = new Date(value);
     return Number.isNaN(parsed.getTime())
       ? value
-      : formatDate(parsed);
-  }
-  const language = formatLanguage;
+      : formatDate(parsed, $localeStore);
+  };
+  $: language = (value: string) => formatLanguage(value, $localeStore);
   function sourceId(id: string): string {
     return `instrument-source-${encodeURIComponent(resource?.slug ?? "")}-${encodeURIComponent(id)}`;
   }
@@ -123,6 +124,7 @@
     familyName = "";
     related = [];
     relationsError = "";
+    const language = $localeStore;
     const slugs = [
       ...new Set(
         [current.family_slug, ...current.related_slugs].filter(
@@ -133,10 +135,7 @@
     relationsLoading = slugs.length > 0;
     const results = await Promise.allSettled(
       slugs.map(async (slug) => {
-        const item =
-          cache.get(slug) ?? (await getInstrument(slug, controller.signal));
-        cache.set(slug, item);
-        return item;
+        return getInstrument(slug, controller.signal, language);
       }),
     );
     if (controller.signal.aborted) return;
@@ -151,7 +150,7 @@
         result.status === "rejected" &&
         current.related_slugs.includes(slugs[index]),
     )
-      ? t("instrument.relatedUnavailable")
+      ? $t("instrument.relatedUnavailable")
       : "";
     relationsLoading = false;
   }
@@ -170,7 +169,7 @@
       class="ui-dialog-overlay"
       style={`--instrument-tone:${resource?.tone?.highlight ?? "var(--accent)"}`}
     />
-    <Dialog.Content
+    <Dialog.Content lang={$localeStore}
       class="ui-dialog-content"
       style={`--instrument-tone:${resource?.tone?.highlight ?? "#F29191"};--instrument-tone-text:${toneText(resource?.tone?.highlight ?? "#F29191")};--instrument-shadow:${resource?.tone?.shadow ?? "#100e0e"}`}
     >
@@ -179,32 +178,32 @@
           <div class="ui-dialog-kind">
             <Badge>
               {!loading && resource?.kind === "family"
-                ? t("instrument.familyBadge")
-                : t("instrument.instrumentBadge")}
+                ? $t("instrument.familyBadge")
+                : $t("instrument.instrumentBadge")}
             </Badge>
           </div>
-          <Dialog.Title class="ui-dialog-title"
+          <Dialog.Title lang={!loading && !error ? resource?.locale : $localeStore} class="ui-dialog-title"
             >{loading || error
-              ? t("instrument.title")
-              : (resource?.name ?? t("instrument.title"))}</Dialog.Title
+              ? $t("instrument.title")
+              : (resource?.name ?? $t("instrument.title"))}</Dialog.Title
           >
           {#if !loading && !error && familyName}<p class="instrument-family">
               {familyName}
             </p>{/if}
         </div>
-        <Dialog.Close class="ui-dialog-close" aria-label={t("instrument.close")}
+        <Dialog.Close class="ui-dialog-close" aria-label={$t("instrument.close")}
           >×</Dialog.Close
         >
       </div>
       <Dialog.Description class="visually-hidden"
-        >{t("instrument.description")}</Dialog.Description
+        >{$t("instrument.description")}</Dialog.Description
       >
       {#key resource?.slug}
         <ScrollArea>
           {#if loading}
             <p class="instrument-message instrument-loading" role="status">
               <span class="loading-indicator" aria-hidden="true"></span>
-              <span>{t("instrument.loading")}</span>
+              <span>{$t("instrument.loading")}</span>
             </p>
           {:else if error}
             <p class="instrument-message" role="alert">{error}</p>
@@ -212,41 +211,42 @@
             <div class="instrument-sheet" data-instrument={resource.slug}>
               <aside
                 class="instrument-visual"
-                aria-label={t("instrument.imageLabel")}
+                aria-label={$t("instrument.imageLabel")}
               >
                 <figure class="instrument-photo">
                   {#if resource.image?.variants.length}
                     <img
                       src={resource.image.variants[0].url}
+                      lang={resource.locale}
                       alt={resource.image.alt}
                       width={resource.image.variants[0].width}
                       height={resource.image.variants[0].height}
                     />
                   {:else}<div class="instrument-image-empty">
                       <span>{resource.name}</span><small
-                        >{t("instrument.imageUnavailable")}</small
+                        >{$t("instrument.imageUnavailable")}</small
                       >
                     </div>{/if}
                   <div
                     class="instrument-tones"
-                    aria-label={t("colors.variations", { name: resource.name })}
+                    aria-label={$t("colors.variations", { name: resource.name })}
                   >
                     {#each toneSwatches(resource.tone?.highlight ?? "#F29191") as swatch}<ColorSwatch
                         color={swatch}
-                        label={t("colors.variation", { name: resource.name })}
+                        label={$t("colors.variation", { name: resource.name })}
                       />{/each}
                   </div>
                   {#if resource.image?.variants.length}
                     <figcaption class="instrument-photo-credit">
                       {#if resource.image.resolution === "exact"}<span
-                          >{t("images.photoCaption", { caption: imageCaption(resource.image.caption) })}</span
+                          >{$t("images.photoCaption", { caption: imageCaption(resource.image.caption) })}</span
                         >{/if}
                       {#if resource.image.credit.photographer_url}<a
                           href={resource.image.credit.photographer_url}
                           target="_blank"
                           rel="noreferrer"
                           >{resource.image.credit.photographer ??
-                            t("images.viewCredit")}<Arrow
+                            $t("images.viewCredit")}<Arrow
                             direction="up-right"
                           /></a
                         >{:else if resource.image.credit.photographer}<span
@@ -262,18 +262,18 @@
                   </p>{/if}
               </aside>
               <div class="instrument-reading">
-                <p class="instrument-description">{resource.description}</p>
-                <section class="instrument-block" aria-label={t("instrument.soundProductionLabel")}>
-                  <h3 class="eyebrow">{t("instrument.soundProductionHeading")}</h3>
-                  <p>{resource.sound_production}</p>
+                <p lang={resource.locale} class="instrument-description">{resource.description}</p>
+                <section class="instrument-block" aria-label={$t("instrument.soundProductionLabel")}>
+                  <h3 class="eyebrow">{$t("instrument.soundProductionHeading")}</h3>
+                  <p lang={resource.locale}>{resource.sound_production}</p>
                 </section>
                 {#if resource.common_roles.length}<section
                     class="instrument-block"
-                    aria-label={t("instrument.rolesLabel")}
+                    aria-label={$t("instrument.rolesLabel")}
                   >
-                    <h3 class="eyebrow">{t("instrument.rolesHeading")}</h3>
+                    <h3 class="eyebrow">{$t("instrument.rolesHeading")}</h3>
                     <ul class="instrument-roles">
-                      {#each resource.common_roles as role}<li>
+                      {#each resource.common_roles as role}<li lang={resource.locale}>
                           {role}
                         </li>{/each}
                     </ul>
@@ -281,58 +281,58 @@
                 {#each sections as section}
                   <section
                     class="instrument-block"
-                    aria-label={t("instrument.curiosityLabel")}
+                    aria-label={$t("instrument.curiosityLabel")}
                   >
-                    <h3 class="eyebrow">{t("instrument.curiosityHeading")}</h3>
-                    <p>
+                    <h3 class="eyebrow">{$t("instrument.curiosityHeading")}</h3>
+                    <p lang={resource.locale}>
                       {section.text}
                       {#each section.citations as citation}{#if sourceNumber(citation.source_id)}<a
                             class="instrument-citation"
                             href={`#${sourceId(citation.source_id)}`}
-                            aria-label={t("instrument.referenceLabel", { number: sourceNumber(citation.source_id) })}
+                            aria-label={$t("instrument.referenceLabel", { number: sourceNumber(citation.source_id) })}
                             >[{sourceNumber(citation.source_id)}]</a
                           >{:else}<span class="instrument-review-note"
-                            >{t("instrument.referenceUnavailable")}</span
+                            >{$t("instrument.referenceUnavailable")}</span
                           >{/if}{/each}
                     </p>
                     {#if !section.review.claim_support_verified}<p
                         class="instrument-review-note"
-                      >{t("instrument.claimReviewPending")} </p>{/if}
-                    <Dropdown title={t("instrument.sectionDetails")}>
+                      >{$t("instrument.claimReviewPending")} </p>{/if}
+                    <Dropdown title={$t("instrument.sectionDetails")}>
                       <div class="instrument-details">
                         <dl>
                           <div>
-                            <dt>{t("instrument.contentLabel")}</dt>
+                            <dt>{$t("instrument.contentLabel")}</dt>
                             <dd>
                               {section.content_type === "fact"
-                                ? t("instrument.fact")
-                                : t("instrument.summary")}
+                                ? $t("instrument.fact")
+                                : $t("instrument.summary")}
                             </dd>
                           </div>
                           <div>
-                            <dt>{t("instrument.statusLabel")}</dt>
+                            <dt>{$t("instrument.statusLabel")}</dt>
                             <dd>
                               {statusLabels[section.status] ?? section.status}
                             </dd>
                           </div>
                           <div>
-                            <dt>{t("instrument.bibliographyLabel")}</dt>
+                            <dt>{$t("instrument.bibliographyLabel")}</dt>
                             <dd>
                               {section.review.source_metadata_verified
-                                ? t("instrument.verified")
-                                : t("instrument.verificationPending")}
+                                ? $t("instrument.verified")
+                                : $t("instrument.verificationPending")}
                             </dd>
                           </div>
                           <div>
-                            <dt>{t("instrument.claimSupportLabel")}</dt>
+                            <dt>{$t("instrument.claimSupportLabel")}</dt>
                             <dd>
                               {section.review.claim_support_verified
-                                ? t("editorialStatus.reviewed")
-                                : t("instrument.reviewPending")}
+                                ? $t("editorialStatus.reviewed")
+                                : $t("instrument.reviewPending")}
                             </dd>
                           </div>
                           {#if section.review.reviewed_at}<div>
-                              <dt>{t("instrument.reviewLabel")}</dt>
+                              <dt>{$t("instrument.reviewLabel")}</dt>
                               <dd>
                                 {date(
                                   section.review.reviewed_at,
@@ -348,8 +348,8 @@
                           </p>{/if}{#each section.citations as citation}{#if citation.locator || citation.note}<p
                             >
                               <strong
-                                >{t("instrument.referencePrefix", { number: sourceNumber(citation.source_id) ||
-                                  t("instrument.referenceMissing") })}</strong
+                                >{$t("instrument.referencePrefix", { number: sourceNumber(citation.source_id) ||
+                                  $t("instrument.referenceMissing") })}</strong
                               >
                               {citation.locator ?? ""}{#if citation.note}<span
                                   class="separator-indicator"
@@ -362,9 +362,9 @@
                 {/each}
                 {#if resource.related_slugs.length}<section
                     class="instrument-block"
-                    aria-label={t("instrument.relatedLabel")}
+                    aria-label={$t("instrument.relatedLabel")}
                   >
-                    <h3 class="eyebrow">{t("instrument.relatedHeading")}</h3>
+                    <h3 class="eyebrow">{$t("instrument.relatedHeading")}</h3>
                     <div class="instrument-related">
                       {#each related as item}<button
                           type="button"
@@ -378,7 +378,7 @@
                       >
                         <span class="loading-indicator" aria-hidden="true"
                         ></span>
-                        <span>{t("instrument.loadingRelated")}</span>
+                        <span>{$t("instrument.loadingRelated")}</span>
                       </p>{/if}{#if relationsError}<p
                         class="instrument-review-note"
                         role="status"
@@ -387,8 +387,8 @@
                       </p>{/if}
                   </section>{/if}
                 {#if resource.further_reading?.length}
-                  <section class="instrument-block" aria-label={t("instrument.readingLabel")}>
-                    <h3 class="eyebrow">{t("instrument.readingHeading")}</h3>
+                  <section class="instrument-block" aria-label={$t("instrument.readingLabel")}>
+                    <h3 class="eyebrow">{$t("instrument.readingHeading")}</h3>
                     <ul>
                       {#each resource.further_reading as article}
                         <li>
@@ -407,9 +407,9 @@
                 {/if}
                 {#if resource.sources.length}<section
                     class="instrument-block"
-                    aria-label={t("instrument.sourcesLabel")}
+                    aria-label={$t("instrument.sourcesLabel")}
                   >
-                    <h3 class="eyebrow">{t("instrument.sourcesHeading")}</h3>
+                    <h3 class="eyebrow">{$t("instrument.sourcesHeading")}</h3>
                     <ol class="instrument-sources">
                       {#each resource.sources as source, index}<li
                           id={sourceId(source.id)}
@@ -434,39 +434,39 @@
                                     aria-hidden="true">·</span
                                   >{/if}{part}{/each}
                             </p>
-                            <Dropdown title={t("instrument.sourceDetails")}>
+                            <Dropdown title={$t("instrument.sourceDetails")}>
                               <div class="instrument-details">
                                 <dl>
                                   <div>
-                                    <dt>{t("instrument.sourceTypeLabel")}</dt>
+                                    <dt>{$t("instrument.sourceTypeLabel")}</dt>
                                     <dd>
                                       {sourceTypeLabels[source.source_type] ??
                                         source.source_type}
                                     </dd>
                                   </div>
                                   <div>
-                                    <dt>{t("instrument.languageLabel")}</dt>
+                                    <dt>{$t("instrument.languageLabel")}</dt>
                                     <dd>{language(source.language)}</dd>
                                   </div>
                                   <div>
-                                    <dt>{t("instrument.metadataLabel")}</dt>
+                                    <dt>{$t("instrument.metadataLabel")}</dt>
                                     <dd>
                                       {source.metadata_verified
-                                        ? t("instrument.verified")
-                                        : t("instrument.verificationPending")}
+                                        ? $t("instrument.verified")
+                                        : $t("instrument.verificationPending")}
                                     </dd>
                                   </div>
                                   {#if source.locator}<div>
-                                      <dt>{t("instrument.locatorLabel")}</dt>
+                                      <dt>{$t("instrument.locatorLabel")}</dt>
                                       <dd>{source.locator}</dd>
                                     </div>{/if}{#if source.license}<div>
-                                      <dt>{t("instrument.licenseLabel")}</dt>
+                                      <dt>{$t("instrument.licenseLabel")}</dt>
                                       <dd>{source.license}</dd>
                                     </div>{/if}{#if source.accessed_at}<div>
-                                      <dt>{t("instrument.accessedLabel")}</dt>
+                                      <dt>{$t("instrument.accessedLabel")}</dt>
                                       <dd>{date(source.accessed_at)}</dd>
                                     </div>{/if}{#if source.verified_at}<div>
-                                      <dt>{t("instrument.verifiedLabel")}</dt>
+                                      <dt>{$t("instrument.verifiedLabel")}</dt>
                                       <dd>{date(source.verified_at)}</dd>
                                     </div>{/if}
                                 </dl>
@@ -477,23 +477,23 @@
                         </li>{/each}
                     </ol>
                   </section>{/if}
-                <Dropdown title={t("instrument.resourceDetails")}>
+                <Dropdown title={$t("instrument.resourceDetails")}>
                   <div class="instrument-details instrument-about">
                     <dl>
                       <div>
-                        <dt>{t("instrument.provenanceLabel")}</dt>
+                        <dt>{$t("instrument.provenanceLabel")}</dt>
                         <dd>
                           {resource.data_source === "mock"
-                            ? t("instrument.demoData")
-                            : t("instrument.catalogData")}
+                            ? $t("instrument.demoData")
+                            : $t("instrument.catalogData")}
                         </dd>
                       </div>
                       <div>
-                        <dt>{t("instrument.catalogLabel")}</dt>
+                        <dt>{$t("instrument.catalogLabel")}</dt>
                         <dd><code class="source-value">{resource.catalog_version}</code></dd>
                       </div>
                       <div>
-                        <dt>{t("instrument.imageCatalogLabel")}</dt>
+                        <dt>{$t("instrument.imageCatalogLabel")}</dt>
                         <dd><code class="source-value">{resource.image_catalog_version}</code></dd>
                       </div>
                     </dl>

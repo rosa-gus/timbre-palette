@@ -4,6 +4,7 @@
   "entities": "entities.json",
   "sources": "sources.json",
   "locales": {
-    "pt-BR": "locales/pt-BR.json"
+    "pt-BR": "locales/pt-BR.json",
+    "en-US": "locales/en-US.json"
   }
 }

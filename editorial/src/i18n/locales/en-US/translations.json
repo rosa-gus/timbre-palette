@@ -1,0 +1,15 @@
+{
+  "translations": {
+    "hint": "Translate the texts and review each language separately. Sources, citations, and credits are preserved.",
+    "incomplete": "{label}: complete the texts and translation review in {locale}.",
+    "invalidLocale": "Enter a valid language other than pt-BR, such as en-US or es.",
+    "locale": "Content language",
+    "rebase": "Review against the current source",
+    "roles": "Musical roles (one per line)",
+    "stale": "The source changed. Check the translation and update its review before publishing.",
+    "staleStatus": "Outdated",
+    "start": "Start translation",
+    "title": "Profile translations",
+    "verified": "Translation faithful to the source and reviewed"
+  }
+}

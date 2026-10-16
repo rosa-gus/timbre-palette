@@ -2,7 +2,7 @@ import { PaletteApiError } from "./errors";
 import { isProfileAnalysisV3 } from "./report-validation";
 export { PaletteApiError } from "./errors";
 export { isProfileAnalysisV3 } from "./report-validation";
-import { t } from "../i18n/runtime";
+import { locale, t, type Locale } from "../i18n/runtime";
 import type {
   InstrumentResource,
   ListeningPeriod,
@@ -200,9 +200,10 @@ export async function getExampleAnalysis(
 export async function getInstrument(
   slug: string,
   signal: AbortSignal,
+  language: Locale = locale,
 ): Promise<InstrumentResource> {
   const result = await getJson<InstrumentResource>(
-    `/v2/instruments/${encodeURIComponent(slug)}`,
+    `/v2/instruments/${encodeURIComponent(slug)}?locale=${encodeURIComponent(language)}`,
     signal,
   );
   if (!isInstrumentResource(result.data)) {

@@ -129,3 +129,19 @@ def test_rejects_invalid_translation(tmp_path, change):
     if change == "locale": payload["locales"]["en_us"] = payload["locales"].pop("en")
     with pytest.raises(ValueError):
         load_snapshot(tmp_path, payload)
+
+
+def test_english_catalog_is_complete_current_and_preserves_neutral_identifiers():
+    sheets = load_manifest(MANIFEST)
+    assert len(sheets) == 23
+    for sheet in sheets:
+        english = next(item for item in sheet["translations"] if item["locale"] == "en-US")
+        assert english["status"] == "reviewed"
+        assert english["source_revision"] == source_revision(sheet)
+        assert english["review"]["reviewer"] == "Codex (translation review)"
+        for key in ("slug", "kind", "family_slug", "related_slugs", "sources"):
+            assert english["resource"][key] == sheet["resource"][key]
+        assert {block["id"] for block in english["resource"]["sections"]} == {block["id"] for block in sheet["resource"]["sections"]}
+    conn = database()
+    publish(conn, sheets, "english")
+    assert conn.execute("SELECT COUNT(*) FROM editorial_resource_translations WHERE locale='en-US' AND status='reviewed'").fetchone()[0] == 23

@@ -1,8 +1,54 @@
-import messages from "./catalog.generated";
+import defaultMessages from "./catalog.generated";
+import { writable, derived } from "svelte/store";
+import { STORAGE_KEYS } from "../../../web/src/utils/storage-keys";
 import type { MessageParameters } from "./message-parameters.generated";
 
-export const locale = "pt-BR";
-export const supportedLocales = [locale] as const;
+export const supportedLocales = ["pt-BR", "en-US"] as const;
+export type Locale = typeof supportedLocales[number];
+export let locale: Locale = "pt-BR";
+let messages = defaultMessages;
+const activeLocale = writable<Locale>(locale);
+export const localeStore = { subscribe: activeLocale.subscribe };
+export const translation = derived<typeof localeStore, typeof t>(localeStore, () => t);
+const preferenceKey = STORAGE_KEYS.editorialLocale;
+let selection = 0;
+
+export function matchLocale(value: string | null | undefined): Locale | null {
+  if (!value) return null;
+  try {
+    const tag = Intl.getCanonicalLocales(value)[0];
+    if (supportedLocales.includes(tag as Locale)) return tag as Locale;
+    const language = tag.split("-")[0];
+    return language === "en" ? "en-US" : language === "pt" ? "pt-BR" : null;
+  } catch { return null; }
+}
+
+export function resolveLocale(query: string | null, saved: string | null, languages: readonly string[]): Locale {
+  return matchLocale(query) ?? matchLocale(saved) ?? languages.map(matchLocale).find((value) => value !== null) ?? "pt-BR";
+}
+
+export async function setLocale(next: Locale, options: { persist?: boolean; updateUrl?: boolean } = {}): Promise<void> {
+  const request = ++selection;
+  const catalog = next === "en-US" ? (await import("./catalog.en-US.generated")).default : defaultMessages;
+  if (request !== selection) return;
+  messages = catalog;
+  locale = next;
+  updateDocument();
+  activeLocale.set(next);
+  if (options.persist !== false) { try { localStorage.setItem(preferenceKey, next); } catch { /* Optional preference. */ } }
+  if (options.updateUrl !== false && typeof window !== "undefined") {
+    const url = new URL(window.location.href);
+    url.searchParams.set("lang", next);
+    window.history.replaceState(window.history.state, "", url);
+  }
+}
+
+function updateDocument(): void {
+  if (typeof document === "undefined") return;
+  document.documentElement.lang = locale;
+  document.documentElement.dir = "ltr";
+
+}
 type MessageKeys<Value> = {
   [Key in keyof Value & string]: Value[Key] extends string ? Key
     : Value[Key] extends Record<string, unknown> ? `${Key}.${MessageKeys<Value[Key]>}` : never;
@@ -35,9 +81,14 @@ function interpolateUpper(text: string, values: Record<string, string | number> 
   }).join("");
 }
 
-export function initializeLocale(): void {
-  document.documentElement.lang = locale;
-  document.documentElement.dir = "ltr";
+export async function initializeLocale(): Promise<void> {
+  let saved: string | null = null;
+  try { saved = localStorage.getItem(preferenceKey); } catch { /* Optional preference. */ }
+  const query = typeof window === "undefined" ? null : new URL(window.location.href).searchParams.get("lang");
+  const languages = typeof navigator === "undefined" ? [] : navigator.languages;
+  const selected = resolveLocale(query, saved, languages);
+  try { await setLocale(selected, { persist: false, updateUrl: false }); }
+  catch { await setLocale("pt-BR", { persist: false, updateUrl: false }); }
 }
 
 /** Source nesting does not change the full keys used by callers. */

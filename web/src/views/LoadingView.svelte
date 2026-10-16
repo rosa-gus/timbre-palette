@@ -1,17 +1,17 @@
 <script lang="ts">
-  import { t } from "../i18n/runtime";
-  export let title = t("loading.historyTitle");
-  export let description = t("loading.historyDescription");
-  export let detail = t("loading.historyDetail");
+  import { translation as t } from "../i18n/runtime";
+  export let title = "";
+  export let description = "";
+  export let detail = "";
 </script>
 
 <section class="loading-view" role="status" aria-live="polite">
-  <h1>{title}</h1>
-  <p class="loading-description">{description}</p>
+  <h1>{title || $t("loading.historyTitle")}</h1>
+  <p class="loading-description">{description || $t("loading.historyDescription")}</p>
   <div class="loading-characters" aria-hidden="true">
     <span class="loading-indicator"></span>
   </div>
-  <p class="loading-detail">{detail}</p>
+  <p class="loading-detail">{detail || $t("loading.historyDetail")}</p>
 </section>
 
 <style>

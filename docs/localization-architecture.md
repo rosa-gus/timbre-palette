@@ -1,6 +1,6 @@
 # Localization architecture
 
-Status: phase 4 implemented.
+Status: phase 5 implemented; browser validation pending.
 
 ## Ownership and dependency boundaries
 
@@ -35,7 +35,7 @@ Changing UI language must not recollect listening history or recalculate analysi
 
 ## Editorial resources and fallback
 
-The catalog supports `GET /v2/instruments/{slug}?locale=en`. Omitted locale preserves the current Portuguese response. Explicit unsupported locales fall back to `pt-BR`; malformed tags use the API's validation error contract. OpenAPI documents the parameter and locale metadata.
+The catalog supports `GET /v2/instruments/{slug}?locale=en-US`. Omitted locale preserves the current Portuguese response. Explicit unsupported locales fall back to `pt-BR`; malformed tags use the API's validation error contract. OpenAPI documents the parameter and locale metadata.
 
 Separate neutral entities from translations keyed by entity/block ID and locale. Serve one publishable language version per resource. If the requested translation is unavailable, return the publishable `pt-BR` version and expose the effective locale in response metadata and `Content-Language`. If neither version is publishable, preserve existing resource availability rules. Do not silently mix translated fields from different languages.
 
@@ -49,7 +49,7 @@ Translations retain citations, source IDs, provenance, and original bibliographi
 2. Extract current Portuguese UI copy without changing behavior (complete).
 3. Separate analysis data from rendered narratives, including cache and reference compatibility (complete).
 4. Add editorial translation storage, review, publication, and API support (complete).
-5. Add another language and validate UI, accessibility, and exported images.
+5. Add `en-US`, locale selection, accessible copy, and localized exports (implemented; browser validation pending).
 
 Later implementation must verify:
 
@@ -63,11 +63,11 @@ Later implementation must verify:
 
 ## Current implementation
 
-Public and editorial UI messages live in separate `src/i18n/locales/pt-BR/` directories, split into JSON files by responsibility. Their runtimes support only `pt-BR`; language selection and additional dictionaries are deferred. Public HTML metadata is resolved from its catalog during Vite development and builds.
+Public and editorial UI dictionaries independently support `pt-BR` and `en-US`, split by responsibility under `src/i18n/locales/{locale}/`. Portuguese is available at startup; English loads on demand. Resolve locale from `?lang=`, the application-specific saved preference, browser languages, then `pt-BR`. Explicit language fallbacks map `en` to `en-US` and `pt` to `pt-BR`. Both headers expose a language selector.
 
 Each JSON file owns distinct top-level namespaces and uses nested objects. Nesting preserves existing full keys: `entry.profileLabel` resolves to `entry` → `profileLabel`. Web domains are common, entry, analysis, narratives, instruments, sharing, errors, and metadata. Editorial domains are common, catalog, sheet, sources, review, images, and translations. Key renaming and copy cleanup are deferred.
 
-Run `yarn locales:format` to apply natural key ordering and two-space indentation. After adding files or changing keys or `{parameters}`, run `yarn locales:generate`. Commit the generated import catalogs and parameter `.d.ts` files; neither duplicates message text. `yarn locales:check` rejects duplicate keys, namespace conflicts, malformed placeholders, unordered JSON, and stale artifacts. CI and application type checks enforce these rules. Development commands generate artifacts at startup.
+Run `yarn locales:format` to apply natural key ordering and two-space indentation. After adding files or changing keys or `{parameters}`, run `yarn locales:generate`. Commit the generated import catalogs and parameter `.d.ts` files; neither duplicates message text. `yarn locales:check` rejects duplicate keys, namespace conflicts, malformed placeholders, unordered JSON, stale artifacts, and differences in locale keys, parameters, or component-owned wrappers. CI and application type checks enforce these rules. Development commands generate artifacts at startup.
 
 Use semantic keys and named parameters with `t`. Public `Message.svelte` supports named wrappers for component-owned markup without rendering HTML. Date, number, percentage, and wait-duration formatting is centralized in `web/src/i18n/formatters.ts`.
 
@@ -76,3 +76,9 @@ Use `<upper>Sentence case</upper>` for uppercase presentation. Both runtimes app
 Report calculation and history collection do not import UI locales. `web/src/analysis/presentation.ts` renders structured narratives for screens and share images. Unknown API errors use local generic copy. The Python reference calculates the same neutral contract and isolates frozen v2 prose in `legacy_presentation.py`. See [report compatibility](api-contract.md#structured-reports-and-compatibility).
 
 Editorial resources use schema-v2 snapshots: neutral entities and bibliographic sources are separate from locale files. Each translation has independent review metadata and a source-content SHA-256 revision; changed source content makes it stale. Publication persists resource and block translations plus revision history. The Worker serves a complete eligible translation or the complete Portuguese fallback, with locale and publication metadata. Legacy taxonomy text columns remain compatibility projections for evidence consumers and the Python reference. The development-only ASCII workspace remains outside UI extraction, but its report fixtures use the structured contract.
+
+Language changes update subscribed UI text, document language, public metadata, formatters, and report presentation in place. They do not repeat listening-history collection or analysis. Public HTML retains Portuguese build-time metadata for clients that do not execute JavaScript. A failed initial English bundle load falls back to Portuguese; a failed manual change keeps the current locale.
+
+Instrument requests include the selected content locale. Resource caches include locale and expire after five minutes. Report display names are resolved from localized catalog resources, with bounded concurrency and cancellation; neutral report and evidence caches remain unchanged. Changing language clears an existing share preview, so exported images use the current language. The ASCII development workspace remains Portuguese.
+
+The 23 English editorial resources are reviewed as translations by `Codex (translation review)`, with their source revisions recorded. Original bibliographic metadata, citations, and image rights remain unchanged. Publish the editorial snapshot to make these resources available through the API; before publication, the existing Portuguese fallback still applies. Browser validation is performed separately by the maintainer.

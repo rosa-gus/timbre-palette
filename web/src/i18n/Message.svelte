@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
-  import { messageParts, type MessageKey } from "./runtime";
+  import { messageParts, localeStore, type MessageKey } from "./runtime";
 
   let { message, values = {}, wrappers = {} }: {
     message: MessageKey;
@@ -9,7 +9,7 @@
   } = $props();
 </script>
 
-{#each messageParts(message, values) as part}
+{#each messageParts(message, values, $localeStore) as part}
   {#if part.wrapper}
     {@render wrappers[part.wrapper](part.text)}
   {:else}

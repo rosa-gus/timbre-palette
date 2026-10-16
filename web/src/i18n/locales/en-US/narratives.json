@@ -1,0 +1,73 @@
+{
+  "narrative": {
+    "discovery": {
+      "summary": "{instrument} adds a distinctive color to the palette, beyond its most prominent instrumental core.",
+      "title": "A less obvious presence: {instrument}"
+    },
+    "image": {
+      "alt": "Image of {instrument}.",
+      "exact": "Image of the instrument {instrument}.",
+      "family": "Illustrative image of the {family} family: {instrument}.",
+      "related": "Image related to the instrument {instrument}."
+    },
+    "notice": {
+      "exampleCatalog": "This example profile combines a fictional listening history with instrumental evidence published in the project catalog.",
+      "insufficient": "{source} Accepted coverage is not yet sufficient to build a palette.",
+      "lastfmCatalog": "The history was obtained from Last.fm and linked to instrumental evidence published in the project catalog.",
+      "lastfmMock": "The history was obtained from Last.fm. Instrumental evidence is still fictional and is used only for product development.",
+      "mock": "Fictional history and instrumental evidence. The contract and calculation are functional.",
+      "partial": "{source} The palette uses the evidence published so far; some interpretations remain limited and may expand on a future visit."
+    },
+    "portrait": {
+      "disclaimer": "A playful interpretation of listening, not a psychological or scientific personality assessment.",
+      "emptySummary": "We found your history, but not enough instrument information to compose this portrait.",
+      "emptyTitle": "Your listening does not have a palette yet.",
+      "singleSummary": "Among tracks with available instrument information, we found {families}.",
+      "singleTitle": "A first portrait: {families}.",
+      "summary": "{families} are the most prominent families among tracks with available instrument information.",
+      "title": "{families}."
+    },
+    "temperament": {
+      "disclaimer": "This is a playful interpretation of musical history, not a psychological or scientific personality assessment.",
+      "dominant-acoustic": {
+        "summary": "Your listening finds a distinctive voice in acoustic sources, bringing gesture, vibration, and sounding material together. Acoustic sources have the largest share among identified sound natures. The family with the largest share of the palette is {family}.",
+        "title": "Acoustic presence"
+      },
+      "dominant-electric": {
+        "summary": "Your listening has an electric signature, with an amplified body and possibilities of timbre. Electric sources have the largest share among identified sound natures. The family with the largest share of the palette is {family}.",
+        "title": "Electric body"
+      },
+      "dominant-electronic": {
+        "summary": "Your listening finds its own language in electronic sounds, with timbres that are shaped and transformed. Electronic sources have the largest share among identified sound natures. The family with the largest share of the palette is {family}.",
+        "title": "Electronic texture"
+      },
+      "dominant-hybrid": {
+        "summary": "Your listening brings organic sources and electronic processes together, making the blend its own signature. Hybrid sources have the largest share among identified sound natures. The family with the largest share of the palette is {family}.",
+        "title": "Organic and electronic"
+      },
+      "dominant-sampled": {
+        "summary": "Your listening finds identity in fragments: sounds that carry other contexts and take on new meanings. Sampled sounds recur in the palette for this period. The family with the largest share of the palette is {family}.",
+        "title": "Memory in fragments"
+      },
+      "electric-plucked-strings": {
+        "summary": "Your listening has an electric signature: an amplified body and possibilities of timbre. Plucked strings and electric sources support most of the palette. The family with the largest share of the palette is {family}.",
+        "title": "Electric body"
+      },
+      "recurring-electronic": {
+        "summary": "Your listening finds its own language in electronic sounds, with timbres that can be shaped and transformed. Electronic sources have the largest share among identified sound natures. The family with the largest share of the palette is {family}.",
+        "title": "Electronic texture"
+      },
+      "recurring-percussion-synthesizers": {
+        "summary": "Your listening finds momentum while keeping a place to linger. Percussion and synthesizers recur together, bringing pulse and texture closer. The family with the largest share of the palette is {family}.",
+        "title": "Movement with atmosphere"
+      },
+      "recurring-sampled": {
+        "summary": "Your listening finds identity in fragments: sounds that carry other contexts and take on new meanings. Sampled sounds recur in the palette for this period. The family with the largest share of the palette is {family}.",
+        "title": "Memory in fragments"
+      }
+    },
+    "vocabulary": {
+      "notice": "These instruments recur in documented recordings by these artists; this does not necessarily describe each track or an instrument's presence in the audio."
+    }
+  }
+}

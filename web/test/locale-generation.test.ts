@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
 import { expect, it } from "vitest";
-import { flattenCatalog, mergeCatalogs, renderMessageTypes } from "../../scripts/generate_locale_types.mjs";
+import { flattenCatalog, mergeCatalogs, renderMessageTypes, validateTranslation } from "../../scripts/generate_locale_types.mjs";
 
 it("generates deterministic parameter contracts without duplicating translations", () => {
   const generated = renderMessageTypes('{"plain":"Olá", "greeting":"Olá {name}, {name}! {count}"}');
@@ -98,4 +98,12 @@ it("retains compile-time validation of JSON message keys and named parameters", 
     unlinkSync(filename);
     rmdirSync(directory);
   }
+});
+
+it("rejects translation key, parameter and semantic wrapper mismatches", () => {
+  const base = { title: "<emphasis>Olá {name}</emphasis>" };
+  expect(() => validateTranslation(base, { title: "<emphasis>Hello {name}</emphasis>" })).not.toThrow();
+  expect(() => validateTranslation(base, { other: "Hello {name}" })).toThrow();
+  expect(() => validateTranslation(base, { title: "<emphasis>Hello {user}</emphasis>" })).toThrow();
+  expect(() => validateTranslation(base, { title: "Hello {name}" })).toThrow();
 });

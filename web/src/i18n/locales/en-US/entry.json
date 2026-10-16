@@ -1,0 +1,22 @@
+{
+  "entry": {
+    "description": "A color palette for the instruments documented in the music you listen to.",
+    "example": "View example",
+    "exampleLabel": "Explore an example listening history",
+    "heroAbout": "About Chladni's experiment",
+    "heroAlt": "Historical Chladni experiment in pink and black duotone",
+    "heroExplanation": "In Chladni's experiment, a vibrating plate makes grains collect in the areas that vibrate least, forming patterns. A way to make sound visible.",
+    "pauseVideo": "Pause video",
+    "play": "Play",
+    "playVideo": "Play video",
+    "playing": "Playing",
+    "profileLabel": "Your Last.fm profile",
+    "title": "Discover what <emphasis>your listening is made of.</emphasis>",
+    "usernamePlaceholder": "username"
+  },
+  "example": {
+    "avatarAlt": "ASCII drawing of a beetle",
+    "badge": "<upper>Example</upper>",
+    "displayName": "Hercules Beetle"
+  }
+}

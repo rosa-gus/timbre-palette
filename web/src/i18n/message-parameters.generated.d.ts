@@ -166,6 +166,8 @@ export type MessageParameters = {
   "instrument.verificationPending": never;
   "instrument.verified": never;
   "instrument.verifiedLabel": never;
+  "language.failed": never;
+  "language.label": never;
   "limits.excludedTracks": never;
   "limits.incompleteCredits": never;
   "limits.intro": never;

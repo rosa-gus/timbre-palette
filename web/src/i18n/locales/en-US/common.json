@@ -1,0 +1,74 @@
+{
+  "actions": {
+    "exploreInstrument": "Explore instrument",
+    "open": "[open]",
+    "openInstrument": "Open {name} profile",
+    "resume": "Resume lookup",
+    "search": "Search",
+    "share": "Share"
+  },
+  "colors": {
+    "copied": "Code copied",
+    "copy": "Copy code",
+    "copyFailed": "Could not copy",
+    "copyLabel": "Copy code {hex}",
+    "detailsLabel": "Details for {label}",
+    "label": "Palette color",
+    "triggerLabel": "{label}: {hex}. Open color details",
+    "variation": "Shade of {name}",
+    "variations": "Shades of {name}"
+  },
+  "controls": {
+    "chooseOption": "Choose an option",
+    "closeNotice": "Dismiss notice",
+    "explanation": "Open explanation"
+  },
+  "dates": {
+    "month1": "Jan.",
+    "month2": "Feb.",
+    "month3": "Mar.",
+    "month4": "Apr.",
+    "month5": "May",
+    "month6": "Jun.",
+    "month7": "Jul.",
+    "month8": "Aug.",
+    "month9": "Sep.",
+    "month10": "Oct.",
+    "month11": "Nov.",
+    "month12": "Dec."
+  },
+  "footer": {
+    "by": "by",
+    "code": "Code",
+    "credits": "<upper>Credits</upper>",
+    "history": "<upper>History</upper>"
+  },
+  "language": {
+    "failed": "Could not load this language. Try again.",
+    "label": "Interface language"
+  },
+  "navigation": {
+    "backUpper": "<upper>Back</upper>",
+    "home": "Timbre Palette, home"
+  },
+  "product": {
+    "apiLabel": "API",
+    "beta": "Beta",
+    "detailsLabel": "Project information",
+    "development": "In development",
+    "editionLabel": "Edition",
+    "methodLabel": "Method",
+    "pilot": "Pilot",
+    "prototype": "Prototype",
+    "stable": "Stable",
+    "statusLabel": "Status",
+    "triggerLabel": "About Timbre Palette, {status}, product {product}"
+  },
+  "theme": {
+    "dark": "<upper>Dark</upper>",
+    "light": "<upper>Light</upper>",
+    "system": "<upper>System</upper>",
+    "systemLabel": "System ({theme})",
+    "toggleLabel": "{theme} theme. Click to switch."
+  }
+}

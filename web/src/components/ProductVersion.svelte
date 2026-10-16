@@ -1,14 +1,14 @@
 <script lang="ts">
-  import { t } from "../i18n/runtime";
+  import { translation as t } from "../i18n/runtime";
   import { Popover } from "bits-ui";
 
   const metadata = __PRODUCT_METADATA__;
-  const statusLabels = {
-    prototype: t("product.prototype"),
-    development: t("product.development"),
-    beta: t("product.beta"),
-    pilot: t("product.pilot"),
-    stable: t("product.stable"),
+  $: statusLabels = {
+    prototype: $t("product.prototype"),
+    development: $t("product.development"),
+    beta: $t("product.beta"),
+    pilot: $t("product.pilot"),
+    stable: $t("product.stable"),
   } as const;
   let open = false;
   let trigger: HTMLButtonElement | null = null;
@@ -44,34 +44,34 @@
   <Popover.Trigger
     bind:ref={trigger}
     class="version-badge"
-    aria-label={t("product.triggerLabel", { status: statusLabels[metadata.status], product: metadata.product })}
+    aria-label={$t("product.triggerLabel", { status: statusLabels[metadata.status], product: metadata.product })}
   >
     v{metadata.product}<span aria-hidden="true">{open ? "▴" : "▾"}</span>
   </Popover.Trigger>
   <Popover.Content
     class="version-panel"
-    side="bottom"
+    side="top"
     align="start"
     sideOffset={18}
     collisionPadding={20}
-    aria-label={t("product.detailsLabel")}
+    aria-label={$t("product.detailsLabel")}
   >
     <div use:alignStem>
       <dl>
         <div>
-          <dt>{t("product.statusLabel")}</dt>
+          <dt>{$t("product.statusLabel")}</dt>
           <dd>{statusLabels[metadata.status]}</dd>
         </div>
         <div>
-          <dt>{t("product.editionLabel")}</dt>
+          <dt>{$t("product.editionLabel")}</dt>
           <dd>v{metadata.product}</dd>
         </div>
         <div>
-          <dt>{t("product.methodLabel")}</dt>
+          <dt>{$t("product.methodLabel")}</dt>
           <dd>{metadata.method}</dd>
         </div>
         <div>
-          <dt>{t("product.apiLabel")}</dt>
+          <dt>{$t("product.apiLabel")}</dt>
           <dd>{metadata.api}</dd>
         </div>
       </dl>
@@ -146,10 +146,5 @@
   }
   dd {
     margin: 0;
-  }
-  @media (max-width: 800px) {
-    :global(.version-badge) {
-      display: none;
-    }
   }
 </style>

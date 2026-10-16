@@ -4,6 +4,7 @@ export type MessageParameters = {
   "catalog.empty": never;
   "catalog.family": never;
   "catalog.heading": never;
+  "catalog.instrument": never;
   "catalog.listLabel": never;
   "catalog.search": never;
   "catalog.searchPlaceholder": never;
@@ -40,6 +41,8 @@ export type MessageParameters = {
   "images.resolution": never;
   "images.unavailable": never;
   "images.url": never;
+  "language.failed": never;
+  "language.label": never;
   "navigation.editorial": never;
   "navigation.instrumentSheets": never;
   "reading.add": never;

@@ -1,0 +1,22 @@
+{
+  "curiosity": {
+    "add": "Add curiosity",
+    "optional": "optional",
+    "optionalHint": "A profile can be published without a curiosity.",
+    "remove": "Remove curiosity",
+    "sourcesTitle": "Curiosity sources",
+    "supportReviewed": "Curiosity support reviewed",
+    "text": "Brief text",
+    "title": "Curiosity"
+  },
+  "sheet": {
+    "briefTitle": "Brief profile",
+    "description": "Description",
+    "editLabel": "Edit profile",
+    "family": "Family",
+    "name": "Name",
+    "selfFamily": "The family itself",
+    "soundProduction": "How it produces sound",
+    "writingHint": "Prefer two or three sentences. History and origins are outside the scope of this profile."
+  }
+}

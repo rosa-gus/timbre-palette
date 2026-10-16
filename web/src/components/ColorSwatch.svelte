@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { t } from "../i18n/runtime";
+  import { translation as t } from "../i18n/runtime";
   import { Popover } from "bits-ui";
 
   export let color: string;
-  export let label = t("colors.label");
+  export let label = "";
+  $: resolvedLabel = label || $t("colors.label");
   export let className = "";
   export let style = "";
   export let presenceName = "";
@@ -97,9 +98,9 @@
     bind:ref={trigger}
     class={`color-swatch ${className}`}
     style={`--swatch-color:${color};${style}`}
-    aria-label={t("colors.triggerLabel", { label: label, hex: hex })}
+    aria-label={$t("colors.triggerLabel", { label: resolvedLabel, hex: hex })}
   >
-    <span class="visually-hidden">{label}: {hex}</span>
+    <span class="visually-hidden">{resolvedLabel}: {hex}</span>
   </Popover.Trigger>
   <Popover.Portal>
     <Popover.Content
@@ -108,7 +109,7 @@
       align="center"
       sideOffset={12}
       collisionPadding={12}
-      aria-label={t("colors.detailsLabel", { label: label })}
+      aria-label={$t("colors.detailsLabel", { label: resolvedLabel })}
     >
       <div use:alignStem>
         {#if presenceName}
@@ -122,13 +123,13 @@
         <button
           type="button"
           class="color-copy"
-          aria-label={t("colors.copyLabel", { hex: hex })}
+          aria-label={$t("colors.copyLabel", { hex: hex })}
           onclick={copyColor}
           >{copied
-            ? t("colors.copied")
+            ? $t("colors.copied")
             : copyFailed
-              ? t("colors.copyFailed")
-              : t("colors.copy")}</button
+              ? $t("colors.copyFailed")
+              : $t("colors.copy")}</button
         >
       </div>
     </Popover.Content>

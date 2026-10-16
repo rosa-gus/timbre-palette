@@ -4,6 +4,8 @@ import { storageKey } from "../storage";
 // Add every browser storage key here. Use the identifier for the feature and
 // the sector for the stored resource; bump its version when semantics change.
 export const STORAGE_KEYS = {
+  webLocale: storageKey("web", "locale"),
+  editorialLocale: storageKey("editorial", "locale"),
   theme: storageKey("ui", "theme"),
   asciiEditor: storageKey("sharing", "ascii-editor"),
   // v2 counts the active snapshot projection, unlike the former catalog stats.
