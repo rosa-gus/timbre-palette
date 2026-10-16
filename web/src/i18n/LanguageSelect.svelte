@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import { Popover } from "bits-ui";
   import { languageNames } from "../../../shared/i18n/locales.mjs";
   import {
@@ -13,6 +14,17 @@
   let busy = false;
   let error = "";
   let trigger: HTMLButtonElement | null = null;
+  let compact = false;
+
+  onMount(() => {
+    const query = window.matchMedia("(max-width: 800px)");
+    const update = () => {
+      compact = query.matches;
+    };
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  });
 
   async function change(language: Locale) {
     busy = true;
@@ -65,8 +77,8 @@
   <Popover.Content
     class="language-panel"
     side="bottom"
-    align="start"
-    sideOffset={18}
+    align={compact ? "end" : "start"}
+    sideOffset={compact ? 6 : 18}
     collisionPadding={20}
     aria-label={$t("language.label")}
     aria-busy={busy}
@@ -187,5 +199,18 @@
   .language-error {
     margin: 12px 0 0;
     color: var(--ink);
+  }
+  @media (max-width: 800px) {
+    :global(.language-panel) {
+      width: max-content;
+      padding: 8px;
+    }
+    :global(.language-panel::before) {
+      display: none;
+    }
+    .language-option {
+      min-height: 44px;
+      border-radius: 0;
+    }
   }
 </style>

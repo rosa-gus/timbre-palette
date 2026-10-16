@@ -354,15 +354,47 @@ main {
     margin-left: 0;
   }
   .site-header {
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 12px;
+    grid-template-columns: minmax(0, 1fr) repeat(2, 68px);
+    gap: 8px;
   }
+  .header-identity,
   .header-actions {
-    flex-wrap: wrap;
-    justify-content: flex-end;
+    display: contents;
   }
-  .header-status,
-  .theme-toggle {
+  .site-header .wordmark {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .site-header .language-badge {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .site-header .theme-toggle {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  .site-header :is(.language-badge, .theme-toggle) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 68px;
+    height: 30px;
+    padding: 0 6px;
+    font-size: 11px;
+    line-height: 1.5;
+    letter-spacing: 0;
+    text-transform: uppercase;
+  }
+  .site-header .catalog-growth {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: end;
+  }
+  .site-footer :is(.version-badge, .version-panel) {
+    display: none;
+  }
+  .header-status {
     font-size: 12px;
   }
   .footer-colophon {
