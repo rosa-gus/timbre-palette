@@ -29,13 +29,26 @@ export type MessageParameters = {
   "editorialStatus.published": never;
   "editorialStatus.reviewed": never;
   "editorialStatus.sourced": never;
-  "entry.description": never;
+  "entry.catalogSize": "count";
+  "entry.discover": never;
   "entry.example": never;
   "entry.exampleLabel": never;
+  "entry.explore": never;
+  "entry.instrumentPreviewHeading": never;
+  "entry.previewClose": never;
+  "entry.previewConsult": never;
+  "entry.previewFull": never;
+  "entry.previewHeading": never;
+  "entry.previewHint": never;
+  "entry.previewScope": never;
+  "entry.previewUnavailable": never;
   "entry.profileLabel": never;
   "entry.pronunciationError": never;
   "entry.pronunciationPlay": never;
   "entry.pronunciationStop": never;
+  "entry.share": never;
+  "entry.sharePreviewLoading": never;
+  "entry.sourceNote": never;
   "entry.title": never;
   "entry.usernamePlaceholder": never;
   "errors.analysisFailed": never;
@@ -407,6 +420,7 @@ export type MessageParameters = {
   "vocabulary.unresolvedIdentities": "artists" | "tracks";
 };
 export type PluralMessages = {
+  "entry.catalogSize": "count";
   "growth.recordings": "count";
   "history.loadedTracks": "tracks";
   "report.playCount": "total_plays";

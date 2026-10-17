@@ -138,12 +138,15 @@
     signal.throwIfAborted();
   }
   let catalogGrowth: { percent: number; added: number } | null = null;
+  let catalogSize: number | null = null;
 
   async function checkCatalog(signal: AbortSignal): Promise<void> {
     try {
       const current = await getCatalogSize(signal);
+      if (signal.aborted) return;
+      catalogSize = current;
       // Only consume the saved comparison when the indicator can be shown.
-      if (signal.aborted || view !== "entry") return;
+      if (view !== "entry") return;
       const saved = getStorageItem<unknown>(STORAGE_KEYS.catalogLastSeen);
       if (
         saved &&
@@ -756,6 +759,7 @@
   <main id="main-content">
     {#if view === "entry" || view === "loading"}
       <EntryView
+        {catalogSize}
         {username}
         {period}
         {periods}

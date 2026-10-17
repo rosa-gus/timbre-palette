@@ -1,9 +1,13 @@
 <script lang="ts">
-  import { onDestroy } from "svelte";
+  import { onDestroy, tick } from "svelte";
+  import { dialogFade } from "../transitions/dialog";
+  import FamilyPalette from "../components/FamilyPalette.svelte";
+  import instrumentPreview from "../analysis/instrument-preview.generated.json";
+  import type { FamilyPresence, ProfileAnalysisV3 } from "../api/types";
   import pronunciationUrl from "../assets/audio/timbrepalette.mp3";
   import { formatWaitDuration } from "../i18n/formatters";
   import Message from "../i18n/Message.svelte";
-  import { translation as t } from "../i18n/runtime";
+  import { translation as t, localeStore, type Locale } from "../i18n/runtime";
   import HistoryResumeNotice from "../components/HistoryResume.svelte";
   import type { HistoryResume } from "../analysis/history";
   import LoadingView from "./LoadingView.svelte";
@@ -14,6 +18,7 @@
   import type { ListeningPeriod } from "../api/types";
 
   export let username = "";
+  export let catalogSize: number | null = null;
   export let period: ListeningPeriod = "1month";
   export let periods: { value: ListeningPeriod; label: string }[] = [];
   export let formError = "";
@@ -32,6 +37,103 @@
   let pronunciationAudio: HTMLAudioElement;
   let pronunciationPlaying = false;
   let pronunciationError = false;
+  let previewOpen: "palette" | "instrument" | "share" | null = null;
+  $: previewInstrument = instrumentPreview[$localeStore];
+  let previewLoading = false;
+  let previewError = false;
+  let previewFamilies: FamilyPresence[] = [];
+  let previewHeading: HTMLParagraphElement;
+  let usernameInput: HTMLInputElement;
+  const previewController = new AbortController();
+  let examplePromise: Promise<ProfileAnalysisV3> | null = null;
+  let sharePreviewUrl = "";
+  let sharePreviewLoading = false;
+  let sharePreviewError = false;
+  let shareRequest = 0;
+  let sharePendingLocale: Locale | null = null;
+  const shareImages = new Map<Locale, string>();
+
+  function loadPreviewExample(): Promise<ProfileAnalysisV3> {
+    if (!examplePromise) {
+      examplePromise = import("../analysis/browser")
+        .then(({ getBrowserExampleAnalysis }) => getBrowserExampleAnalysis("1month", previewController.signal, "entry-palette-preview"))
+        .catch((error) => { examplePromise = null; throw error; });
+    }
+    return examplePromise;
+  }
+
+  $: if (previewOpen === "share") void prepareSharePreview($localeStore);
+
+  async function prepareSharePreview(language: Locale): Promise<void> {
+    const cached = shareImages.get(language);
+    if (cached) {
+      ++shareRequest;
+      sharePreviewUrl = cached;
+      sharePreviewLoading = false;
+      sharePreviewError = false;
+      sharePendingLocale = null;
+      return;
+    }
+    if (sharePendingLocale === language) return;
+    const request = ++shareRequest;
+    sharePendingLocale = language;
+    sharePreviewLoading = true;
+    sharePreviewError = false;
+    sharePreviewUrl = "";
+    try {
+      await tick();
+      // Let the existing loading indicator paint before rendering the canvas.
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+      const [example, { createShareImage }] = await Promise.all([
+        loadPreviewExample(), import("../sharing/share"),
+      ]);
+      if (previewController.signal.aborted || request !== shareRequest) return;
+      const blob = await createShareImage(example.track_palette, undefined, {
+        isExample: true,
+        displayName: example.profile.realname || $t("example.displayName"),
+      });
+      if (previewController.signal.aborted || request !== shareRequest || $localeStore !== language) return;
+      const url = URL.createObjectURL(blob);
+      shareImages.set(language, url);
+      sharePreviewUrl = url;
+    } catch {
+      if (!previewController.signal.aborted && request === shareRequest) sharePreviewError = true;
+    } finally {
+      if (request === shareRequest) {
+        sharePreviewLoading = false;
+        sharePendingLocale = null;
+      }
+    }
+  }
+
+  async function showPreview(kind: "palette" | "instrument" | "share"): Promise<void> {
+    if (loading) return;
+    if (previewOpen === kind) {
+      previewOpen = null;
+      return;
+    }
+    previewOpen = kind;
+    await tick();
+    previewHeading?.focus();
+    if (kind !== "palette") return;
+    if (previewFamilies.length || previewLoading) return;
+    previewLoading = true;
+    previewError = false;
+    try {
+      const example = await loadPreviewExample();
+      if (!previewController.signal.aborted) previewFamilies = example.track_palette.families.slice(0, 3);
+    } catch {
+      if (!previewController.signal.aborted) previewError = true;
+    } finally {
+      previewLoading = false;
+    }
+  }
+
+  async function returnToForm(): Promise<void> {
+    previewOpen = null;
+    await tick();
+    usernameInput?.focus();
+  }
 
   async function togglePronunciation(): Promise<void> {
     if (!pronunciationAudio) return;
@@ -53,6 +155,8 @@
   }
 
   onDestroy(() => pronunciationAudio?.pause());
+  onDestroy(() => previewController.abort());
+  onDestroy(() => { for (const url of shareImages.values()) URL.revokeObjectURL(url); });
 
   function submitProfile(): void {
     if (loading || waitSeconds > 0) return;
@@ -62,6 +166,7 @@
 </script>
 
 {#snippet titleEmphasis(text: string)}<span>{text}</span>{/snippet}
+{#snippet catalogCount(text: string)}<code>{text}</code>{/snippet}
 
 <section
   class:loading
@@ -94,12 +199,76 @@
       ></audio>
       {#if pronunciationError}<p class="pronunciation-error" role="status">{$t("entry.pronunciationError")}</p>{/if}
     </div>
-    <p class="entry-description">{$t("entry.description")} </p>
+    <ol class="entry-description" role="list">
+      <li><span class="entry-list-index" aria-hidden="true">[1]</span><button class="entry-preview-trigger" type="button" aria-expanded={previewOpen === "palette" && !loading} aria-controls="entry-preview" disabled={loading} on:click={() => showPreview("palette")}>{$t("entry.discover")}</button></li>
+      <li><span class="entry-list-index" aria-hidden="true">[2]</span><button class="entry-preview-trigger" type="button" aria-expanded={previewOpen === "instrument" && !loading} aria-controls="entry-preview" disabled={loading} on:click={() => showPreview("instrument")}>{$t("entry.explore")}</button></li>
+      <li><span class="entry-list-index" aria-hidden="true">[3]</span><button class="entry-preview-trigger" type="button" aria-expanded={previewOpen === "share" && !loading} aria-controls="entry-preview" disabled={loading} on:click={() => showPreview("share")}>{$t("entry.share")}</button></li>
+    </ol>
+    <p class="entry-preview-hint">{$t("entry.previewHint")}</p>
+    <p class="entry-source-note">{$t("entry.sourceNote")}</p>
+    {#if catalogSize !== null}
+      <p class="entry-catalog-size">
+        <Message message="entry.catalogSize" values={{ count: catalogSize }} wrappers={{ value: catalogCount }} />
+      </p>
+    {/if}
   </div>
 
   <div class="entry-action-area">
+    {#if !loading}
+      {#each previewOpen ? [previewOpen] : [] as previewKind (previewKind)}
+      <div id="entry-preview" class="entry-preview" in:dialogFade|global out:dialogFade|global aria-busy={(previewKind === "palette" && previewLoading) || (previewKind === "share" && sharePreviewLoading)}>
+        <div class="preview-heading">
+          <p class="eyebrow" tabindex="-1" bind:this={previewHeading}>{previewKind === "palette" ? $t("entry.previewHeading") : previewKind === "instrument" ? $t("entry.instrumentPreviewHeading") : $t("sharing.exampleHeading")}</p>
+          <button type="button" class="preview-close" aria-label={$t("entry.previewClose")} on:click={returnToForm}>[×]</button>
+        </div>
+        {#if previewKind === "share"}
+          {#if sharePreviewLoading}
+            <p class="share-preview-status" role="status">
+              <span class="loading-indicator" aria-hidden="true"></span>
+              <span>{$t("entry.sharePreviewLoading")}</span>
+            </p>
+          {:else if sharePreviewError}
+            <p class="entry-source-note" role="status">{$t("sharing.failed")}</p>
+          {:else if sharePreviewUrl}
+            <img class="share-preview-image" src={sharePreviewUrl} width="1200" height="1500" alt={$t("sharing.previewAlt", { listener: $t("example.displayName") })} />
+          {/if}
+        {:else if previewKind === "instrument"}
+          <div class="instrument-preview" lang={$localeStore}>
+            <h2>{previewInstrument.name}</h2>
+            <p class="instrument-preview-family">{previewInstrument.family}</p>
+            <section class="instrument-block" aria-labelledby="preview-sound-production">
+              <h3 id="preview-sound-production" class="eyebrow"><Message message="instrument.soundProductionHeading" /></h3>
+              <p>{previewInstrument.soundProduction}</p>
+            </section>
+            <section class="instrument-block" aria-labelledby="preview-curiosity">
+              <h3 id="preview-curiosity" class="eyebrow"><Message message="instrument.curiosityHeading" /></h3>
+              <p>{previewInstrument.curiosity}</p>
+            </section>
+            <div class="instrument-preview-sources">
+              <p class="eyebrow"><Message message="instrument.sourcesHeading" /></p>
+              {#each previewInstrument.sources as source}
+                <a href={source.url} title={source.title} target="_blank" rel="noreferrer">{source.publisher}<Arrow direction="up-right" /></a>
+              {/each}
+            </div>
+          </div>
+        {:else if previewLoading}
+          <p class="entry-source-note" role="status">{$t("loading.catalog")}</p>
+        {:else if previewError}
+          <p class="entry-source-note" role="status">{$t("entry.previewUnavailable")}</p>
+        {:else}
+          <FamilyPalette families={previewFamilies} compact />
+          <p class="entry-source-note">{$t("entry.previewScope")}</p>
+        {/if}
+        <div class="preview-actions">
+          <Button variant="primary" on:click={returnToForm}><span>{$t("entry.previewConsult")}</span><Arrow direction="right" /></Button>
+          <button class="example-button" type="button" on:click={onExample}>{$t("entry.previewFull")}<Arrow direction="right" /></button>
+        </div>
+      </div>
+      {/each}
+    {/if}
     <form
       class="profile-form"
+      hidden={previewOpen !== null && !loading}
       inert={loading}
       aria-hidden={loading}
       on:submit|preventDefault={submitProfile}
@@ -113,6 +282,7 @@
             >last.fm/user/</span
           >
           <input
+            bind:this={usernameInput}
             id="username"
             aria-describedby="username-prefix"
             value={username}
@@ -187,7 +357,7 @@
     max-width: none;
     margin: 0;
     color: var(--ink);
-    font-size: clamp(2.5rem, 4vw, 4rem);
+    font-size: clamp(2rem, 3vw, 3rem);
     font-weight: 500;
     letter-spacing: -0.055em;
     line-height: 1.08;
@@ -237,14 +407,144 @@
     font: 12px/1.5 var(--meta);
   }
   .entry-description {
-    max-width: 32ch;
+    display: grid;
+    gap: 8px;
+    max-width: 44ch;
     margin: 8px 0 0;
+    padding: 0;
+    list-style: none;
     color: var(--muted);
     font-size: 1rem;
     line-height: 1.5;
     text-wrap: pretty;
   }
+  .entry-description li {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: baseline;
+    gap: 12px;
+  }
+  .entry-list-index {
+    color: var(--accent-soft);
+    font: 12px/1.5 var(--meta);
+  }
+  .entry-preview-trigger {
+    display: inline;
+    justify-self: start;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .entry-preview-trigger:is(:hover, :focus-visible, [aria-expanded="true"]) {
+    color: var(--ink);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+  .entry-preview {
+    grid-area: 1 / 1;
+    align-self: start;
+    padding: 24px;
+    border: 1px solid var(--line-strong);
+    background: var(--paper);
+  }
+  .entry-preview-hint {
+    margin: 8px 0 0;
+    color: var(--muted);
+    font: 12px/1.5 var(--meta);
+  }
+  .preview-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 24px;
+    color: var(--muted);
+  }
+  .preview-heading p { margin: 0; }
+  .preview-close {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font: 12px/1.5 var(--meta);
+    cursor: pointer;
+  }
+  .preview-close:hover { color: var(--ink); }
+  .share-preview-status {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    min-height: 180px;
+    margin: 0;
+    color: var(--muted);
+    font: 12px/1.5 var(--meta);
+  }
+  .share-preview-image {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: min(42svh, 380px);
+    object-fit: contain;
+  }
+  .instrument-preview h2 {
+    margin: 0;
+    font-size: 24px;
+    line-height: 1.2;
+  }
+  .instrument-preview-family {
+    margin: 8px 0 24px;
+    color: var(--muted);
+    font: 12px/1.5 var(--meta);
+  }
+  .instrument-block { margin: 0 0 24px; }
+  .instrument-block .eyebrow,
+  .instrument-preview-sources .eyebrow {
+    margin: 0 0 12px;
+    color: var(--muted);
+    letter-spacing: 0.065em;
+  }
+  .instrument-block > p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .instrument-preview-sources a {
+    color: var(--muted);
+    font: 12px/1.5 var(--meta);
+    text-underline-offset: 4px;
+  }
+  .instrument-preview-sources a:is(:hover, :focus-visible) { color: var(--ink); }
+  .preview-actions { display: grid; gap: 8px; margin-top: 24px; }
+  .preview-actions :global(.ui-button) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 48px;
+  }
+  .entry-source-note {
+    max-width: 64ch;
+    margin: 16px 0 0;
+    color: var(--muted);
+    font: 12px/1.5 var(--meta);
+    text-wrap: pretty;
+  }
+  .entry-catalog-size {
+    margin: 8px 0 0;
+    color: var(--muted);
+    font: 12px/1.5 var(--meta);
+  }
+  .entry-catalog-size code {
+    color: var(--accent-soft);
+    font: inherit;
+  }
   .entry-action-area {
+    display: grid;
     position: relative;
     width: 100%;
     max-width: 440px;
@@ -252,7 +552,7 @@
     margin-top: clamp(80px, 15svh, 160px);
     justify-self: end;
   }
-  .profile-form { width: 100%; }
+  .profile-form { grid-area: 1 / 1; width: 100%; }
   .loading .profile-form { visibility: hidden; }
   .field-block { display: grid; gap: 10px; }
   .field-heading { display: flex; }
@@ -364,7 +664,7 @@
   .entry-limits { width: 100%; min-width: 0; }
   @media (max-width: 1000px) and (min-width: 801px) {
     .entry-view { gap: 40px; }
-    .entry-tagline { font-size: clamp(2.5rem, 4vw, 3rem); }
+    .entry-tagline { font-size: clamp(2rem, 3vw, 2.5rem); }
   }
   @media (max-width: 800px) {
     .entry-view {
@@ -375,11 +675,12 @@
       max-width: 520px;
     }
     .entry-tagline {
-      font-size: clamp(1.75rem, 7.5vw, 2.5rem);
+      font-size: clamp(1.5rem, 6vw, 2rem);
       letter-spacing: -0.045em;
       line-height: 1.1;
     }
     .entry-description { font-size: 14px; }
+    .entry-preview { padding: 16px; }
     .entry-action-area { max-width: none; margin-top: 0; }
   }
   @media (max-width: 380px) {
