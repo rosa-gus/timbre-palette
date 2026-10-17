@@ -1,4 +1,6 @@
 <script lang="ts">
+  import homePoster from "../../assets/treated/ondas-desktop.png";
+  import homeMobilePoster from "../../assets/treated/ondas-mobile-poster.png";
   import {
     localizeAnalysis,
     type LocalizedAnalysis,
@@ -198,7 +200,7 @@
     }
     const request = new AbortController();
     localizationController = request;
-    displayResult = null;
+    if (!refresh) displayResult = null;
     localizationPending = Boolean(source);
     if (!source) return;
     try {
@@ -710,6 +712,14 @@
   >{/snippet}
 
 <div class="site-shell" data-view={view} data-theme={resolvedTheme}>
+  {#if view === "entry" || view === "loading"}
+    <div class="entry-backdrop" aria-hidden="true">
+      <picture>
+        <source media="(max-width: 800px)" srcset={homeMobilePoster} />
+        <img src={homePoster} alt="" fetchpriority="high" width="1920" height="1080" />
+      </picture>
+    </div>
+  {/if}
   <header class="site-header">
     <div class="header-identity">
       <a class="wordmark" href={homePath} aria-label={$t("navigation.home")}>
@@ -722,9 +732,9 @@
           aria-hidden="true"
         />
       </a>
-      <LanguageSelect />
     </div>
     <div class="header-actions">
+      <LanguageSelect />
       {#if catalogGrowth && view === "entry"}
         <CatalogGrowth {...catalogGrowth} />
       {/if}
@@ -774,19 +784,12 @@
         inert={preparingReport}
         aria-hidden={preparingReport}
       >
-        {#if !localizationPending && displayResult?.localization.incomplete}
-          <p class="localization-notice" role="status">
-            {$t("localization.partial")}
-            <button
-              type="button"
-              on:click={() => updatePresentation(result, $localeStore, true)}
-              >{$t("localization.retry")}</button
-            >
-          </p>
-        {/if}
         <ResultsView
           revealReady={view === "report"}
           result={displayResult ?? result}
+          localizationIncomplete={Boolean(displayResult?.localization.incomplete)}
+          {localizationPending}
+          onRetryLocalization={() => void updatePresentation(result, $localeStore, true)}
           {period}
           activeView={activeAnalysisView}
           onSelectView={selectAnalysisView}
@@ -866,7 +869,7 @@
             target="_blank"
             rel="noreferrer noopener">rosa gus</a
           > <span class="separator-indicator" aria-hidden="true">·</span>
-          {$t("footer.code")}
+          {$t("footer.license")}
           <a
             href="https://www.gnu.org/licenses/gpl-3.0.html"
             target="_blank"
@@ -888,6 +891,14 @@
           rel="noreferrer noopener">MusicBrainz</a
         >
       </div>
+      <div class="footer-source">
+        <span class="footer-label">{$t("footer.sourceCode")}</span>
+        <a
+          href="https://github.com/rosa-gus/timbre-palette"
+          target="_blank"
+          rel="noreferrer noopener">GitHub</a
+        >
+      </div>
     </div>
   </footer>
 </div>
@@ -902,19 +913,6 @@
 />
 
 <style>
-  .localization-notice {
-    color: var(--muted);
-    font-size: 12px;
-  }
-  .localization-notice button {
-    margin-left: 8px;
-    color: inherit;
-    background: none;
-    border: 0;
-    text-decoration: underline;
-    cursor: pointer;
-  }
-
   main {
     position: relative;
   }

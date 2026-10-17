@@ -47,8 +47,10 @@
     "tracksProgress": "Carregando faixas ({current}/{total})"
   },
   "localization": {
-    "partial": "Parte do conteúdo do catálogo é exibida no idioma original.",
-    "retry": "Tentar traduzir novamente"
+    "partial": "Parte do catálogo está no idioma original.",
+    "pending": "Tentando…",
+    "retry": "Tentar novamente",
+    "retrying": "Atualizando as traduções do catálogo…"
   },
   "nature": {
     "acoustic": "Acústica",

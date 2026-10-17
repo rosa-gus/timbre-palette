@@ -25,9 +25,10 @@
   },
   "footer": {
     "by": "por",
-    "code": "Código",
     "credits": "<upper>Créditos</upper>",
-    "history": "<upper>Histórico</upper>"
+    "history": "<upper>Histórico</upper>",
+    "license": "Licença",
+    "sourceCode": "<upper>Código fonte</upper>"
   },
   "language": {
     "failed": "Não foi possível carregar o idioma. Tente novamente.",

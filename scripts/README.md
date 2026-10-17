@@ -5,11 +5,55 @@ No tool runs during an API request.
 
 ## Image processing
 
-Install the image-processing dependency:
+The current treatment is **rosa-reticle 0.1.0**, a tonal screen inspired by
+Bayer ordered dithering. It applies a fine texture selectively to shadows,
+preserves continuous highlights, and maps the result to a duotone palette.
+
+Install Pillow and ensure FFmpeg is available for video work:
 
 ```sh
-python3 -m pip install 'Pillow>=10,<13'
+python3 -m pip install 'Pillow>=10.1,<13'
 ```
+
+### Instrument photograph
+
+```sh
+python3 scripts/treat_instrument.py assets/piano.jpeg /tmp/piano-rosa.png
+python3 scripts/treat_instrument.py assets/piano.jpeg /tmp/piano-blue.png \
+  --highlight '#9EBBD1' --width 1200
+```
+
+`treat_instrument.py` calls the engine in `rosa_reticle.py`. Options are
+`--width`, `--shadow` and `--highlight`. Output is an RGB PNG without embedded
+source metadata, accompanied by a `.json` generation record. Existing outputs
+and sidecars are preserved. The same command is available through
+`python3 scripts/rosa_reticle.py image ...`.
+
+### Video
+
+```sh
+python3 scripts/rosa_reticle.py video assets/vinil.mp4 /tmp/vinil-rosa-av1.webm \
+  --work-dir /tmp/vinil-rosa-frames --prepare-only
+python3 scripts/rosa_reticle.py video assets/vinil.mp4 /tmp/vinil-rosa-av1.webm \
+  --work-dir /tmp/vinil-rosa-frames --encode-only --preset av1
+```
+
+Videos carry treated grayscale; apply the duotone during display using the
+sRGB SVG color matrix documented in [rosa-reticle](../docs/rosa-reticle.md).
+The guide covers video presets, resuming jobs, poster handling, the Python API,
+and contribution checks.
+
+### Documentation showcase
+
+The documentation showcase can be regenerated independently:
+
+```sh
+python3 scripts/rosa_reticle_showcase.py --force
+```
+
+It writes the comparison PNG and reproducibility sidecar under `docs/images/`.
+See [the visual showcase](../docs/rosa-reticle.md#visual-showcase) for the Bayer
+reference parameters and the controlled comparison.
 
 ### Batch preparation
 
@@ -19,57 +63,21 @@ python3 scripts/prepare_images.py --force
 python3 scripts/prepare_images.py --manifest catalog/instrument-images.json
 ```
 
-`prepare_images.py` validates manifest schema v1 and generates treated PNGs from
-the manifest defaults, family tones, and per-image overrides. Existing outputs
-are preserved unless `--force` is supplied. Manifest paths are resolved from
-the repository root.
+`prepare_images.py` validates manifest schema v1. A manifest with
+`"treatment_version": "rosa-reticle-0.1.0"` uses the current engine; its
+`defaults` and per-image `treatment` options accept `width`, `shadow` and
+`highlight`. Family tones continue to select each instrument's colors.
 
-### Single-file treatment
+The repository catalog uses `rosa-reticle-0.1.0`. `--force` regenerates existing
+outputs; without it, existing files are skipped. Paths are resolved from the
+repository root.
 
-```sh
-python3 scripts/treat_instrument.py \
-  assets/piano.jpeg assets/treated/piano.png
-```
-
-Image options:
-
-- `--shadow`, `--highlight`: opaque RGB colors;
-- `--levels`: quantization levels, from 2 to 256;
-- `--strength`: ordered-dithering intensity, from 0 to 1;
-- `--width`: maximum output width; images are never upscaled;
-- `--contrast`, `--gamma`: positive tonal adjustments.
-
-The pipeline applies EXIF orientation, composites transparency over the shadow
-color, resizes before dithering, and writes metadata-free PNGs. It does not
-crop, normalize histograms, overwrite existing outputs, or process images in
-HTTP requests. The same input, parameters, and Pillow version produce a
-deterministic result.
-
-### Video treatment
-
-Video output requires FFmpeg with the `libvpx-vp9` encoder:
-
-The single home hero is cropped to the panel's 16:9 frame and scaled to
-760 × 428 before treatment. The same output is used in idle and loading states.
-This avoids encoding pixels that the panel will not display:
-
-The input below is the retained original excerpt for regeneration; the app
-loads only the generated `chladni-hero.webm`.
-
-```sh
-ffmpeg -i assets/chladni-intro.mp4 \
-  -vf "crop=3840:2160:128:0,scale=760:428:flags=lanczos" \
-  -an -c:v libvpx-vp9 -crf 10 -b:v 0 -deadline realtime -cpu-used 8 \
-  /tmp/chladni-hero-760.webm
-python3 scripts/treat_instrument.py \
-  /tmp/chladni-hero-760.webm assets/treated/chladni-hero.webm \
-  --poster assets/treated/chladni-hero.png --width 760 --fps 20 --crf 32
-```
-
-Video-specific options are `--fps`, `--duration`, `--crf`, and `--poster`.
-Output is silent VP9 WebM; the default is 24 fps, a maximum width of 1200 px,
-and CRF 18. Temporary frames are removed automatically. Videos are not part
-of the instrumental image manifest or the static image publication pipeline.
+Every batch writes `assets/treated/manifest.json`, recording actual source and
+output hashes, family colors, resolved options, image dimensions, generation
+times, implementation fingerprints, and Python/Pillow versions. The log tracks
+generated and skipped files and whether retained outputs match the current
+request. Unknown provenance is marked explicitly. Use
+`--generation-manifest <path.json>` to select another log path.
 
 ## Static image publication
 

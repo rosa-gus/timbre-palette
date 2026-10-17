@@ -34,6 +34,9 @@
   };
   export let result: ProfileAnalysisV3;
   export let revealReady = true;
+  export let localizationIncomplete = false;
+  export let localizationPending = false;
+  export let onRetryLocalization: () => void = () => undefined;
   export let period: ListeningPeriod = "1month";
   export let periods: { value: ListeningPeriod; label: string }[] = [];
   export let periodLoading = false;
@@ -411,6 +414,19 @@
             ) })} </p>
         </Tooltip>
       {/if}
+      {#if localizationIncomplete}
+        <div class="localization-notice">
+          <span class="localization-info" aria-hidden="true">[i]</span>
+          <p role="status">{localizationPending ? $t("localization.retrying") : $t("localization.partial")}</p>
+          <button
+            type="button"
+            disabled={localizationPending}
+            on:click={onRetryLocalization}
+          >{localizationPending ? $t("localization.pending") : $t("localization.retry")}
+            <span class="retry-arrow" aria-hidden="true">&#x21BB;&#xFE0E;</span>
+          </button>
+        </div>
+      {/if}
     </div>
   </section>
   </div>
@@ -717,6 +733,48 @@
 </div>
 
 <style>
+  .localization-notice {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0 12px;
+    padding-top: 8px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .localization-info { font-family: var(--meta); }
+  .localization-notice p { margin: 0; }
+  .localization-notice button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: start;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font: 12px/1.5 var(--meta);
+  }
+  .localization-notice button:is(:hover, :focus-visible):not(:disabled) {
+    color: var(--accent-soft);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+  .localization-notice button:disabled { cursor: wait; }
+  .retry-arrow {
+    font-family: var(--meta);
+    font-weight: 400;
+    font-size: 1.1em;
+    line-height: 1;
+  }
+  @media (max-width: 800px) {
+    .localization-notice { grid-template-columns: auto minmax(0, 1fr); align-items: baseline; }
+    .localization-notice button { grid-column: 2; justify-self: start; }
+  }
+
   .results-view {
     position: relative;
     isolation: isolate;

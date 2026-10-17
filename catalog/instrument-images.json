@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "treatment_version": "duotone-bayer4-v1",
+  "treatment_version": "rosa-reticle-0.1.0",
   "catalog_version": "images-0.1.0",
   "family_names": {
     "plucked-strings": "Cordas dedilhadas",
@@ -64,11 +64,7 @@
   "defaults": {
     "shadow": "#000000",
     "highlight": "#f29191",
-    "levels": 8,
-    "strength": 0.35,
-    "width": 1200,
-    "contrast": 1.1,
-    "gamma": 1.0
+    "width": 1200
   },
   "images": [
     {

@@ -140,7 +140,7 @@
       <span>{$t("report.trackCount", { tracks_analyzed: report.profile.tracks_analyzed })}</span><span
         >{$t("report.playCount", { total_plays: report.profile.total_plays })}</span
       ><span
-        >{$t("report.trackCoverage", { coverage: percent(report.analysis.coverage_tracks) })} <Tooltip ariaLabel={$t("report.coverageTitle")} triggerLabel="[?]">
+        >{$t("report.trackCoverage", { coverage: percent(report.analysis.coverage_tracks) })} <Tooltip ariaLabel={$t("report.coverageTitle")} triggerLabel="[i]">
             <p>{$t("report.coverageDescription")} </p>
             <p>{$t("report.excludedTracks")}</p>
             {#if hydrationPending}<p class="tooltip-note">

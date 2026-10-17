@@ -47,8 +47,10 @@
     "tracksProgress": "Loading tracks ({current}/{total})"
   },
   "localization": {
-    "partial": "Some catalog content is displayed in its original language.",
-    "retry": "Retry translations"
+    "partial": "Some catalog content is in its original language.",
+    "pending": "Retrying…",
+    "retry": "Try again",
+    "retrying": "Updating catalog translations…"
   },
   "nature": {
     "acoustic": "Acoustic",

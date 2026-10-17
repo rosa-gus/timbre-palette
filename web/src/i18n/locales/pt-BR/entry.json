@@ -1,16 +1,12 @@
 {
   "entry": {
-    "description": "Uma paleta de cores para os instrumentos documentados nas músicas que você ouviu.",
+    "description": "Uma paleta instrumental a partir do seu histórico de escuta.",
     "example": "Ver exemplo",
     "exampleLabel": "Ver uma escuta de exemplo",
-    "heroAbout": "Sobre o experimento de Chladni",
-    "heroAlt": "Experimento histórico de Chladni tratado em duotone rosa e preto",
-    "heroExplanation": "No experimento de Chladni, a vibração de uma placa faz os grãos se acumularem nas regiões que menos vibram, formando padrões. Uma maneira de tornar o som visível.",
-    "pauseVideo": "Pausar vídeo",
-    "play": "Reproduzir",
-    "playVideo": "Reproduzir vídeo",
-    "playing": "Reproduzindo",
     "profileLabel": "Seu perfil do Last.fm",
+    "pronunciationError": "Não foi possível reproduzir a pronúncia. Tente novamente.",
+    "pronunciationPlay": "Ouvir a pronúncia de Timbre Palette em inglês britânico",
+    "pronunciationStop": "Parar a pronúncia de Timbre Palette",
     "title": "Descubra do que <emphasis>sua escuta é feita.</emphasis>",
     "usernamePlaceholder": "nome de usuário"
   },

@@ -4,7 +4,7 @@
 
   export let frozen = false;
   export let anchor: HTMLElement | null = null;
-  export let triggerLabel = "[?]";
+  export let triggerLabel = "[i]";
   export let ariaLabel = "";
   export let closeLabel = "";
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
