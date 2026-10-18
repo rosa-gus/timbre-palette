@@ -62,12 +62,6 @@
   $: periodLabels = Object.fromEntries(
     periods.map((item) => [item.value, item.label]),
   ) as Record<ListeningPeriod, string>;
-  $: sectionLabels = {
-    portrait: $t("sections.portrait"),
-    palette: $t("sections.palette"),
-    discovery: $t("sections.discovery"),
-    share: $t("actions.share"),
-  };
   const availabilityKeys: Record<
     SectionId,
     keyof PaletteReport["analysis"]["section_availability"]
@@ -76,13 +70,6 @@
     palette: "families",
     discovery: "discovery",
     share: "families",
-  };
-  $: availabilityLabels = {
-    available: $t("availability.available"),
-    insufficient_coverage: $t("availability.insufficientCoverage"),
-    insufficient_diversity: $t("availability.insufficientDiversity"),
-    insufficient_nature_evidence: $t("availability.insufficientNature"),
-    no_candidate: $t("availability.noCandidate"),
   };
   $: statusLabels = {
     partial: $t("status.partial"),
@@ -115,7 +102,9 @@
   };
   const homePath = normalizePathname();
   let view: "entry" | "loading" | "report" = "entry";
+  const REPORT_TRANSITION_MS = 600;
   let preparingReport = false;
+  let revealingReport = false;
   let revealAssets: Promise<unknown> | null = null;
 
   async function prepareReport(signal: AbortSignal): Promise<void> {
@@ -130,8 +119,7 @@
     await tick();
     await Promise.all([revealAssets, document.fonts.ready]);
     signal.throwIfAborted();
-    // Keep the loading composition visible while the mounted report settles.
-    await new Promise<void>((resolve) => window.setTimeout(resolve, 180));
+    // Let the mounted report settle before dissolving the loading screen.
     await new Promise<void>((resolve) => {
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
     });
@@ -229,12 +217,6 @@
     shareFeedback = "";
     if (dialogOpen && requestedInstrumentSlug)
       void loadInstrument(requestedInstrumentSlug);
-    loadingTitle = $t(
-      isExample ? "loading.exampleTitle" : "loading.historyTitle",
-    );
-    loadingDescription = $t(
-      isExample ? "loading.exampleDescription" : "loading.historyDescription",
-    );
     loadingDetail = $t(isExample ? "loading.catalog" : "loading.historyDetail");
   }
   let activeAnalysisView: AnalysisView = "track_palette";
@@ -245,8 +227,13 @@
       : formErrorSource
         ? $localeStore && getApiErrorMessage(formErrorSource)
         : "";
-  let loadingTitle = $t("loading.historyTitle");
-  let loadingDescription = $t("loading.historyDescription");
+  let loadingStage: "history" | "evidence" | "palette" = "history";
+  $: loadingTitle = $t(
+    loadingStage === "palette" ? "loading.paletteTitle"
+      : isExample ? "loading.exampleTitle"
+      : loadingStage === "evidence" ? "loading.evidenceTitle"
+      : "loading.historyTitle",
+  );
   let loadingDetail = $t("loading.historyDetail");
   let periodLoading = false;
   let periodErrorSource: unknown = null;
@@ -303,26 +290,6 @@
   let instrumentError = "";
   let controller: AbortController | null = null;
   let instrumentController: AbortController | null = null;
-  $: sectionOptions = (Object.keys(sectionLabels) as SectionId[]).map(
-    (value) => ({
-      value,
-      label: sectionLabels[value],
-      disabled:
-        value !== "share" &&
-        !!result &&
-        result.track_palette.analysis.section_availability[
-          availabilityKeys[value]
-        ] !== "available",
-      note:
-        value !== "share" && result
-          ? availabilityLabels[
-              result.track_palette.analysis.section_availability[
-                availabilityKeys[value]
-              ]
-            ]
-          : undefined,
-    }),
-  );
 
   function availability(section: SectionId): SectionAvailability {
     return (
@@ -390,6 +357,8 @@
     const request = new AbortController();
     controller = request;
     preparingReport = false;
+    revealingReport = false;
+    loadingStage = "history";
     const signal = request.signal;
     if (sharePreviewUrl) URL.revokeObjectURL(sharePreviewUrl);
     sharePreviewUrl = "";
@@ -422,6 +391,8 @@
               signal,
               (phase, current, total) => {
                 if (signal.aborted) return;
+                loadingStage = phase === "evidence" ? "evidence"
+                  : phase === "assembly" ? "palette" : "history";
                 loadingDetail =
                   phase === "tracks"
                     ? $t("loading.tracksProgress", {
@@ -458,11 +429,22 @@
       activeAnalysisView = resolveAnalysisView(next, requestedAnalysisView);
       if (!preserveReport) {
         preparingReport = true;
-        loadingDetail = $t("loading.palette");
+        loadingStage = "palette";
+        loadingDetail = $t("loading.revealDetail");
         await prepareReport(signal);
         if (controller !== request) return;
+        if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+          revealingReport = true;
+          await tick();
+          await new Promise<void>((resolve) => {
+            window.setTimeout(resolve, REPORT_TRANSITION_MS);
+          });
+          signal.throwIfAborted();
+          if (controller !== request) return;
+        }
       }
       view = "report";
+      revealingReport = false;
       preparingReport = false;
       periodLoading = false;
       periodErrorSource = null;
@@ -471,6 +453,7 @@
     } catch (error) {
       if (signal.aborted || controller !== request) return;
       preparingReport = false;
+      revealingReport = false;
       if (preserveReport) {
         periodLoading = false;
         periodErrorSource = error;
@@ -492,8 +475,6 @@
   function submit(): void {
     isExample = false;
     exampleId = "";
-    loadingTitle = $t("loading.historyTitle");
-    loadingDescription = $t("loading.historyDescription");
     loadingDetail = $t("loading.historyDetail");
     username = normalizeUsername(username);
     if (!username) {
@@ -515,8 +496,6 @@
     isExample = true;
     exampleId = createExampleId();
     username = "";
-    loadingTitle = $t("loading.exampleTitle");
-    loadingDescription = $t("loading.exampleDescription");
     loadingDetail = $t("loading.catalog");
     formErrorSource = null;
     void loadReport();
@@ -714,9 +693,14 @@
 {#snippet sourceCode(text: string)}<code class="source-value">{text}</code
   >{/snippet}
 
-<div class="site-shell" data-view={view} data-theme={resolvedTheme}>
+<div
+  class="site-shell"
+  data-view={view}
+  data-theme={resolvedTheme}
+  style:--report-transition-duration={`${REPORT_TRANSITION_MS}ms`}
+>
   {#if view === "entry" || view === "loading"}
-    <div class="entry-backdrop" aria-hidden="true">
+    <div class="entry-backdrop" class:departing={revealingReport} aria-hidden="true">
       <picture>
         <source media="(max-width: 800px)" srcset={homeMobilePoster} />
         <img src={homePoster} alt="" fetchpriority="high" width="1920" height="1080" />
@@ -758,33 +742,35 @@
   </header>
   <main id="main-content">
     {#if view === "entry" || view === "loading"}
-      <EntryView
-        {catalogSize}
-        {username}
-        {period}
-        {periods}
-        {formError}
-        resumeProgress={entryHistory}
-        {waitSeconds}
-        onResume={() => resumeReport()}
-        loading={view === "loading"}
-        {loadingTitle}
-        {loadingDescription}
-        {loadingDetail}
-        onUsernameChange={(value) => {
-          username = value;
-          isExample = false;
-          exampleId = "";
-        }}
-        onPeriodChange={(value) => (period = value)}
-        onSubmit={submit}
-        onExample={openExample}
-      />
+      <div class="entry-stage" class:departing={revealingReport}>
+        <EntryView
+          {catalogSize}
+          {username}
+          {period}
+          {periods}
+          {formError}
+          resumeProgress={entryHistory}
+          {waitSeconds}
+          onResume={() => resumeReport()}
+          loading={view === "loading"}
+          {loadingTitle}
+          {loadingDetail}
+          onUsernameChange={(value) => {
+            username = value;
+            isExample = false;
+            exampleId = "";
+          }}
+          onPeriodChange={(value) => (period = value)}
+          onSubmit={submit}
+          onExample={openExample}
+        />
+      </div>
     {/if}
     {#if (view === "report" || preparingReport) && result}
       <div
         class="report-stage"
         class:preparing={preparingReport}
+        class:revealing={revealingReport}
         inert={preparingReport}
         aria-hidden={preparingReport}
       >
@@ -797,7 +783,6 @@
           {period}
           activeView={activeAnalysisView}
           onSelectView={selectAnalysisView}
-          {sectionOptions}
           {periodLabels}
           {statusLabels}
           {confidenceLabels}
@@ -920,7 +905,27 @@
   main {
     position: relative;
   }
+  .site-header,
+  .site-footer {
+    position: relative;
+    z-index: 3;
+  }
+  .entry-stage {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    min-width: 0;
+  }
+  .entry-backdrop.departing { z-index: 1; }
+  .entry-stage.departing,
+  .entry-backdrop.departing {
+    pointer-events: none;
+    mask-repeat: repeat;
+    animation: home-dissolve var(--report-transition-duration) step-end both;
+  }
   .report-stage {
+    position: relative;
+    z-index: 0;
     min-width: 0;
   }
   .report-stage.preparing {
@@ -932,5 +937,33 @@
     overflow: clip;
     visibility: hidden;
     pointer-events: none;
+  }
+  .report-stage.preparing.revealing { visibility: visible; }
+  @keyframes home-dissolve {
+    0% { mask-image: none; }
+    10% {
+      mask-image: url("./assets/bayer-mask-75.svg");
+      mask-size: 96px 96px;
+    }
+    35% {
+      mask-image: url("./assets/bayer-mask-50.svg");
+      mask-size: 48px 48px;
+    }
+    65% {
+      mask-image: url("./assets/bayer-mask-25.svg");
+      mask-size: 24px 24px;
+    }
+    85% {
+      mask-image: url("./assets/bayer-mask-25.svg");
+      mask-size: 12px 12px;
+    }
+    100% { visibility: hidden; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .entry-stage.departing,
+    .entry-backdrop.departing {
+      animation: none;
+      visibility: hidden;
+    }
   }
 </style>

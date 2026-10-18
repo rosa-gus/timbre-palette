@@ -121,7 +121,7 @@
     font: inherit;
     text-align: left;
     text-decoration: underline;
-    text-decoration-color: var(--muted);
+    text-decoration-color: var(--line-strong);
     text-decoration-thickness: 1px;
     text-underline-offset: 5px;
     transition: color 150ms ease, text-decoration-color 150ms ease;

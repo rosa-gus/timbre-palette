@@ -55,6 +55,7 @@ a:focus-visible {
 }
 a {
   color: inherit;
+  text-decoration-color: var(--line-strong);
 }
 h1,
 h2,
@@ -111,10 +112,14 @@ main {
 .site-shell:is([data-view="entry"], [data-view="loading"]) {
   background: var(--paper);
 }
+.site-shell[data-theme="dark"]:is([data-view="entry"], [data-view="loading"]) {
+  --muted: #cec4c0;
+  --quiet: #b8adaa;
+}
 .entry-backdrop {
-  --veil-open: 74%;
-  --veil-content: 82%;
-  --veil-footer: 94%;
+  --veil-open: 68%;
+  --veil-content: 78%;
+  --veil-footer: 90%;
   position: fixed;
   inset: 0;
   z-index: -1;
@@ -123,7 +128,7 @@ main {
 }
 .site-shell[data-theme="dark"] .entry-backdrop {
   --veil-open: 42%;
-  --veil-content: 58%;
+  --veil-content: 64%;
   --veil-footer: 82%;
 }
 .entry-backdrop picture,
@@ -290,7 +295,8 @@ main {
 }
 .loading-indicator {
   display: inline-block;
-  flex: 0 0 4.4em;
+  width: 7ch;
+  flex: 0 0 7ch;
   color: var(--accent-soft);
   font-family: var(--meta);
   white-space: pre;
@@ -341,20 +347,16 @@ main {
   }
 }
 @keyframes loading-indicator {
-  0%,
-  24.99% {
+  0% {
     content: "* . . .";
   }
-  25%,
-  49.99% {
+  25% {
     content: ". * . .";
   }
-  50%,
-  74.99% {
+  50% {
     content: ". . * .";
   }
-  75%,
-  100% {
+  75%, 100% {
     content: ". . . *";
   }
 }

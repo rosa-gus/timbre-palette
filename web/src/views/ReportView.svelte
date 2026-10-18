@@ -20,12 +20,6 @@
   import type { FamilyPresence } from "../api/types";
 
   type SectionId = "portrait" | "palette" | "discovery" | "share";
-  type SectionOption = {
-    value: string;
-    label: string;
-    disabled?: boolean;
-    note?: string;
-  };
   export let report: PaletteReport;
   export let isExample = false;
   export let hydrationPending = false;
@@ -34,7 +28,6 @@
   $: asciiArtwork = createAsciiArtwork(report.families);
   $: discoveryAvailable =
     !!report.discovery && getAvailability("discovery") === "available";
-  export let sectionOptions: SectionOption[] = [];
   export let periodLabels: Record<string, string>;
   export let confidenceLabels: Record<Confidence, string>;
   export let shareFeedback = "";
@@ -84,16 +77,6 @@
   aria-labelledby="report-title"
   style={`--report-tone:${report.families[0]?.tone?.highlight ?? fallbackTone};--report-tone-text:${toneText(report.families[0]?.tone?.highlight ?? fallbackTone)}`}
 >
-  <nav class="report-index" aria-label={$t("report.indexLabel")}>
-    {#each sectionOptions as option, index}
-      <a
-        href={`#${option.value}`}
-        data-unavailable={option.disabled || undefined}
-        title={option.note}
-        >{String(index + 1).padStart(2, "0")} / {option.label}</a
-      >
-    {/each}
-  </nav>
   <section id="portrait" class="portrait" aria-labelledby="report-title">
     <div class="portrait-copy">
       <p class="eyebrow">{$t("report.portraitHeading")}</p>
@@ -101,24 +84,25 @@
       <p class="large-copy">
         {portrait.summary}
       </p>
+      <p class="portrait-scope">{$t("report.portraitScope")}</p>
+      <div class="portrait-caption">
+        <span>{$t("report.trackCount", { tracks_analyzed: report.profile.tracks_analyzed })}</span><span
+          >{$t("report.playCount", { total_plays: report.profile.total_plays })}</span
+        ><span
+          >{$t("report.trackCoverage", { coverage: percent(report.analysis.coverage_tracks) })} <Tooltip ariaLabel={$t("report.coverageTitle")} triggerLabel="[i]">
+              <p>{$t("report.coverageDescription")} </p>
+              <p>{$t("report.excludedTracks")}</p>
+              {#if hydrationPending}<p class="tooltip-note">
+                  <span class="loading-indicator" aria-hidden="true"></span>
+                  <span>{$t("report.hydrationNotice")}</span>
+                </p>{/if}
+            </Tooltip>
+          </span
+        >
+      </div>
       {#if portrait.disclaimer}<p class="disclaimer">
           {portrait.disclaimer}
         </p>{/if}
-    </div>
-    <div class="portrait-caption">
-      <span>{$t("report.trackCount", { tracks_analyzed: report.profile.tracks_analyzed })}</span><span
-        >{$t("report.playCount", { total_plays: report.profile.total_plays })}</span
-      ><span
-        >{$t("report.trackCoverage", { coverage: percent(report.analysis.coverage_tracks) })} <Tooltip ariaLabel={$t("report.coverageTitle")} triggerLabel="[i]">
-            <p>{$t("report.coverageDescription")} </p>
-            <p>{$t("report.excludedTracks")}</p>
-            {#if hydrationPending}<p class="tooltip-note">
-                <span class="loading-indicator" aria-hidden="true"></span>
-                <span>{$t("report.hydrationNotice")}</span>
-              </p>{/if}
-          </Tooltip>
-        </span
-      >
     </div>
     <div class="composition" aria-label={$t("report.compositionLabel")}>
       {#each report.families as family}<ColorSwatch
@@ -368,31 +352,11 @@
     margin: 0 auto;
     padding: 0 0 32px;
   }
-  .report-index {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px 30px;
-    padding: 20px 0;
-  }
-  .report-index a {
-    color: var(--muted);
-    font-family: var(--meta);
-    font-size: 12px;
-    text-decoration: none;
-  }
-  .report-index a:hover {
-    color: var(--ink);
-    text-decoration: underline;
-    text-underline-offset: 5px;
-  }
-  .report-index a[data-unavailable="true"] {
-    color: var(--quiet);
-  }
   .portrait {
     padding-top: 40px;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 220px;
-    gap: 32px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
   }
   .portrait-title {
     max-width: 950px;
@@ -422,18 +386,20 @@
     color: var(--muted);
     margin: 0;
   }
+  .portrait-scope {
+    margin: 0 0 8px;
+    color: var(--muted);
+    font-size: 14px;
+  }
   .portrait-caption {
-    display: grid;
-    align-content: end;
-    gap: 8px;
-    padding-bottom: 4px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px 20px;
+    margin-bottom: 16px;
     color: var(--muted);
     font-family: var(--meta);
     font-size: 13px;
-  }
-  .portrait-caption span:last-child {
-    margin-top: 12px;
-    font-family: var(--display);
   }
   .composition {
     grid-column: 1/-1;
@@ -490,7 +456,7 @@
     font: inherit;
     text-align: left;
     text-decoration: underline;
-    text-decoration-color: var(--muted);
+    text-decoration-color: var(--line-strong);
     text-decoration-thickness: 1px;
     text-underline-offset: 5px;
     transition:
@@ -726,9 +692,6 @@
     font-size: 14px;
   }
   @media (max-width: 800px) {
-    .report-index {
-      gap: 14px 20px;
-    }
     .portrait {
       grid-template-columns: 1fr;
       padding-top: 24px;
@@ -738,9 +701,6 @@
       display: flex;
       flex-wrap: wrap;
       gap: 12px;
-    }
-    .portrait-caption span:last-child {
-      margin: 0;
     }
     .instrument-grid {
       grid-template-columns: 1fr;

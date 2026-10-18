@@ -27,7 +27,6 @@
   export let onResume: () => void = () => undefined;
   export let loading = false;
   export let loadingTitle = $t("loading.historyTitle");
-  export let loadingDescription = $t("loading.historyDescription");
   export let loadingDetail = $t("loading.historyDetail");
   export let onUsernameChange: (value: string) => void = () => undefined;
   export let onPeriodChange: (value: ListeningPeriod) => void = () => undefined;
@@ -171,12 +170,22 @@
 <section
   class:loading
   class="entry-view"
-  aria-labelledby="entry-title"
-  aria-busy={loading}
+  aria-labelledby={loading ? "loading-title" : "entry-title"}
 >
+  {#if loading}
+    <LoadingView
+      title={loadingTitle}
+      context={$t("loading.profileContext", {
+        username: username ? `@${username}` : $t("example.displayName"),
+        period: periods.find((option) => option.value === period)?.label ?? period,
+      })}
+      detail={loadingDetail}
+    />
+  {:else}
   <div class="entry-intro">
     <h1 id="entry-title" class="entry-tagline"><Message message="entry.title" wrappers={{ emphasis: titleEmphasis }} />
     </h1>
+    <p class="entry-subtitle">{$t("entry.subtitle")}</p>
     <div class="entry-pronunciation">
       <button
         class="pronunciation-button"
@@ -199,11 +208,11 @@
       ></audio>
       {#if pronunciationError}<p class="pronunciation-error" role="status">{$t("entry.pronunciationError")}</p>{/if}
     </div>
-    <ol class="entry-description" role="list">
-      <li><span class="entry-list-index" aria-hidden="true">[1]</span><button class="entry-preview-trigger" type="button" aria-expanded={previewOpen === "palette" && !loading} aria-controls="entry-preview" disabled={loading} on:click={() => showPreview("palette")}>{$t("entry.discover")}</button></li>
-      <li><span class="entry-list-index" aria-hidden="true">[2]</span><button class="entry-preview-trigger" type="button" aria-expanded={previewOpen === "instrument" && !loading} aria-controls="entry-preview" disabled={loading} on:click={() => showPreview("instrument")}>{$t("entry.explore")}</button></li>
-      <li><span class="entry-list-index" aria-hidden="true">[3]</span><button class="entry-preview-trigger" type="button" aria-expanded={previewOpen === "share" && !loading} aria-controls="entry-preview" disabled={loading} on:click={() => showPreview("share")}>{$t("entry.share")}</button></li>
-    </ol>
+    <ul class="entry-description" role="list">
+      <li><span class="entry-list-marker" aria-hidden="true"></span><button class="entry-preview-trigger" type="button" aria-expanded={previewOpen === "palette" && !loading} aria-controls="entry-preview" disabled={loading} on:click={() => showPreview("palette")}>{$t("entry.discover")}</button></li>
+      <li><span class="entry-list-marker" aria-hidden="true"></span><button class="entry-preview-trigger" type="button" aria-expanded={previewOpen === "instrument" && !loading} aria-controls="entry-preview" disabled={loading} on:click={() => showPreview("instrument")}>{$t("entry.explore")}</button></li>
+      <li><span class="entry-list-marker" aria-hidden="true"></span><button class="entry-preview-trigger" type="button" aria-expanded={previewOpen === "share" && !loading} aria-controls="entry-preview" disabled={loading} on:click={() => showPreview("share")}>{$t("entry.share")}</button></li>
+    </ul>
     <p class="entry-preview-hint">{$t("entry.previewHint")}</p>
     <p class="entry-source-note">{$t("entry.sourceNote")}</p>
     {#if catalogSize !== null}
@@ -256,6 +265,7 @@
         {:else if previewError}
           <p class="entry-source-note" role="status">{$t("entry.previewUnavailable")}</p>
         {:else}
+          <p class="palette-preview-intro">{$t("entry.previewIntro")}</p>
           <FamilyPalette families={previewFamilies} compact />
           <p class="entry-source-note">{$t("entry.previewScope")}</p>
         {/if}
@@ -323,21 +333,14 @@
           class="example-button"
           type="button"
           disabled={loading}
-          aria-label={$t("entry.exampleLabel")}
           on:click={onExample}
         >{$t("entry.example")}<Arrow direction="right" />
         </button>
         {#if !loading}<div class="entry-limits"><AnalysisLimits /></div>{/if}
       </div>
     </form>
-    {#if loading}
-      <LoadingView
-        title={loadingTitle}
-        description={loadingDescription}
-        detail={loadingDetail}
-      />
-    {/if}
   </div>
+  {/if}
 </section>
 
 <style>
@@ -352,6 +355,12 @@
     padding: clamp(48px, 8svh, 100px) 0 56px;
     color: var(--ink);
   }
+  .entry-view.loading {
+    grid-template-columns: minmax(0, 1fr);
+    align-content: center;
+    justify-items: center;
+    gap: 0;
+  }
   .entry-intro { min-width: 0; }
   .entry-tagline {
     max-width: none;
@@ -364,6 +373,14 @@
     text-wrap: wrap;
   }
   .entry-tagline span { display: block; }
+  .entry-subtitle {
+    max-width: 44ch;
+    margin: 16px 0 0;
+    color: var(--muted);
+    font-size: 1rem;
+    line-height: 1.6;
+    text-wrap: pretty;
+  }
   .entry-pronunciation { margin-top: 12px; }
   .pronunciation-button {
     display: inline-flex;
@@ -421,12 +438,13 @@
   .entry-description li {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
-    align-items: baseline;
+    align-items: center;
     gap: 12px;
   }
-  .entry-list-index {
-    color: var(--accent-soft);
-    font: 12px/1.5 var(--meta);
+  .entry-list-marker {
+    width: 7px;
+    height: 7px;
+    background: var(--accent);
   }
   .entry-preview-trigger {
     display: inline;
@@ -437,12 +455,18 @@
     color: inherit;
     font: inherit;
     text-align: left;
+    text-decoration: underline;
+    text-decoration-color: var(--line-strong);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 4px;
     cursor: pointer;
   }
   .entry-preview-trigger:is(:hover, :focus-visible, [aria-expanded="true"]) {
     color: var(--ink);
-    text-decoration: underline;
-    text-underline-offset: 4px;
+    text-decoration-color: currentColor;
+  }
+  .entry-preview-trigger[aria-expanded="true"] {
+    color: var(--accent-soft);
   }
   .entry-preview {
     grid-area: 1 / 1;
@@ -450,6 +474,12 @@
     padding: 24px;
     border: 1px solid var(--line-strong);
     background: var(--paper);
+  }
+  .palette-preview-intro {
+    margin: 0 0 20px;
+    color: var(--muted);
+    line-height: 1.6;
+    text-wrap: pretty;
   }
   .entry-preview-hint {
     margin: 8px 0 0;
@@ -487,8 +517,6 @@
     display: block;
     width: 100%;
     height: auto;
-    max-height: min(42svh, 380px);
-    object-fit: contain;
   }
   .instrument-preview h2 {
     margin: 0;
@@ -553,7 +581,6 @@
     justify-self: end;
   }
   .profile-form { grid-area: 1 / 1; width: 100%; }
-  .loading .profile-form { visibility: hidden; }
   .field-block { display: grid; gap: 10px; }
   .field-heading { display: flex; }
   .field-block label,

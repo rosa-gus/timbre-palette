@@ -2,7 +2,6 @@
   import { formatNumber, formatPercent, formatRegisteredDate } from "../i18n/formatters";
   import { translation as t, localeStore } from "../i18n/runtime";
   import { Tabs } from "bits-ui";
-  import { tick } from "svelte";
   import { normalizePathname } from "../navigation";
   import { getAsciiLines, getFamilyTexture, hasAsciiDrawing } from "../sharing/ascii";
   import { fitFamilyTexture } from "../sharing/texture";
@@ -26,12 +25,6 @@
   import ReportView from "./ReportView.svelte";
 
   type SectionId = "portrait" | "palette" | "discovery" | "share";
-  type SectionOption = {
-    value: string;
-    label: string;
-    disabled?: boolean;
-    note?: string;
-  };
   export let result: ProfileAnalysisV3;
   export let revealReady = true;
   export let localizationIncomplete = false;
@@ -48,7 +41,6 @@
   export let onPeriodChange: (value: ListeningPeriod) => void = () => undefined;
   export let activeView: AnalysisView;
   export let onSelectView: (view: AnalysisView) => void;
-  export let sectionOptions: SectionOption[] = [];
   export let periodLabels: Record<string, string>;
   export let statusLabels: Record<AnalysisStatus, string>;
   export let confidenceLabels: Record<Confidence, string>;
@@ -295,22 +287,10 @@
   function dismissLowCoverageNotice(): void {
     dismissedLowCoveragePeriod = period;
   }
-
-  async function showShareSection(event: MouseEvent): Promise<void> {
-    event.preventDefault();
-    if (activeView !== "track_palette") onSelectView("track_palette");
-    await tick();
-    const section = document.getElementById("share");
-    if (!section) return;
-    if (window.location.hash !== "#share") {
-      window.history.pushState({}, "", "#share");
-    }
-    section.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
 </script>
 
 <div class="results-view">
-  <div class="results-opening" class:reveal-ready={revealReady}>
+  <div class="results-opening">
   <a class="back-link" href={homePath}><Arrow direction="left" />{$t("navigation.backUpper")}</a>
   <section
     class="profile-card"
@@ -332,9 +312,6 @@
     <div class="profile-copy">
       <div class="profile-identity">
         <div class="profile-label">
-          {#if !result.is_example}
-          <p class="eyebrow">{$t("profile.heading")} </p>
-          {/if}
           {#if result.is_example}<Badge tone="accent">{$t("example.badge")}</Badge>{/if}
         </div>
         <h1 id="profile-title">
@@ -362,13 +339,6 @@
           {/if}
         </div>
         <div class="profile-actions">
-          {#if directAvailable && !periodLoading}<a
-             class="profile-link"
-             href="#share"
-             on:click={showShareSection}
-              >{result.is_example ? $t("sharing.viewExampleUpper") : $t("sharing.viewOwnUpper")}
-              <Arrow direction="right" /></a
-            >{/if}
           {#if !result.is_example}<a
             class="profile-link"
             href={lastFmUrl}
@@ -414,19 +384,6 @@
             ) })} </p>
         </Tooltip>
       {/if}
-      {#if localizationIncomplete}
-        <div class="localization-notice">
-          <span class="localization-info" aria-hidden="true">[i]</span>
-          <p role="status">{localizationPending ? $t("localization.retrying") : $t("localization.partial")}</p>
-          <button
-            type="button"
-            disabled={localizationPending}
-            on:click={onRetryLocalization}
-          >{localizationPending ? $t("localization.pending") : $t("localization.retry")}
-            <span class="retry-arrow" aria-hidden="true">&#x21BB;&#xFE0E;</span>
-          </button>
-        </div>
-      {/if}
     </div>
   </section>
   </div>
@@ -460,12 +417,32 @@
       {/if}
     </Tabs.List>
 
+    <p class="view-description">
+      <span aria-hidden="true">^ </span>
+      {activeView === "track_palette"
+        ? $t("results.trackPaletteDescription")
+        : $t("results.artistVocabularyDescription")}
+    </p>
+
+      {#if localizationIncomplete}
+        <div class="localization-notice">
+          <span class="localization-info" aria-hidden="true">[i]</span>
+          <p role="status">{localizationPending ? $t("localization.retrying") : $t("localization.partial")}</p>
+          <button
+            type="button"
+            disabled={localizationPending}
+            on:click={onRetryLocalization}
+          >{localizationPending ? $t("localization.pending") : $t("localization.retry")}
+            <span class="retry-arrow" aria-hidden="true">&#x21BB;&#xFE0E;</span>
+          </button>
+        </div>
+      {/if}
+
     <Tabs.Content value="track_palette" class="view-panel">
       {#if directAvailable}
         <ReportView
           report={palette}
           isExample={result.is_example}
-          {sectionOptions}
           {periodLabels}
           {confidenceLabels}
           {shareFeedback}
@@ -787,7 +764,6 @@
     margin: 0 auto;
     padding: 54px 0 32px;
   }
-  .results-opening::after,
   .period-reveal::after {
     position: absolute;
     z-index: 2;
@@ -803,15 +779,9 @@
     z-index: 1;
     isolation: isolate;
   }
-  .results-opening::after {
-    background: var(--paper);
-  }
-  .results-opening.reveal-ready::after {
-    animation: dither-resolve 560ms steps(1, end) forwards;
-  }
   .back-link {
     display: inline-block;
-    margin-bottom: 28px;
+    margin-bottom: 20px;
     color: var(--accent-soft);
     font: 13px var(--meta);
     letter-spacing: 0.06em;
@@ -830,11 +800,11 @@
   }
   .profile-card {
     display: grid;
-    grid-template-columns: 192px minmax(0, 1fr);
-    align-items: stretch;
-    gap: 24px;
+    grid-template-columns: 64px minmax(0, 1fr);
+    align-items: center;
+    gap: 16px 20px;
     padding: 0 0 24px;
-    margin-bottom: 38px;
+    margin-bottom: 24px;
     border-bottom: 1px solid var(--line-strong);
   }
   .profile-label {
@@ -844,7 +814,7 @@
   }
   .profile-avatar {
     display: grid;
-    width: 192px;
+    width: 64px;
     aspect-ratio: 1;
     align-self: center;
     overflow: hidden;
@@ -863,54 +833,54 @@
   .profile-avatar-drawing {
     margin: 0;
     color: var(--accent-soft);
-    font: 9px/1.1 var(--meta);
+    font: 3px/1.1 var(--meta);
     white-space: pre;
     transform: scaleX(1.3);
   }
   .profile-copy {
-    display: flex;
+    display: grid;
     min-width: 0;
-    flex-direction: column;
-    justify-content: space-between;
-    gap: 24px;
-  }
-  .profile-identity .eyebrow {
-    margin: 0;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 6px 24px;
   }
   .profile-identity h1 {
-    margin: 6px 0 0;
+    margin: 0;
     color: var(--ink);
-    font-size: clamp(1.8rem, 2.6vw, 2.6rem);
+    font-size: clamp(1.35rem, 2vw, 1.75rem);
     line-height: 1.1;
     overflow-wrap: anywhere;
   }
   .profile-username {
-    margin: 6px 0 0;
+    display: inline;
+    margin: 0;
     color: var(--muted);
     font: 14px var(--meta);
     overflow-wrap: anywhere;
   }
-  .profile-footer {
+  .profile-identity {
     display: flex;
-    align-items: end;
-    justify-content: space-between;
     flex-wrap: wrap;
-    gap: 16px 24px;
+    align-items: baseline;
+    gap: 4px 12px;
+    min-width: 0;
   }
+  .profile-label:empty { display: none; }
+  .profile-footer { display: contents; }
   .profile-meta {
+    grid-column: 1;
+    grid-row: 2;
     display: flex;
     flex-wrap: wrap;
     gap: 8px 18px;
-    color: var(--quiet);
-    font: 12px var(--meta);
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
+    color: var(--muted);
+    font: 12px/1.5 var(--meta);
   }
   .profile-actions {
+    grid-column: 2;
+    grid-row: 1 / 3;
     display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
+    align-items: center;
   }
   .profile-actions .profile-link {
     justify-content: space-between;
@@ -919,8 +889,7 @@
     display: inline-flex;
     align-items: center;
     min-height: 40px;
-    padding: 8px 12px;
-    border: 1px solid var(--line-strong);
+    padding: 4px 0;
     color: var(--muted);
     font: 12px var(--meta);
     letter-spacing: 0.04em;
@@ -929,17 +898,23 @@
   }
   .profile-link:hover,
   .profile-link:focus-visible {
-    border-color: var(--accent-soft);
     color: var(--accent-soft);
+    text-decoration: underline;
+    text-underline-offset: 4px;
   }
   .period-controls {
     grid-column: 1 / -1;
     display: grid;
     gap: 9px;
-    padding-top: 20px;
-    border-top: 1px solid var(--line);
+    padding-top: 0;
   }
   .period-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
     color: var(--muted);
     font: 12px var(--meta);
     letter-spacing: 0.05em;
@@ -998,13 +973,18 @@
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    .results-opening::after,
     .period-reveal::after {
       display: none;
     }
   }
   :global(.view-tabs) {
     width: 100%;
+  }
+  .view-description {
+    margin: 12px 0 0;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.5;
   }
   :global(.view-switch) {
     display: grid;
@@ -1367,7 +1347,7 @@
     font: inherit;
     text-align: left;
     text-decoration: underline;
-    text-decoration-color: var(--muted);
+    text-decoration-color: var(--line-strong);
     text-decoration-thickness: 1px;
     text-underline-offset: 4px;
     transition:
@@ -1411,31 +1391,35 @@
       padding-top: 32px;
     }
     .profile-card {
-      grid-template-columns: minmax(0, 1fr);
-      gap: 16px;
+      grid-template-columns: 48px minmax(0, 1fr);
+      gap: 12px;
       padding-bottom: 20px;
+      margin-bottom: 20px;
     }
     .profile-avatar {
-      width: 100%;
+      width: 48px;
+      align-self: start;
     }
-    .profile-avatar-drawing {
-      font-size: 5px;
-    }
-    .profile-identity h1 {
-      font-size: clamp(1.6rem, 6vw, 2.2rem);
-    }
+    .profile-avatar-drawing { font-size: 2.3px; }
+    .profile-identity h1 { font-size: 1.35rem; }
     .profile-copy {
-      gap: 18px;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 4px;
     }
-    .period-controls {
-      padding-top: 16px;
+    .profile-username { font-size: 12px; }
+    .profile-meta { font-size: 11px; }
+    .profile-actions {
+      grid-column: 1;
+      grid-row: 3;
     }
+    .profile-link { min-height: 32px; font-size: 11px; }
+    .period-controls { padding-top: 0; }
     :global(.view-tab) {
       flex-direction: column;
       align-items: flex-start;
       justify-content: center;
-      gap: 8px;
-      min-height: 80px;
+      gap: 4px;
+      min-height: 60px;
       padding: 12px 10px;
       font-size: 12px;
       line-height: 1.5;

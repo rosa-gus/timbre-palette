@@ -32,7 +32,6 @@ export type MessageParameters = {
   "entry.catalogSize": "count";
   "entry.discover": never;
   "entry.example": never;
-  "entry.exampleLabel": never;
   "entry.explore": never;
   "entry.instrumentPreviewHeading": never;
   "entry.previewClose": never;
@@ -40,6 +39,7 @@ export type MessageParameters = {
   "entry.previewFull": never;
   "entry.previewHeading": never;
   "entry.previewHint": never;
+  "entry.previewIntro": never;
   "entry.previewScope": never;
   "entry.previewUnavailable": never;
   "entry.profileLabel": never;
@@ -49,6 +49,7 @@ export type MessageParameters = {
   "entry.share": never;
   "entry.sharePreviewLoading": never;
   "entry.sourceNote": never;
+  "entry.subtitle": never;
   "entry.title": never;
   "entry.usernamePlaceholder": never;
   "errors.analysisFailed": never;
@@ -190,13 +191,17 @@ export type MessageParameters = {
   "loading.assembly": never;
   "loading.catalog": never;
   "loading.evidenceProgress": "current" | "total";
+  "loading.evidenceTitle": never;
   "loading.exampleDescription": never;
   "loading.exampleTitle": never;
   "loading.historyDescription": never;
   "loading.historyDetail": never;
   "loading.historyTitle": never;
   "loading.palette": never;
+  "loading.paletteTitle": never;
+  "loading.profileContext": "period" | "username";
   "loading.profileProgress": never;
+  "loading.revealDetail": never;
   "loading.tracksProgress": "current" | "total";
   "localization.partial": never;
   "localization.pending": never;
@@ -307,10 +312,12 @@ export type MessageParameters = {
   "report.paletteTitle": never;
   "report.playCount": "total_plays";
   "report.portraitHeading": never;
+  "report.portraitScope": never;
   "report.trackCount": "tracks_analyzed";
   "report.trackCoverage": "coverage";
   "report.unpublished": never;
   "report.vocals": "artists" | "plays" | "ratio" | "tracks";
+  "results.artistVocabularyDescription": never;
   "results.artistVocabularyTab": never;
   "results.insufficientBadge": never;
   "results.noPortraitDescription": never;
@@ -318,6 +325,7 @@ export type MessageParameters = {
   "results.openVocabulary": never;
   "results.playCoverage": "coverage";
   "results.trackCoverage": "coverage";
+  "results.trackPaletteDescription": never;
   "results.trackPaletteHeading": never;
   "results.trackPaletteTab": never;
   "results.viewsLabel": never;
