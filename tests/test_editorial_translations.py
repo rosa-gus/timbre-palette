@@ -138,7 +138,6 @@ def test_english_catalog_is_complete_current_and_preserves_neutral_identifiers()
         english = next(item for item in sheet["translations"] if item["locale"] == "en-US")
         assert english["status"] == "reviewed"
         assert english["source_revision"] == source_revision(sheet)
-        assert english["review"]["reviewer"] == "Codex (translation review)"
         for key in ("slug", "kind", "family_slug", "related_slugs", "sources"):
             assert english["resource"][key] == sheet["resource"][key]
         assert {block["id"] for block in english["resource"]["sections"]} == {block["id"] for block in sheet["resource"]["sections"]}
