@@ -13,15 +13,13 @@
   },
   "growth": {
     "hydration": "Ao consultar um perfil, faixas e artistas ainda não materializados podem ser consultados em segundo plano no snapshot MusicBrainz publicado. Novas evidências podem aparecer em uma visita futura.",
-    "recordings": "Mais {count} gravações com instrumentos documentados desde sua última visita neste navegador.",
+    "recordings": "{count, plural, =0 {Mais # gravações com instrumentos documentados desde sua última visita neste navegador.} one {Mais # gravação com instrumentos documentados desde sua última visita neste navegador.} other {Mais # gravações com instrumentos documentados desde sua última visita neste navegador.}}",
     "summary": "Nosso catálogo cresceu {percentage}%.",
     "title": "Crescimento do catálogo",
     "triggerLabel": "Crescimento do catálogo: +{percentage}% desde sua última visita neste navegador"
   },
   "history": {
-    "loadedTracks": "{tracks} faixas já carregadas{periodSuffix}. Retome para concluir a análise.",
-    "minutes": "{count} min",
-    "seconds": "{count} s",
+    "loadedTracks": "{tracks, plural, =0 {# faixas já carregadas{periodSuffix}. Retome para concluir a análise.} one {# faixa já carregada{periodSuffix}. Retome para concluir a análise.} other {# faixas já carregadas{periodSuffix}. Retome para concluir a análise.}}",
     "wait": "Aguarde {duration} para tentar novamente.",
     "waitWithLabel": "Aguarde {waitLabel} para tentar novamente."
   },
@@ -39,14 +37,24 @@
     "assembly": "Montando resultado...",
     "catalog": "Consultando o catálogo",
     "evidenceProgress": "Consultando evidências ({current}/{total})",
+    "evidenceTitle": "Encontrando os instrumentos.",
     "exampleDescription": "Selecionando gravações e créditos do catálogo.",
     "exampleTitle": "Preparando o exemplo.",
     "historyDescription": "As primeiras relações estão sendo reunidas.",
     "historyDetail": "Consultando o Last.fm",
     "historyTitle": "Lendo seu histórico.",
     "palette": "Preparando sua paleta…",
+    "paletteTitle": "Sua paleta está tomando forma.",
+    "profileContext": "{username} / {period}",
     "profileProgress": "Carregando perfil (1/1)",
+    "revealDetail": "Preparando as imagens e os detalhes do resultado…",
     "tracksProgress": "Carregando faixas ({current}/{total})"
+  },
+  "localization": {
+    "partial": "Parte do catálogo está no idioma original.",
+    "pending": "Tentando…",
+    "retry": "Tentar novamente",
+    "retrying": "Atualizando as traduções do catálogo…"
   },
   "nature": {
     "acoustic": "Acústica",
@@ -102,23 +110,26 @@
     "noDiscovery": "Nenhuma descoberta para destacar neste período.",
     "paletteHeading": "<upper>02 / Paleta</upper>",
     "paletteTitle": "As presenças da sua escuta.",
-    "playCount": "{total_plays} reproduções",
+    "playCount": "{total_plays, plural, =0 {# reproduções} one {# reprodução} other {# reproduções}}",
     "portraitHeading": "<upper>01 / Seu retrato instrumental</upper>",
-    "trackCount": "{tracks_analyzed} faixas",
+    "portraitScope": "Entre as faixas com créditos identificados.",
+    "trackCount": "{tracks_analyzed, plural, =0 {# faixas} one {# faixa} other {# faixas}}",
     "trackCoverage": "{coverage} das faixas cobertas",
     "unpublished": "não publicado",
-    "vocals": "Voz documentada: <value>{tracks}</value> faixas, <value>{artists}</value> artistas e <value>{plays}</value> reproduções (<value>{ratio}</value> das reproduções)."
+    "vocals": "Voz documentada: <value>{tracks}</value> {tracks, plural, =0 {faixas} one {faixa} other {faixas}}, <value>{artists}</value> {artists, plural, =0 {artistas} one {artista} other {artistas}} e <value>{plays}</value> {plays, plural, =0 {reproduções} one {reprodução} other {reproduções}} (<value>{ratio}</value> das reproduções)."
   },
   "results": {
-    "artistVocabularyTab": "<upper>02 / Vocabulário dos artistas</upper>",
+    "artistVocabularyDescription": "Instrumentos associados aos artistas que você ouviu.",
+    "artistVocabularyTab": "<upper>Vocabulário dos artistas</upper>",
     "insufficientBadge": "<upper>Insuficiente</upper>",
     "noPortraitDescription": "Não encontramos créditos instrumentais diretos aceitos em uma amostra suficiente deste histórico. Isso não significa que esses instrumentos estejam ausentes das músicas.",
     "noPortraitTitle": "Ainda não há um retrato das suas faixas.",
     "openVocabulary": "<upper>Ver vocabulário dos artistas →</upper>",
     "playCoverage": "{coverage} das reproduções cobertas",
     "trackCoverage": "{coverage} das faixas",
+    "trackPaletteDescription": "Instrumentos documentados nas músicas que você ouviu.",
     "trackPaletteHeading": "<upper>01 / Paleta das faixas</upper>",
-    "trackPaletteTab": "<upper>01 / Paleta das faixas</upper>",
+    "trackPaletteTab": "<upper>Paleta das faixas</upper>",
     "viewsLabel": "Leituras da escuta"
   },
   "sections": {
@@ -162,14 +173,14 @@
     "pending": "em preparação",
     "pendingDescription": "Estamos reunindo informações sobre artistas deste histórico. Isso pode levar horas; volte mais tarde para consultar novamente.",
     "pendingTitle": "Esta leitura ainda está em preparação.",
-    "playReach": "{qualified} / {total} reproduções",
+    "playReach": "{qualified} / {total, plural, =0 {# reproduções} one {# reprodução} other {# reproduções}}",
     "playsHeading": "<upper>Reproduções</upper>",
     "predominantFamily": "{name} / família predominante",
     "qualifiedArtistsHeading": "<upper>Artistas qualificados</upper>",
     "qualifiedTracksHeading": "<upper>Faixas ligadas a artistas qualificados</upper>",
     "reachDescription": "O alcance mostra a parte do histórico ligada a artistas com instrumentos recorrentes documentados. Ele não é a cobertura da paleta das faixas.",
     "reachLabel": "Alcance do vocabulário",
-    "recordingCount": "{count} gravações distintas",
+    "recordingCount": "{count, plural, =0 {# gravações distintas} one {# gravação distinta} other {# gravações distintas}}",
     "recordingScope": "gravação",
     "recurringInstruments": "com instrumentos recorrentes",
     "shareDescription": "A participação mostra o peso relativo calculado entre as famílias deste vocabulário. Não mede volume, duração ou presença do instrumento nas faixas ouvidas.",
@@ -178,6 +189,6 @@
     "trackReach": "{coverage} das faixas",
     "trackScope": "faixa",
     "unavailableTitle": "Ainda não há um vocabulário para mostrar.",
-    "unresolvedIdentities": "{artists} artistas e {tracks} faixas sem identidade MusicBrainz não entram na consulta pendente."
+    "unresolvedIdentities": "{artists} {artists, plural, =0 {artistas} one {artista} other {artistas}} e {tracks} {tracks, plural, =0 {faixas} one {faixa} other {faixas}} sem identidade MusicBrainz não entram na consulta pendente."
   }
 }

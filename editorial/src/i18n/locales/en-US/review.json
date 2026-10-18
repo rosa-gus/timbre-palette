@@ -1,0 +1,29 @@
+{
+  "review": {
+    "date": "Review date",
+    "deprecated": "Withdrawn",
+    "draft": "Draft",
+    "linkReviewer": "Reviewer",
+    "note": "Editorial note",
+    "pending": "In review",
+    "published": "Published",
+    "reviewed": "Reviewed",
+    "reviewer": "Reviewer",
+    "sourced": "Source linked",
+    "status": "Status",
+    "textVerified": "Description and sound production reviewed",
+    "title": "Profile review"
+  },
+  "validation": {
+    "curiosityCitation": "{label}: a sourced curiosity requires a citation.",
+    "curiosityReference": "{label}: missing reference in curiosity.",
+    "curiosityReview": "{label}: complete the curiosity review before promoting it.",
+    "image": "{label}: check the image identifier, description, and URL.",
+    "missingReference": "{label}: missing reference in {field}.",
+    "readingLink": "{label}: check the Read more title and URL.",
+    "readingReview": "{label}: provide the Read more link review.",
+    "requiredText": "{label}: enter the name, description, and sound production.",
+    "review": "{label}: provide a reviewer and review date.",
+    "source": "{label}: check the source title and URL."
+  }
+}

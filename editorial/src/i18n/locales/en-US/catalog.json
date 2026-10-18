@@ -1,0 +1,19 @@
+{
+  "catalog": {
+    "description": "Brief texts, images, references, and paths to learn more.",
+    "empty": "No profiles found.",
+    "family": "Sound family",
+    "heading": "<upper>01 / Editorial catalog</upper>",
+    "instrument": "Instrument",
+    "listLabel": "Profiles",
+    "search": "Find profile",
+    "searchPlaceholder": "Name or slug",
+    "sidebarLabel": "Instruments and families",
+    "titleEnd": "in a few words.",
+    "titleStart": "Instruments,"
+  },
+  "navigation": {
+    "editorial": "editorial",
+    "instrumentSheets": "<upper>Instrument profiles</upper>"
+  }
+}

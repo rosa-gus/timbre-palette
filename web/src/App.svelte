@@ -1,13 +1,20 @@
 <script lang="ts">
+  import homePoster from "../../assets/treated/ondas-desktop.png";
+  import homeMobilePoster from "../../assets/treated/ondas-mobile-poster.png";
+  import {
+    localizeAnalysis,
+    type LocalizedAnalysis,
+    localizedInstrument as getInstrument,
+  } from "./i18n/resources";
+  import LanguageSelect from "./i18n/LanguageSelect.svelte";
   import Message from "./i18n/Message.svelte";
-  import { t } from "./i18n/runtime";
+  import { translation as t, localeStore } from "./i18n/runtime";
   import { onMount, onDestroy, tick } from "svelte";
   import bayer75 from "./assets/bayer-mask-75.svg";
   import bayer50 from "./assets/bayer-mask-50.svg";
   import bayer25 from "./assets/bayer-mask-25.svg";
   import {
     getApiErrorMessage,
-    getInstrument,
     getAnalysis,
     getExampleAnalysis,
     normalizeUsername,
@@ -37,27 +44,24 @@
   import CatalogGrowth from "./components/CatalogGrowth.svelte";
   import ResultsView from "./views/ResultsView.svelte";
   import EntryView from "./views/EntryView.svelte";
-  import { getBrowserAnalysis, getBrowserExampleAnalysis } from "./analysis/browser";
+  import {
+    getBrowserAnalysis,
+    getBrowserExampleAnalysis,
+  } from "./analysis/browser";
   import { loadRuntimeConfig, profileAnalysisMode } from "./api/runtime-config";
 
   type SectionId = "portrait" | "palette" | "discovery" | "share";
-  const periods: { value: ListeningPeriod; label: string }[] = [
-    { value: "7day", label: t("periods.week") },
-    { value: "1month", label: t("periods.month") },
-    { value: "3month", label: t("periods.threeMonths") },
-    { value: "6month", label: t("periods.sixMonths") },
-    { value: "12month", label: t("periods.year") },
-    { value: "overall", label: t("periods.overall") },
-  ];
-  const periodLabels: Record<ListeningPeriod, string> = Object.fromEntries(
+  $: periods = [
+    { value: "7day", label: $t("periods.week") },
+    { value: "1month", label: $t("periods.month") },
+    { value: "3month", label: $t("periods.threeMonths") },
+    { value: "6month", label: $t("periods.sixMonths") },
+    { value: "12month", label: $t("periods.year") },
+    { value: "overall", label: $t("periods.overall") },
+  ] satisfies { value: ListeningPeriod; label: string }[];
+  $: periodLabels = Object.fromEntries(
     periods.map((item) => [item.value, item.label]),
   ) as Record<ListeningPeriod, string>;
-  const sectionLabels: Record<SectionId, string> = {
-    portrait: t("sections.portrait"),
-    palette: t("sections.palette"),
-    discovery: t("sections.discovery"),
-    share: t("actions.share"),
-  };
   const availabilityKeys: Record<
     SectionId,
     keyof PaletteReport["analysis"]["section_availability"]
@@ -67,29 +71,22 @@
     discovery: "discovery",
     share: "families",
   };
-  const availabilityLabels: Record<SectionAvailability, string> = {
-    available: t("availability.available"),
-    insufficient_coverage: t("availability.insufficientCoverage"),
-    insufficient_diversity: t("availability.insufficientDiversity"),
-    insufficient_nature_evidence: t("availability.insufficientNature"),
-    no_candidate: t("availability.noCandidate"),
+  $: statusLabels = {
+    partial: $t("status.partial"),
+    ready: $t("status.ready"),
+    insufficient: $t("status.insufficient"),
   };
-  const statusLabels: Record<AnalysisStatus, string> = {
-    partial: t("status.partial"),
-    ready: t("status.ready"),
-    insufficient: t("status.insufficient"),
-  };
-  const confidenceLabels: Record<Confidence, string> = {
-    documented: t("confidence.documented"),
-    strongly_associated: t("confidence.associated"),
-    estimated: t("confidence.estimated"),
+  $: confidenceLabels = {
+    documented: $t("confidence.documented"),
+    strongly_associated: $t("confidence.associated"),
+    estimated: $t("confidence.estimated"),
   };
   type Theme = "dark" | "light" | "system";
   type ResolvedTheme = Exclude<Theme, "system">;
-  const themeLabels: Record<Theme, string> = {
-    dark: t("theme.dark"),
-    light: t("theme.light"),
-    system: t("theme.system"),
+  $: themeLabels = {
+    dark: $t("theme.dark"),
+    light: $t("theme.light"),
+    system: $t("theme.system"),
   };
   const headerMarks: Record<ResolvedTheme, { src: string; srcset: string }> = {
     dark: {
@@ -105,33 +102,39 @@
   };
   const homePath = normalizePathname();
   let view: "entry" | "loading" | "report" = "entry";
+  const REPORT_TRANSITION_MS = 600;
   let preparingReport = false;
+  let revealingReport = false;
   let revealAssets: Promise<unknown> | null = null;
 
   async function prepareReport(signal: AbortSignal): Promise<void> {
     // Decode the reveal masks before starting the animation on cold visits.
-    revealAssets ??= Promise.all([bayer75, bayer50, bayer25].map((src) => {
-      const image = new Image();
-      image.src = src;
-      return image.decode().catch(() => undefined);
-    }));
+    revealAssets ??= Promise.all(
+      [bayer75, bayer50, bayer25].map((src) => {
+        const image = new Image();
+        image.src = src;
+        return image.decode().catch(() => undefined);
+      }),
+    );
     await tick();
     await Promise.all([revealAssets, document.fonts.ready]);
     signal.throwIfAborted();
-    // Keep the loading composition visible while the mounted report settles.
-    await new Promise<void>((resolve) => window.setTimeout(resolve, 180));
+    // Let the mounted report settle before dissolving the loading screen.
     await new Promise<void>((resolve) => {
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
     });
     signal.throwIfAborted();
   }
   let catalogGrowth: { percent: number; added: number } | null = null;
+  let catalogSize: number | null = null;
 
   async function checkCatalog(signal: AbortSignal): Promise<void> {
     try {
       const current = await getCatalogSize(signal);
+      if (signal.aborted) return;
+      catalogSize = current;
       // Only consume the saved comparison when the indicator can be shown.
-      if (signal.aborted || view !== "entry") return;
+      if (view !== "entry") return;
       const saved = getStorageItem<unknown>(STORAGE_KEYS.catalogLastSeen);
       if (
         saved &&
@@ -170,29 +173,107 @@
   let isExample = false;
   let exampleId = "";
   let result: ProfileAnalysisV3 | null = null;
+  let displayResult: LocalizedAnalysis | null = null;
+  let localizationPending = false;
+  let localizationController: AbortController | null = null;
+  $: void updatePresentation(result, $localeStore);
+  async function updatePresentation(
+    source: ProfileAnalysisV3 | null,
+    language: typeof $localeStore,
+    refresh = false,
+  ) {
+    localizationController?.abort();
+    if (refresh) {
+      if (sharePreviewUrl) URL.revokeObjectURL(sharePreviewUrl);
+      sharePreviewUrl = "";
+      shareBlob = null;
+      shareFeedback = "";
+    }
+    const request = new AbortController();
+    localizationController = request;
+    if (!refresh) displayResult = null;
+    localizationPending = Boolean(source);
+    if (!source) return;
+    try {
+      const translated = await localizeAnalysis(
+        source,
+        language,
+        request.signal,
+        refresh,
+      );
+      if (!request.signal.aborted) displayResult = translated;
+    } catch {
+      /* Keep the existing report if localized resources are unavailable. */
+    } finally {
+      if (!request.signal.aborted) localizationPending = false;
+    }
+  }
+  let previousLocale = $localeStore;
+  $: if ($localeStore !== previousLocale) {
+    previousLocale = $localeStore;
+    if (sharePreviewUrl) URL.revokeObjectURL(sharePreviewUrl);
+    sharePreviewUrl = "";
+    shareBlob = null;
+    shareFeedback = "";
+    if (dialogOpen && requestedInstrumentSlug)
+      void loadInstrument(requestedInstrumentSlug);
+    loadingDetail = $t(isExample ? "loading.catalog" : "loading.historyDetail");
+  }
   let activeAnalysisView: AnalysisView = "track_palette";
-  let formError = "";
-  let loadingTitle = t("loading.historyTitle");
-  let loadingDescription = t("loading.historyDescription");
-  let loadingDetail = t("loading.historyDetail");
+  let formErrorSource: unknown = null;
+  $: formError =
+    formErrorSource === "usernameRequired"
+      ? $t("errors.usernameRequired")
+      : formErrorSource
+        ? $localeStore && getApiErrorMessage(formErrorSource)
+        : "";
+  let loadingStage: "history" | "evidence" | "palette" = "history";
+  $: loadingTitle = $t(
+    loadingStage === "palette" ? "loading.paletteTitle"
+      : isExample ? "loading.exampleTitle"
+      : loadingStage === "evidence" ? "loading.evidenceTitle"
+      : "loading.historyTitle",
+  );
+  let loadingDetail = $t("loading.historyDetail");
   let periodLoading = false;
-  let periodError = "";
+  let periodErrorSource: unknown = null;
+  $: periodError = periodErrorSource
+    ? $localeStore && getApiErrorMessage(periodErrorSource)
+    : "";
   let savedHistory: HistoryResume | null = null;
   let now = Date.now();
-  $: matchingHistory = !isExample && savedHistory &&
-    savedHistory.username.toLowerCase() === normalizeUsername(username).toLowerCase() ? savedHistory : null;
+  $: matchingHistory =
+    !isExample &&
+    savedHistory &&
+    savedHistory.username.toLowerCase() ===
+      normalizeUsername(username).toLowerCase()
+      ? savedHistory
+      : null;
   $: entryHistory = matchingHistory?.period === period ? matchingHistory : null;
-  $: waitSeconds = savedHistory ? Math.max(0, Math.ceil((savedHistory.retryAt - now) / 1000)) : 0;
+  $: waitSeconds = savedHistory
+    ? Math.max(0, Math.ceil((savedHistory.retryAt - now) / 1000))
+    : 0;
 
   function refreshHistory(): void {
     now = Date.now();
-    savedHistory = profileAnalysisMode() === "browser" ? getHistoryResume(apiBaseUrl()) : null;
+    savedHistory =
+      profileAnalysisMode() === "browser"
+        ? getHistoryResume(apiBaseUrl())
+        : null;
   }
   function resumeReport(): void {
     refreshHistory();
     const saved = savedHistory;
-    if (!saved || saved.username.toLowerCase() !== normalizeUsername(username).toLowerCase() ||
-        saved.retryAt > Date.now() || view === "loading" || periodLoading || isExample) return;
+    if (
+      !saved ||
+      saved.username.toLowerCase() !==
+        normalizeUsername(username).toLowerCase() ||
+      saved.retryAt > Date.now() ||
+      view === "loading" ||
+      periodLoading ||
+      isExample
+    )
+      return;
     period = saved.period;
     void loadReport(view === "report", true);
   }
@@ -204,31 +285,11 @@
   let canShareImage = false;
   let dialogOpen = false;
   let instrument: InstrumentResource | null = null;
+  let requestedInstrumentSlug = "";
   let instrumentLoading = false;
   let instrumentError = "";
   let controller: AbortController | null = null;
   let instrumentController: AbortController | null = null;
-  const instrumentCache = new Map<string, InstrumentResource>();
-  $: sectionOptions = (Object.keys(sectionLabels) as SectionId[]).map(
-    (value) => ({
-      value,
-      label: sectionLabels[value],
-      disabled:
-        value !== "share" &&
-        !!result &&
-        result.track_palette.analysis.section_availability[
-          availabilityKeys[value]
-        ] !== "available",
-      note:
-        value !== "share" && result
-          ? availabilityLabels[
-              result.track_palette.analysis.section_availability[
-                availabilityKeys[value]
-              ]
-            ]
-          : undefined,
-    }),
-  );
 
   function availability(section: SectionId): SectionAvailability {
     return (
@@ -288,11 +349,16 @@
     return "track_palette";
   }
 
-  async function loadReport(preserveReport = false, resume = false): Promise<void> {
+  async function loadReport(
+    preserveReport = false,
+    resume = false,
+  ): Promise<void> {
     controller?.abort();
     const request = new AbortController();
     controller = request;
     preparingReport = false;
+    revealingReport = false;
+    loadingStage = "history";
     const signal = request.signal;
     if (sharePreviewUrl) URL.revokeObjectURL(sharePreviewUrl);
     sharePreviewUrl = "";
@@ -300,11 +366,11 @@
     shareFeedback = "";
     if (preserveReport) {
       periodLoading = true;
-      periodError = "";
+      periodErrorSource = null;
     } else {
       periodRevealKey = 0;
       view = "loading";
-      formError = "";
+      formErrorSource = null;
     }
     try {
       await loadRuntimeConfig();
@@ -312,19 +378,38 @@
       const useBrowserAssembly = profileAnalysisMode() === "browser";
       const next = isExample
         ? useBrowserAssembly
-          ? await getBrowserExampleAnalysis(period, signal, exampleId || undefined)
+          ? await getBrowserExampleAnalysis(
+              period,
+              signal,
+              exampleId || undefined,
+            )
           : await getExampleAnalysis(period, signal, exampleId || undefined)
         : useBrowserAssembly
-          ? await getBrowserAnalysis(username, period, signal, (phase, current, total) => {
-              if (signal.aborted) return;
-              loadingDetail = phase === "tracks"
-                ? t("loading.tracksProgress", { current: current, total: total })
-                : phase === "profile"
-                  ? t("loading.profileProgress")
-                  : phase === "evidence"
-                    ? t("loading.evidenceProgress", { current: current, total: total })
-                    : t("loading.assembly");
-            }, resume)
+          ? await getBrowserAnalysis(
+              username,
+              period,
+              signal,
+              (phase, current, total) => {
+                if (signal.aborted) return;
+                loadingStage = phase === "evidence" ? "evidence"
+                  : phase === "assembly" ? "palette" : "history";
+                loadingDetail =
+                  phase === "tracks"
+                    ? $t("loading.tracksProgress", {
+                        current: current,
+                        total: total,
+                      })
+                    : phase === "profile"
+                      ? $t("loading.profileProgress")
+                      : phase === "evidence"
+                        ? $t("loading.evidenceProgress", {
+                            current: current,
+                            total: total,
+                          })
+                        : $t("loading.assembly");
+              },
+              resume,
+            )
           : await getAnalysis(username, period, signal);
       signal.throwIfAborted();
       if (controller !== request) return;
@@ -344,27 +429,39 @@
       activeAnalysisView = resolveAnalysisView(next, requestedAnalysisView);
       if (!preserveReport) {
         preparingReport = true;
-        loadingDetail = t("loading.palette");
+        loadingStage = "palette";
+        loadingDetail = $t("loading.revealDetail");
         await prepareReport(signal);
         if (controller !== request) return;
+        if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+          revealingReport = true;
+          await tick();
+          await new Promise<void>((resolve) => {
+            window.setTimeout(resolve, REPORT_TRANSITION_MS);
+          });
+          signal.throwIfAborted();
+          if (controller !== request) return;
+        }
       }
       view = "report";
+      revealingReport = false;
       preparingReport = false;
       periodLoading = false;
-      periodError = "";
+      periodErrorSource = null;
       updateUrl();
       return;
     } catch (error) {
       if (signal.aborted || controller !== request) return;
       preparingReport = false;
+      revealingReport = false;
       if (preserveReport) {
         periodLoading = false;
-        periodError = getApiErrorMessage(error);
+        periodErrorSource = error;
         if (result) period = result.profile.period;
         updateUrl();
       } else {
         view = "entry";
-        formError = getApiErrorMessage(error);
+        formErrorSource = error;
       }
     } finally {
       if (controller === request) refreshHistory();
@@ -378,12 +475,10 @@
   function submit(): void {
     isExample = false;
     exampleId = "";
-    loadingTitle = t("loading.historyTitle");
-    loadingDescription = t("loading.historyDescription");
-    loadingDetail = t("loading.historyDetail");
+    loadingDetail = $t("loading.historyDetail");
     username = normalizeUsername(username);
     if (!username) {
-      formError = t("errors.usernameRequired");
+      formErrorSource = "usernameRequired";
       return;
     }
     if (view === "loading") return;
@@ -401,10 +496,8 @@
     isExample = true;
     exampleId = createExampleId();
     username = "";
-    loadingTitle = t("loading.exampleTitle");
-    loadingDescription = t("loading.exampleDescription");
-    loadingDetail = t("loading.catalog");
-    formError = "";
+    loadingDetail = $t("loading.catalog");
+    formErrorSource = null;
     void loadReport();
   }
   function openInstrument(): void {
@@ -412,6 +505,8 @@
     if (slug) void loadInstrument(slug);
   }
   async function loadInstrument(slug: string): Promise<void> {
+    requestedInstrumentSlug = slug;
+    const language = $localeStore;
     instrumentController?.abort();
     const request = new AbortController();
     instrumentController = request;
@@ -420,12 +515,9 @@
     instrumentLoading = true;
     instrument = null;
     try {
-      const next =
-        instrumentCache.get(slug) ??
-        (await getInstrument(slug, request.signal));
+      const next = await getInstrument(slug, request.signal, language);
       if (request.signal.aborted) return;
       instrument = next;
-      instrumentCache.set(slug, next);
     } catch (error) {
       if (!request.signal.aborted) instrumentError = getApiErrorMessage(error);
     } finally {
@@ -433,26 +525,33 @@
     }
   }
   async function generateShare(): Promise<void> {
-    if (!result || shareBusy) return;
-    const sourceReport = result.track_palette;
+    if (!result || shareBusy || localizationPending) return;
+    const sourceReport = displayResult?.track_palette ?? result.track_palette;
+    const shareLocale = $localeStore;
     shareBusy = true;
-    shareFeedback = t("sharing.preparing");
+    shareFeedback = $t("sharing.preparing");
     try {
       const blob = await createShareImage(sourceReport, undefined, {
         isExample: result.is_example,
-        displayName: result.profile.realname || t("example.displayName"),
+        displayName:
+          displayResult?.profile.realname ||
+          result.profile.realname ||
+          $t("example.displayName"),
       });
-      if (result?.track_palette !== sourceReport || view !== "report") return;
+      if (
+        (displayResult?.track_palette ?? result?.track_palette) !==
+          sourceReport ||
+        $localeStore !== shareLocale ||
+        view !== "report"
+      )
+        return;
       if (sharePreviewUrl) URL.revokeObjectURL(sharePreviewUrl);
       shareBlob = blob;
       sharePreviewUrl = URL.createObjectURL(blob);
-      shareFeedback =
-        t("sharing.ready");
+      shareFeedback = $t("sharing.ready");
     } catch (error) {
       shareFeedback =
-        error instanceof Error
-          ? error.message
-          : t("sharing.failed");
+        error instanceof Error ? error.message : $t("sharing.failed");
     } finally {
       shareBusy = false;
     }
@@ -463,7 +562,7 @@
       shareBlob,
       result.is_example ? "besouro-hercules" : result.profile.username,
     );
-    shareFeedback = t("sharing.downloaded");
+    shareFeedback = $t("sharing.downloaded");
   }
   async function shareImage(): Promise<void> {
     if (!shareBlob || !result || !canShareImage) return;
@@ -481,25 +580,25 @@
       await navigator.share({
         files: [file],
         title: result.is_example
-          ? t("sharing.exampleTitle")
-          : t("sharing.title"),
+          ? $t("sharing.exampleTitle")
+          : $t("sharing.title"),
         text: result.is_example
-          ? t("sharing.exampleDescription")
-          : t("sharing.description"),
+          ? $t("sharing.exampleDescription")
+          : $t("sharing.description"),
       });
-      shareFeedback = t("sharing.completed");
+      shareFeedback = $t("sharing.completed");
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") {
-        shareFeedback = t("sharing.cancelled");
+        shareFeedback = $t("sharing.cancelled");
         return;
       }
-      shareFeedback =
-        t("sharing.unavailable");
+      shareFeedback = $t("sharing.unavailable");
     }
   }
   onDestroy(() => {
     controller?.abort();
     instrumentController?.abort();
+    localizationController?.abort();
     if (sharePreviewUrl) URL.revokeObjectURL(sharePreviewUrl);
   });
   function isTheme(value: unknown): value is Theme {
@@ -561,7 +660,10 @@
         period = savedHistory.period;
       }
       if (profile && !isExample && view === "entry") {
-        const matches = savedHistory && savedHistory.username.toLowerCase() === username.toLowerCase() && savedHistory.period === period;
+        const matches =
+          savedHistory &&
+          savedHistory.username.toLowerCase() === username.toLowerCase() &&
+          savedHistory.period === period;
         if (!matches) void loadReport();
       }
       void checkCatalog(catalogController.signal);
@@ -588,12 +690,26 @@
   });
 </script>
 
-{#snippet sourceCode(text: string)}<code class="source-value">{text}</code>{/snippet}
+{#snippet sourceCode(text: string)}<code class="source-value">{text}</code
+  >{/snippet}
 
-<div class="site-shell" data-view={view} data-theme={resolvedTheme}>
+<div
+  class="site-shell"
+  data-view={view}
+  data-theme={resolvedTheme}
+  style:--report-transition-duration={`${REPORT_TRANSITION_MS}ms`}
+>
+  {#if view === "entry" || view === "loading"}
+    <div class="entry-backdrop" class:departing={revealingReport} aria-hidden="true">
+      <picture>
+        <source media="(max-width: 800px)" srcset={homeMobilePoster} />
+        <img src={homePoster} alt="" fetchpriority="high" width="1920" height="1080" />
+      </picture>
+    </div>
+  {/if}
   <header class="site-header">
     <div class="header-identity">
-      <a class="wordmark" href={homePath} aria-label={t("navigation.home")}>
+      <a class="wordmark" href={homePath} aria-label={$t("navigation.home")}>
         <img
           src={headerMarks[resolvedTheme].src}
           srcset={headerMarks[resolvedTheme].srcset}
@@ -603,18 +719,22 @@
           aria-hidden="true"
         />
       </a>
-      <ProductVersion />
     </div>
     <div class="header-actions">
+      <LanguageSelect />
       {#if catalogGrowth && view === "entry"}
         <CatalogGrowth {...catalogGrowth} />
       {/if}
       <button
         class="theme-toggle"
         type="button"
-        aria-label={t("theme.toggleLabel", { theme: themeLabels[theme].toLowerCase() })}
+        aria-label={$t("theme.toggleLabel", {
+          theme: themeLabels[theme].toLowerCase(),
+        })}
         title={theme === "system"
-          ? t("theme.systemLabel", { theme: themeLabels[resolvedTheme].toLowerCase() })
+          ? $t("theme.systemLabel", {
+              theme: themeLabels[resolvedTheme].toLowerCase(),
+            })
           : themeLabels[theme]}
         on:click={toggleTheme}>{themeLabels[theme]}</button
       >
@@ -622,59 +742,69 @@
   </header>
   <main id="main-content">
     {#if view === "entry" || view === "loading"}
-      <EntryView
-        {username}
-        {period}
-        {periods}
-        {formError}
-        resumeProgress={entryHistory}
-        {waitSeconds}
-        onResume={() => resumeReport()}
-        loading={view === "loading"}
-        {loadingTitle}
-        {loadingDescription}
-        {loadingDetail}
-        onUsernameChange={(value) => {
-          username = value;
-          isExample = false;
-          exampleId = "";
-        }}
-        onPeriodChange={(value) => (period = value)}
-        onSubmit={submit}
-        onExample={openExample}
-      />
+      <div class="entry-stage" class:departing={revealingReport}>
+        <EntryView
+          {catalogSize}
+          {username}
+          {period}
+          {periods}
+          {formError}
+          resumeProgress={entryHistory}
+          {waitSeconds}
+          onResume={() => resumeReport()}
+          loading={view === "loading"}
+          {loadingTitle}
+          {loadingDetail}
+          onUsernameChange={(value) => {
+            username = value;
+            isExample = false;
+            exampleId = "";
+          }}
+          onPeriodChange={(value) => (period = value)}
+          onSubmit={submit}
+          onExample={openExample}
+        />
+      </div>
     {/if}
     {#if (view === "report" || preparingReport) && result}
-      <div class="report-stage" class:preparing={preparingReport} inert={preparingReport} aria-hidden={preparingReport}>
-      <ResultsView
-        revealReady={view === "report"}
-        {result}
-        {period}
-        activeView={activeAnalysisView}
-        onSelectView={selectAnalysisView}
-        {sectionOptions}
-        {periodLabels}
-        {statusLabels}
-        {confidenceLabels}
-        {shareFeedback}
-        {sharePreviewUrl}
-        {shareBusy}
-        {canShareImage}
-        {periodLoading}
-        {periodError}
-        resumeProgress={matchingHistory}
-        {waitSeconds}
-        onResume={() => resumeReport()}
-        {periodRevealKey}
-        {periods}
-        onPeriodChange={changePeriod}
-        onDownloadShare={downloadShare}
-        onShareImage={shareImage}
-        onOpenInstrument={openInstrument}
-        onOpenInstrumentSlug={(slug) => void loadInstrument(slug)}
-        onGenerateShare={generateShare}
-        getAvailability={availability}
-      />
+      <div
+        class="report-stage"
+        class:preparing={preparingReport}
+        class:revealing={revealingReport}
+        inert={preparingReport}
+        aria-hidden={preparingReport}
+      >
+        <ResultsView
+          revealReady={view === "report"}
+          result={displayResult ?? result}
+          localizationIncomplete={Boolean(displayResult?.localization.incomplete)}
+          {localizationPending}
+          onRetryLocalization={() => void updatePresentation(result, $localeStore, true)}
+          {period}
+          activeView={activeAnalysisView}
+          onSelectView={selectAnalysisView}
+          {periodLabels}
+          {statusLabels}
+          {confidenceLabels}
+          {shareFeedback}
+          {sharePreviewUrl}
+          shareBusy={shareBusy || localizationPending}
+          {canShareImage}
+          {periodLoading}
+          {periodError}
+          resumeProgress={matchingHistory}
+          {waitSeconds}
+          onResume={() => resumeReport()}
+          {periodRevealKey}
+          {periods}
+          onPeriodChange={changePeriod}
+          onDownloadShare={downloadShare}
+          onShareImage={shareImage}
+          onOpenInstrument={openInstrument}
+          onOpenInstrumentSlug={(slug) => void loadInstrument(slug)}
+          onGenerateShare={generateShare}
+          getAvailability={availability}
+        />
       </div>
     {/if}
   </main>
@@ -688,40 +818,47 @@
         {#if result}
           <div class="footer-explainer footer-explainer--source">
             <Dropdown
-              title={t("sources.versionsTitle")}
+              title={$t("sources.versionsTitle")}
               align="end"
               mobileStart
             >
-              <p><Message
-                message="sources.snapshot"
-                values={{ snapshot: result.snapshot.snapshot_version }}
-                wrappers={{ version: sourceCode }}
-              /></p>
-              <p><Message
-                message="sources.method"
-                values={{
-                  tracks: result.track_palette.analysis.methodology_version,
-                  artists: result.artist_vocabulary.methodology_version,
-                }}
-                wrappers={{ version: sourceCode }}
-              /></p>
+              <p>
+                <Message
+                  message="sources.snapshot"
+                  values={{ snapshot: result.snapshot.snapshot_version }}
+                  wrappers={{ version: sourceCode }}
+                />
+              </p>
+              <p>
+                <Message
+                  message="sources.method"
+                  values={{
+                    tracks: result.track_palette.analysis.methodology_version,
+                    artists: result.artist_vocabulary.methodology_version,
+                  }}
+                  wrappers={{ version: sourceCode }}
+                />
+              </p>
             </Dropdown>
           </div>
         {/if}
       </div>
     {/if}
     <div class="footer-colophon">
+      <span class="footer-signature" aria-hidden="true"># + : *</span>
       <div class="footer-identity">
         <div class="footer-brand">
           <span class="footer-wordmark">TIMBRE PALETTE</span>
-          <span class="footer-signature" aria-hidden="true"># + : *</span>
+          <ProductVersion />
         </div>
         <p class="footer-byline">
-          {t("footer.by")} <a
+          {$t("footer.by")}
+          <a
             href="https://rosa-gus.github.io/portfolio"
             target="_blank"
             rel="noreferrer noopener">rosa gus</a
-          > <span class="separator-indicator" aria-hidden="true">·</span> {t("footer.code")}
+          > <span class="separator-indicator" aria-hidden="true">·</span>
+          {$t("footer.license")}
           <a
             href="https://www.gnu.org/licenses/gpl-3.0.html"
             target="_blank"
@@ -730,17 +867,25 @@
         </p>
       </div>
       <div class="footer-source">
-        <span class="footer-label">{t("footer.history")}</span>
+        <span class="footer-label">{$t("footer.history")}</span>
         <a href="https://www.last.fm/" target="_blank" rel="noreferrer noopener"
           >Last.fm</a
         >
       </div>
       <div class="footer-source">
-        <span class="footer-label">{t("footer.credits")}</span>
+        <span class="footer-label">{$t("footer.credits")}</span>
         <a
           href="https://musicbrainz.org/"
           target="_blank"
           rel="noreferrer noopener">MusicBrainz</a
+        >
+      </div>
+      <div class="footer-source">
+        <span class="footer-label">{$t("footer.sourceCode")}</span>
+        <a
+          href="https://github.com/rosa-gus/timbre-palette"
+          target="_blank"
+          rel="noreferrer noopener">GitHub</a
         >
       </div>
     </div>
@@ -760,7 +905,27 @@
   main {
     position: relative;
   }
+  .site-header,
+  .site-footer {
+    position: relative;
+    z-index: 3;
+  }
+  .entry-stage {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    min-width: 0;
+  }
+  .entry-backdrop.departing { z-index: 1; }
+  .entry-stage.departing,
+  .entry-backdrop.departing {
+    pointer-events: none;
+    mask-repeat: repeat;
+    animation: home-dissolve var(--report-transition-duration) step-end both;
+  }
   .report-stage {
+    position: relative;
+    z-index: 0;
     min-width: 0;
   }
   .report-stage.preparing {
@@ -772,5 +937,33 @@
     overflow: clip;
     visibility: hidden;
     pointer-events: none;
+  }
+  .report-stage.preparing.revealing { visibility: visible; }
+  @keyframes home-dissolve {
+    0% { mask-image: none; }
+    10% {
+      mask-image: url("./assets/bayer-mask-75.svg");
+      mask-size: 96px 96px;
+    }
+    35% {
+      mask-image: url("./assets/bayer-mask-50.svg");
+      mask-size: 48px 48px;
+    }
+    65% {
+      mask-image: url("./assets/bayer-mask-25.svg");
+      mask-size: 24px 24px;
+    }
+    85% {
+      mask-image: url("./assets/bayer-mask-25.svg");
+      mask-size: 12px 12px;
+    }
+    100% { visibility: hidden; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .entry-stage.departing,
+    .entry-backdrop.departing {
+      animation: none;
+      visibility: hidden;
+    }
   }
 </style>

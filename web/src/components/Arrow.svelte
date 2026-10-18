@@ -2,7 +2,11 @@
   export let direction: "left" | "right" | "up-right" = "right";
 </script>
 
-<span class={`icon-arrow icon-arrow--${direction}`} aria-hidden="true">&#x2191;&#xFE0E;</span>
+<span class={`icon-arrow icon-arrow--${direction}`} aria-hidden="true">
+  <svg viewBox="0 0 16 16" fill="none" focusable="false">
+    <path d="M8 14V2M3 7l5-5 5 5" stroke="currentColor" stroke-width="1.25" />
+  </svg>
+</span>
 
 <style>
   .icon-arrow {
@@ -14,6 +18,11 @@
     line-height: 1;
     transform-origin: center;
     vertical-align: -0.08em;
+  }
+  .icon-arrow svg {
+    display: block;
+    width: 1em;
+    height: 1em;
   }
   .icon-arrow--right {
     transform: rotate(90deg);

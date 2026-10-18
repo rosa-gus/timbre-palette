@@ -80,6 +80,15 @@ describe("editorial content locales", () => {
     expect((await read("?locale=en")).status).toBe(404);
   });
 
+  it.each(["deprecated", "draft", "stale"])("does not revive a %s source through an approved translation", async (status) => {
+    const original = await (await read()).json() as { image: Record<string, unknown> | null };
+    const content = { ...base, image: original.image };
+    await store("pt-BR", content, status);
+    await store("en-US", { ...content, name: "Approved translation" });
+    expect((await read("?locale=en-US")).status).toBe(404);
+    expect((await read()).status).toBe(404);
+  });
+
   it("does not expose a staging publication or fall through to compatibility text after removal", async () => {
     await store("pt-BR", base);
     await env.DB.prepare(`INSERT INTO editorial_publications (revision, manifest_hash, commit_sha, published_by, status, content_schema_version)

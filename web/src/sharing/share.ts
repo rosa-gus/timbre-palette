@@ -95,11 +95,13 @@ export async function createShareImage(
   };
   context.fillStyle = "#000000";
   context.fillRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = accent;
+  context.fillRect(0, 0, canvas.width, 8);
   context.fillStyle = "#b5adaa";
   context.font = "500 20px 'IBM Plex Mono', monospace";
   const dateLabel = formatShareDate();
   context.fillText(dateLabel, 72, 82);
-  context.fillStyle = brandPink;
+  context.fillStyle = accent;
   context.fillText(
     t("sharing.paletteHeading"),
     72 + context.measureText(dateLabel).width + 24,

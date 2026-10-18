@@ -1,0 +1,159 @@
+{
+  "schema_version": 1,
+  "algorithm": "rosa-reticle",
+  "algorithm_version": "0.1.0",
+  "runtime": {
+    "python": "3.14.8",
+    "pillow": "12.3.0"
+  },
+  "sources": {
+    "voice": {
+      "file": "family_voice.jpeg",
+      "sha256": "fc14e764a2b48754e43ca9179b8bbb352f6cbffff47a567bfac53f70d1af7cf5",
+      "prepared_size": [
+        1200,
+        800
+      ],
+      "detail_bounds": [
+        516,
+        316,
+        732,
+        484
+      ],
+      "credit": {
+        "photographer": "Josh Rocklage",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/mulher-se-apresentando-no-palco-HAAsKeZbHAc",
+        "photographer_url": "https://unsplash.com/@joshrocklage",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license",
+        "note": "Autoria, URLs e licença gratuita informadas pelo responsável pelo projeto. Fotografia ilustrativa da família; não constitui evidência de participação em gravações."
+      }
+    },
+    "synth": {
+      "file": "synthesizer.jpeg",
+      "sha256": "6ea8ec78c998f57f11844fa7534dfe708100610f8964c4cd258c9b5ca1afb93f",
+      "prepared_size": [
+        1200,
+        750
+      ],
+      "detail_bounds": [
+        360,
+        168,
+        576,
+        296
+      ],
+      "credit": {
+        "photographer": "Anton Shuvalov",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/mixer-de-audio-preto-e-cinza-WFIoD6zWn98",
+        "photographer_url": "https://unsplash.com/@a8ka",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license",
+        "note": "Créditos e licença gratuita informados pelo responsável pelo projeto."
+      }
+    }
+  },
+  "common": {
+    "processing_width": 1200,
+    "shadow": "#000000",
+    "highlight": "#f29191"
+  },
+  "photo_reference": {
+    "matrix": [
+      [
+        0,
+        8,
+        2,
+        10
+      ],
+      [
+        12,
+        4,
+        14,
+        6
+      ],
+      [
+        3,
+        11,
+        1,
+        9
+      ],
+      [
+        15,
+        7,
+        13,
+        5
+      ]
+    ],
+    "levels": 8,
+    "strength": 0.35,
+    "contrast": 1.1,
+    "gamma": 1
+  },
+  "tonal_control": {
+    "curve": [
+      [
+        0,
+        0
+      ],
+      [
+        0.015,
+        0.008
+      ],
+      [
+        0.04,
+        0.028
+      ],
+      [
+        0.1,
+        0.095
+      ],
+      [
+        0.22,
+        0.235
+      ],
+      [
+        0.4,
+        0.445
+      ],
+      [
+        0.6,
+        0.665
+      ],
+      [
+        0.8,
+        0.855
+      ],
+      [
+        1,
+        1
+      ]
+    ],
+    "palette": [
+      0,
+      0.02,
+      0.065,
+      0.16,
+      0.31,
+      0.49,
+      0.68,
+      0.82,
+      1
+    ],
+    "bayer": "unmasked",
+    "rosa": "pairs_gray; tonal and detail masks"
+  },
+  "implementation": {
+    "showcase_sha256": "dc55fd175a71ba7cb993d7f8f0d0664e1dd68c36ab10b1f6991d79b7b274a11e",
+    "engine_sha256": "0b6012224bf8df55cf93156e77e818af52c24c53efb8d6c86e957ed82c2a7c0e"
+  },
+  "output": {
+    "name": "rosa-reticle-showcase.png",
+    "dimensions": [
+      1424,
+      2072
+    ],
+    "sha256": "6ce51d6ae425c3e72c2f00e42823a0cfc71d61d056457bace7f51f4499185452"
+  }
+}

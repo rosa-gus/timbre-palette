@@ -1,6 +1,6 @@
 <script lang="ts">
   import { formatWaitDuration } from "../i18n/formatters";
-  import { t } from "../i18n/runtime";
+  import { translation as t, localeStore } from "../i18n/runtime";
   import Button from "./Button.svelte";
   import type { HistoryResume } from "../analysis/history";
 
@@ -9,21 +9,21 @@
   export let periodLabel = "";
   export let showResume = true;
   export let onResume: () => void = () => undefined;
-  $: waitLabel = formatWaitDuration(waitSeconds);
+  $: waitLabel = formatWaitDuration(waitSeconds, $localeStore);
 </script>
 
 <div class="history-resume">
   {#if progress.pages > 0}
-    <p>{t("history.loadedTracks", { tracks: progress.tracks, periodSuffix: periodLabel
+    <p>{$t("history.loadedTracks", { tracks: progress.tracks, periodSuffix: periodLabel
         ? ` · ${periodLabel}`
         : "" })} </p>
   {/if}
   {#if waitSeconds > 0}
-    <p>{t("history.waitWithLabel", { waitLabel: waitLabel })}</p>
+    <p>{$t("history.waitWithLabel", { waitLabel: waitLabel })}</p>
   {/if}
   {#if progress.pages > 0 && showResume}
     <Button variant="secondary" disabled={waitSeconds > 0} on:click={onResume}
-      >{t("actions.resume")}</Button
+      >{$t("actions.resume")}</Button
     >
   {/if}
 </div>

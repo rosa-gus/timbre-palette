@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { t } from "../i18n/runtime";
+  import { translation as t } from "../i18n/runtime";
   import { RadioGroup } from "bits-ui";
 
   type Option = {
@@ -10,7 +10,7 @@
   };
   export let options: Option[] = [];
   export let value = "";
-  export let label = t("controls.chooseOption");
+  export let label = "";
   export let onChange: (value: string) => void = () => undefined;
   export let selectedButton: HTMLButtonElement | null = null;
 
@@ -32,7 +32,7 @@
 
 <RadioGroup.Root
   class="segmented-control"
-  aria-label={label}
+  aria-label={label || $t("controls.chooseOption")}
   orientation="horizontal"
   {value}
   onValueChange={onChange}

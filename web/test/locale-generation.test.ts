@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
 import { expect, it } from "vitest";
-import { flattenCatalog, mergeCatalogs, renderMessageTypes } from "../../scripts/generate_locale_types.mjs";
+import { flattenCatalog, mergeCatalogs, renderMessageTypes, validateTranslation } from "../../scripts/generate_locale_types.mjs";
 
 it("generates deterministic parameter contracts without duplicating translations", () => {
   const generated = renderMessageTypes('{"plain":"Olá", "greeting":"Olá {name}, {name}! {count}"}');
@@ -18,6 +18,10 @@ it.each([
   '{"duplicate":"first", "duplicate":"second"}',
   '{"nested":{"text":"first", "text":"second"}}',
   '{"empty":{}}',
+  '{"empty":""}',
+  '{"empty":"   "}',
+  '{"message":"Hello <upper"}',
+  '{"message":"Hello </upper"}',
   '{"dotted.key":"Use nesting"}',
   '{"array":["value"]}',
   '{"count":1}',
@@ -69,6 +73,9 @@ it("retains compile-time validation of JSON message keys and named parameters", 
     t("loading.tracksProgress", { current: 1, total: 4 });
     t("entry.profileLabel");
     editorialText("validation.requiredText", { label: "Piano" });
+    t("report.trackCount", { tracks_analyzed: 1 });
+    // @ts-expect-error Plural selectors require raw numbers.
+    t("report.trackCount", { tracks_analyzed: "1" });
     // @ts-expect-error Missing named parameter.
     t("loading.tracksProgress", { current: 1 });
     // @ts-expect-error Unknown message key.
@@ -98,4 +105,19 @@ it("retains compile-time validation of JSON message keys and named parameters", 
     unlinkSync(filename);
     rmdirSync(directory);
   }
+});
+
+it("rejects translation key, parameter and semantic wrapper mismatches", () => {
+  const base = { title: "<emphasis>Olá {name}</emphasis>" };
+  expect(() => validateTranslation(base, { title: "<emphasis>Hello {name}</emphasis>" })).not.toThrow();
+  expect(() => validateTranslation(base, { other: "Hello {name}" })).toThrow();
+  expect(() => validateTranslation(base, { title: "<emphasis>Hello {user}</emphasis>" })).toThrow();
+  expect(() => validateTranslation(base, { title: "Hello {name}" })).toThrow();
+});
+
+
+it("allows partial non-default catalogs while validating every supplied message", () => {
+  expect(() => validateTranslation({ title: "Title", tracks: "{count} tracks" }, { title: "Título" })).not.toThrow();
+  expect(() => validateTranslation({ title: "Title" }, { title: "" })).toThrow("Empty message");
+  expect(() => validateTranslation({ title: "Title" }, { title: "Hello <upper" })).toThrow();
 });

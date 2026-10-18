@@ -1,4 +1,4 @@
-import messages from "./web/src/i18n/locales/pt-BR/metadata.json";
+import messages from "./web/src/i18n/locales/en-US/metadata.json";
 import { defineConfig } from "vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { readFileSync } from "node:fs";

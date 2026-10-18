@@ -1,0 +1,17 @@
+{
+  "errors": {
+    "loadRevisions": "Could not load local revisions. Initial data is shown; export your changes to preserve them.",
+    "storageUnavailable": "Local storage unavailable. Export the revision to preserve your changes."
+  },
+  "export": {
+    "action": "Export JSON revision ↗",
+    "success": "Revision exported. Exporting does not publish changes to the API."
+  },
+  "language": {
+    "failed": "Could not load this language. Try again.",
+    "label": "Interface language"
+  },
+  "storage": {
+    "notice": "Revisions saved in this browser · manual export"
+  }
+}

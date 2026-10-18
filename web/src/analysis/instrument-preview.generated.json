@@ -1,0 +1,30 @@
+{
+  "pt-BR": {
+    "slug": "synthesizer",
+    "name": "Sintetizador",
+    "family": "Sintetizadores",
+    "soundProduction": "Sinais são gerados ou reproduzidos e depois moldados por controles.",
+    "curiosity": "O Minimoog popularizou a roda de pitch bend (pitch wheel), uma das invenções mais marcantes da música moderna. Ela foi criada especificamente para que os tecladistas pudessem dobrar a afinação das notas em tempo real e rivalizar com a expressividade e os solos das guitarras elétricas no palco.",
+    "sources": [
+      {
+        "title": "Minimoog: The First Truly Portable Synthesizer",
+        "publisher": "Red Bull Music Academy",
+        "url": "https://daily.redbullmusicacademy.com/2017/10/instrumental-instruments-minimoog"
+      }
+    ]
+  },
+  "en-US": {
+    "slug": "synthesizer",
+    "name": "Synthesizer",
+    "family": "Synthesizers",
+    "soundProduction": "Signals are generated or played back, then shaped through controls.",
+    "curiosity": "The Minimoog popularized the pitch-bend wheel, one of modern music's most notable inventions. It was created specifically so keyboard players could bend the pitch of notes in real time and rival the expressiveness and solos of electric guitars on stage.",
+    "sources": [
+      {
+        "title": "Minimoog: The First Truly Portable Synthesizer",
+        "publisher": "Red Bull Music Academy",
+        "url": "https://daily.redbullmusicacademy.com/2017/10/instrumental-instruments-minimoog"
+      }
+    ]
+  }
+}

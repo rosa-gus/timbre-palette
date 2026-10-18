@@ -1,13 +1,18 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { initializeLocale, locale, messageParts, t } from "../src/i18n/runtime";
-import { t as editorialText } from "../../editorial/src/i18n/runtime";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { initializeLocale, locale, messageParts, t, setLocale } from "../src/i18n/runtime";
+import { t as editorialText, setLocale as setEditorialLocale } from "../../editorial/src/i18n/runtime";
 import {
   formatDate, formatNumber, formatPercent, formatRegisteredDate,
   formatShareDate, formatWaitDuration,
 } from "../src/i18n/formatters";
 import { getApiErrorMessage, PaletteApiError } from "../src/api/client";
 
-afterEach(() => vi.unstubAllGlobals());
+beforeEach(async () => {
+  await setLocale("pt-BR", { persist: false, updateUrl: false });
+  await setEditorialLocale("pt-BR", { persist: false, updateUrl: false });
+});
+
+afterEach(async () => { await setLocale("pt-BR", { persist: false, updateUrl: false }); vi.unstubAllGlobals(); });
 
 describe("Portuguese presentation compatibility", () => {
   it("keeps public and editorial dictionaries independent", () => {
@@ -60,10 +65,11 @@ describe("Portuguese presentation compatibility", () => {
     expect(formatShareDate(new Date(2026, 9, 15, 12))).toBe("15 DE OUT. 2026");
   });
 
-  it("sets document language and direction without fetching data", () => {
+  it("sets document language and direction without fetching data", async () => {
     const documentElement = { lang: "", dir: "" };
     vi.stubGlobal("document", { documentElement });
-    initializeLocale();
+    vi.stubGlobal("navigator", { languages: ["pt-BR"] });
+    await initializeLocale();
     expect(documentElement).toEqual({ lang: locale, dir: "ltr" });
   });
 

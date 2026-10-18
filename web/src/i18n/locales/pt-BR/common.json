@@ -4,7 +4,7 @@
     "open": "[abrir]",
     "openInstrument": "Abrir ficha de {name}",
     "resume": "Retomar consulta",
-    "search": "Buscar",
+    "search": "Descobrir minha paleta",
     "share": "Compartilhar"
   },
   "colors": {
@@ -23,25 +23,16 @@
     "closeNotice": "Fechar aviso",
     "explanation": "Abrir explicação"
   },
-  "dates": {
-    "month1": "jan.",
-    "month2": "fev.",
-    "month3": "mar.",
-    "month4": "abr.",
-    "month5": "mai.",
-    "month6": "jun.",
-    "month7": "jul.",
-    "month8": "ago.",
-    "month9": "set.",
-    "month10": "out.",
-    "month11": "nov.",
-    "month12": "dez."
-  },
   "footer": {
     "by": "por",
-    "code": "Código",
     "credits": "<upper>Créditos</upper>",
-    "history": "<upper>Histórico</upper>"
+    "history": "<upper>Histórico</upper>",
+    "license": "Licença",
+    "sourceCode": "<upper>Código fonte</upper>"
+  },
+  "language": {
+    "failed": "Não foi possível carregar o idioma. Tente novamente.",
+    "label": "Idioma da interface"
   },
   "navigation": {
     "backUpper": "<upper>Voltar</upper>",

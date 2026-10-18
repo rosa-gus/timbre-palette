@@ -1,0 +1,27 @@
+{
+  "reading": {
+    "add": "Add article",
+    "hint": "Articles for further reading. These links do not replace the text sources.",
+    "publisher": "Institution or author",
+    "remove": "Remove link",
+    "title": "Read more"
+  },
+  "sources": {
+    "accessed": "Accessed on",
+    "add": "Add source",
+    "descriptionTitle": "Description sources",
+    "heading": "Text sources",
+    "locator": "Locator",
+    "locatorPlaceholder": "Page, section, or entry",
+    "locatorWithTitle": "Locator — {title}",
+    "notes": "Notes",
+    "publisher": "Institution or publisher",
+    "remove": "Remove source",
+    "soundProductionTitle": "Sound production sources",
+    "title": "Title",
+    "untitled": "Untitled source",
+    "url": "URL",
+    "verified": "Bibliographic metadata verified",
+    "verifiedAt": "Metadata verified on"
+  }
+}

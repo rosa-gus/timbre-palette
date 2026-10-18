@@ -7,6 +7,10 @@
     "action": "Exportar revisão JSON ↗",
     "success": "Revisão exportada. A exportação não publica alterações na API."
   },
+  "language": {
+    "failed": "Não foi possível carregar o idioma. Tente novamente.",
+    "label": "Idioma da interface"
+  },
   "storage": {
     "notice": "Revisões salvas neste navegador · exportação manual"
   }

@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { t } from "../i18n/runtime";
+  import { translation as t } from "../i18n/runtime";
   import { Popover as BitsPopover } from "bits-ui";
 
   export let frozen = false;
   export let anchor: HTMLElement | null = null;
-  export let triggerLabel = "[?]";
-  export let ariaLabel = t("controls.explanation");
-  export let closeLabel = t("controls.closeNotice");
+  export let triggerLabel = "[i]";
+  export let ariaLabel = "";
+  export let closeLabel = "";
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
   export let align: "start" | "center" | "end" = "end";
   export let sideOffset = 18;
@@ -91,7 +91,7 @@
         openDelay={200}
         closeDelay={0}
         class="tooltip-trigger"
-        aria-label={ariaLabel}
+        aria-label={ariaLabel || $t("controls.explanation")}
         >{triggerLabel}</BitsPopover.Trigger
       >
     {/if}
@@ -107,7 +107,7 @@
       onCloseAutoFocus={preventAutoFocus}
       onInteractOutside={handleInteractOutside}
       onEscapeKeydown={handleEscapeKeydown}
-      aria-label={ariaLabel}
+      aria-label={ariaLabel || $t("controls.explanation")}
     >
       <div use:alignStem>
         <slot />
@@ -115,7 +115,7 @@
           <button
             class="tooltip-close"
             type="button"
-            aria-label={closeLabel}
+            aria-label={closeLabel || $t("controls.closeNotice")}
             on:click={close}>×</button
           >
         {/if}

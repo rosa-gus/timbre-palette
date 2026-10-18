@@ -1,16 +1,29 @@
 <script lang="ts">
   import { formatPercent } from "../i18n/formatters";
   import Message from "../i18n/Message.svelte";
-  import { t } from "../i18n/runtime";
+  import { translation as t, localeStore } from "../i18n/runtime";
   import Arrow from "../components/Arrow.svelte";
   import Badge from "../components/Badge.svelte";
   import Button from "../components/Button.svelte";
   import ColorSwatch from "../components/ColorSwatch.svelte";
   import Dropdown from "../components/Dropdown.svelte";
   import Tooltip from "../components/Tooltip.svelte";
-  import { getPortraitCopy, getAnalysisNotice, getDiscoveryCopy, getImageCopy } from "../analysis/presentation";
-  import { createAsciiArtwork, getFamilyTexture } from "../sharing/ascii";
-  import { fitFamilyTexture } from "../sharing/texture";
+  import {
+    getPortraitCopy,
+    getAnalysisNotice,
+    getDiscoveryCopy,
+    getImageCopy,
+  } from "../analysis/presentation";
+  import { createAsciiArtwork } from "../sharing/ascii";
+  import FamilyPalette from "../components/FamilyPalette.svelte";
+  import {
+    fallbackTone,
+    parseHex,
+    mix,
+    hex,
+    toneText,
+    type Rgb,
+  } from "../sharing/palette-tones";
   import type {
     Confidence,
     PaletteReport,
@@ -19,21 +32,16 @@
   import type { FamilyPresence } from "../api/types";
 
   type SectionId = "portrait" | "palette" | "discovery" | "share";
-  type SectionOption = {
-    value: string;
-    label: string;
-    disabled?: boolean;
-    note?: string;
-  };
   export let report: PaletteReport;
   export let isExample = false;
   export let hydrationPending = false;
-  $: portrait = getPortraitCopy(report);
-  $: discoveryCopy = report.discovery ? getDiscoveryCopy(report.discovery) : null;
+  $: portrait = getPortraitCopy(report, $localeStore);
+  $: discoveryCopy = report.discovery
+    ? getDiscoveryCopy(report.discovery, $localeStore)
+    : null;
   $: asciiArtwork = createAsciiArtwork(report.families);
   $: discoveryAvailable =
     !!report.discovery && getAvailability("discovery") === "available";
-  export let sectionOptions: SectionOption[] = [];
   export let periodLabels: Record<string, string>;
   export let confidenceLabels: Record<Confidence, string>;
   export let shareFeedback = "";
@@ -44,41 +52,7 @@
     section: SectionId,
   ) => SectionAvailability = () => "insufficient_coverage";
 
-  function percent(value: number): string {
-    return formatPercent(value);
-  }
-
-  type Rgb = [number, number, number];
-  const fallbackTone = "#F29191";
-
-  function parseHex(value: string): Rgb | null {
-    const normalized = value.trim().replace(/^#/, "");
-    if (!/^[0-9a-f]{6}$/i.test(normalized)) return null;
-    return [
-      Number.parseInt(normalized.slice(0, 2), 16),
-      Number.parseInt(normalized.slice(2, 4), 16),
-      Number.parseInt(normalized.slice(4, 6), 16),
-    ];
-  }
-
-  function mix(first: Rgb, second: Rgb, amount: number): Rgb {
-    return first.map((value, index) =>
-      Math.round(value + (second[index] - value) * amount),
-    ) as Rgb;
-  }
-
-  function hex(rgb: Rgb): string {
-    return `#${rgb
-      .map((value) => value.toString(16).padStart(2, "0"))
-      .join("")
-      .toUpperCase()}`;
-  }
-
-  function toneText(value: string): string {
-    const base = parseHex(value) ?? parseHex(fallbackTone)!;
-    return hex(mix(base, [0, 0, 0], 0.6));
-  }
-
+  $: percent = (value: number): string => formatPercent(value, 0, $localeStore);
 
   function toneSwatches(family: FamilyPresence): string[] {
     const base =
@@ -100,16 +74,17 @@
   export let onDownloadShare: () => void = () => undefined;
   export let onShareImage: () => void = () => undefined;
   const natureLabels: Record<string, string> = {
-    acoustic: t("nature.acoustic"),
-    electric: t("nature.electric"),
-    electronic: t("nature.electronic"),
-    sampled: t("nature.sampled"),
-    hybrid: t("nature.hybrid"),
-    unknown: t("nature.unknown"),
+    acoustic: $t("nature.acoustic"),
+    electric: $t("nature.electric"),
+    electronic: $t("nature.electronic"),
+    sampled: $t("nature.sampled"),
+    hybrid: $t("nature.hybrid"),
+    unknown: $t("nature.unknown"),
   };
 </script>
 
-{#snippet sourceValue(text: string)}<span class="source-value">{text}</span>{/snippet}
+{#snippet sourceValue(text: string)}<span class="source-value">{text}</span
+  >{/snippet}
 {#snippet nextLine(text: string)}<br />{text}{/snippet}
 
 <section
@@ -117,43 +92,42 @@
   aria-labelledby="report-title"
   style={`--report-tone:${report.families[0]?.tone?.highlight ?? fallbackTone};--report-tone-text:${toneText(report.families[0]?.tone?.highlight ?? fallbackTone)}`}
 >
-  <nav class="report-index" aria-label={t("report.indexLabel")}>
-    {#each sectionOptions as option, index}
-      <a
-        href={`#${option.value}`}
-        data-unavailable={option.disabled || undefined}
-        title={option.note}
-        >{String(index + 1).padStart(2, "0")} / {option.label}</a
-      >
-    {/each}
-  </nav>
   <section id="portrait" class="portrait" aria-labelledby="report-title">
     <div class="portrait-copy">
-      <p class="eyebrow">{t("report.portraitHeading")}</p>
+      <p class="eyebrow">{$t("report.portraitHeading")}</p>
       <h2 class="portrait-title" id="report-title">{portrait.title}</h2>
       <p class="large-copy">
         {portrait.summary}
       </p>
+      <p class="portrait-scope">{$t("report.portraitScope")}</p>
+      <div class="portrait-caption">
+        <span
+          >{$t("report.trackCount", {
+            tracks_analyzed: report.profile.tracks_analyzed,
+          })}</span
+        ><span
+          >{$t("report.playCount", {
+            total_plays: report.profile.total_plays,
+          })}</span
+        ><span
+          >{$t("report.trackCoverage", {
+            coverage: percent(report.analysis.coverage_tracks),
+          })}
+          <Tooltip ariaLabel={$t("report.coverageTitle")} triggerLabel="[i]">
+            <p>{$t("report.coverageDescription")}</p>
+            <p>{$t("report.excludedTracks")}</p>
+            {#if hydrationPending}<p class="tooltip-note">
+                <span class="loading-indicator" aria-hidden="true"></span>
+                <span>{$t("report.hydrationNotice")}</span>
+              </p>{/if}
+          </Tooltip>
+        </span>
+      </div>
       {#if portrait.disclaimer}<p class="disclaimer">
           {portrait.disclaimer}
         </p>{/if}
     </div>
-    <div class="portrait-caption">
-      <span>{t("report.trackCount", { tracks_analyzed: report.profile.tracks_analyzed })}</span><span
-        >{t("report.playCount", { total_plays: report.profile.total_plays })}</span
-      ><span
-        >{t("report.trackCoverage", { coverage: percent(report.analysis.coverage_tracks) })} <Tooltip ariaLabel={t("report.coverageTitle")} triggerLabel="[?]">
-            <p>{t("report.coverageDescription")} </p>
-            <p>{t("report.excludedTracks")}</p>
-            {#if hydrationPending}<p class="tooltip-note">
-                <span class="loading-indicator" aria-hidden="true"></span>
-                <span>{t("report.hydrationNotice")}</span>
-              </p>{/if}
-          </Tooltip>
-        </span
-      >
-    </div>
-    <div class="composition" aria-label={t("report.compositionLabel")}>
+    <div class="composition" aria-label={$t("report.compositionLabel")}>
       {#each report.families as family}<ColorSwatch
           color={family.tone?.highlight ?? fallbackTone}
           label={`${family.name} (${percent(family.share)})`}
@@ -162,7 +136,7 @@
           style={`flex-grow:${family.share};`}
         />{/each}
     </div>
-    <p class="color-hint">{t("report.copyHint")} </p>
+    <p class="color-hint">{$t("report.copyHint")}</p>
     <div class="instrument-grid">
       {#each report.families.slice(0, 3) as family, index}
         <figure
@@ -172,47 +146,52 @@
           <figcaption>
             <div class="instrument-heading">
               <span class="eyebrow"
-                >{t("report.dominantPresence", { index: String(index + 1).padStart(2, "0") })}</span
+                >{$t("report.dominantPresence", {
+                  index: String(index + 1).padStart(2, "0"),
+                })}</span
               >
               <button
                 type="button"
                 class="family-card-link"
-                aria-label={t("actions.openInstrument", { name: family.name })}
+                aria-label={$t("actions.openInstrument", { name: family.name })}
                 on:click={() => onOpenInstrumentSlug(family.slug)}
-              >{t("actions.open")}</button>
+                >{$t("actions.open")}</button
+              >
             </div>
             <div class="instrument-name">
-              <h2>{family.name}</h2>
+              <h2 lang={family.locale}>{family.name}</h2>
               <strong>{percent(family.share)}</strong>
             </div>
           </figcaption>
           {#if family.image?.variants.length}<div class="credited-image">
               <img
                 src={family.image.variants[0].url}
-                alt={getImageCopy(family.image).alt}
+                lang={family.image.alt ? family.image.locale : $localeStore}
+                alt={getImageCopy(family.image, $localeStore).alt}
                 width={family.image.variants[0].width}
                 height={family.image.variants[0].height}
               />
             </div>{:else}<div class="image-placeholder">{family.name}</div>{/if}
           <div
             class="tone-strip"
-            aria-label={t("colors.variations", { name: family.name })}
+            aria-label={$t("colors.variations", { name: family.name })}
           >
             {#each toneSwatches(family) as swatch}<ColorSwatch
                 color={swatch}
-                label={t("colors.variation", { name: family.name })}
+                label={$t("colors.variation", { name: family.name })}
               />{/each}
           </div>
           {#if family.image?.variants.length}<p class="photo-caption">
               <span class="photo-caption-text"
-                >{t("images.photoCaption", { caption: getImageCopy(family.image).label })}</span
+                >{$t("images.photoCaption", {
+                  caption: getImageCopy(family.image, $localeStore).label,
+                })}</span
               >{#if family.image.credit.photographer_url}<a
                   href={family.image.credit.photographer_url}
                   target="_blank"
                   rel="noreferrer"
-                  >{family.image.credit.photographer ?? t("images.viewCredit")}<Arrow
-                    direction="up-right"
-                  /></a
+                  >{family.image.credit.photographer ??
+                    $t("images.viewCredit")}<Arrow direction="up-right" /></a
                 >{:else if family.image.credit.photographer}<span
                   >{family.image.credit.photographer}</span
                 >{/if}
@@ -223,50 +202,18 @@
   </section>
   <section id="palette" class="archive-section" aria-labelledby="palette-title">
     <div class="section-heading">
-      <p class="eyebrow">{t("report.paletteHeading")}</p>
-      <h2 id="palette-title">{t("report.paletteTitle")}</h2>
-      <p class="palette-scope">{t("report.identifiedSources")}</p>
+      <p class="eyebrow">{$t("report.paletteHeading")}</p>
+      <h2 id="palette-title">{$t("report.paletteTitle")}</h2>
+      <p class="palette-scope">{$t("report.identifiedSources")}</p>
     </div>
     <div class="palette-layout">
-      <div class="family-list" aria-label={t("report.familiesLabel")}>
-        {#each report.families as family}<div
-            class="family-row"
-            style={`--family-tone:${family.tone?.highlight ?? fallbackTone};--family-tone-text:${toneText(family.tone?.highlight ?? fallbackTone)}`}
-          >
-            <div class="family-label">
-              <button
-                type="button"
-                class="family-link"
-                aria-label={t("actions.openInstrument", { name: family.name })}
-                on:click={() => onOpenInstrumentSlug(family.slug)}
-                >{family.name}</button
-              ><Badge tone="neutral"
-                >{confidenceLabels[family.confidence]}</Badge
-              >
-            </div>
-            <div
-              class="share-bar"
-              aria-label={`${family.name}: ${percent(family.share)}`}
-              style={`--family-texture-tone:${toneText(family.tone?.highlight ?? fallbackTone)};--family-tone:${family.tone?.highlight ?? fallbackTone}`}
-            >
-              <span
-                class="family-texture"
-                style={`width:${family.share * 100}%;`}
-                aria-hidden="true"
-                use:fitFamilyTexture={getFamilyTexture(family.slug)}
-              ></span>
-              <ColorSwatch
-                color={family.tone?.highlight ?? fallbackTone}
-                label={`${family.name} (${percent(family.share)})`}
-                className="share-swatch"
-                style={`width:${family.share * 100}%;`}
-              />
-            </div>
-            <strong>{percent(family.share)}</strong>
-          </div>{/each}
-      </div>
+      <FamilyPalette
+        families={report.families}
+        {confidenceLabels}
+        {onOpenInstrumentSlug}
+      />
       <aside>
-        <p class="eyebrow">{t("report.natureHeading")}</p>
+        <p class="eyebrow">{$t("report.natureHeading")}</p>
         {#if report.sound_balance}<ul class="compact-list">
             {#each Object.entries(report.sound_balance)
               .filter(([, value]) => Math.round(value * 100) > 0)
@@ -275,29 +222,44 @@
                   >{percent(value)}</strong
                 >
               </li>{/each}
-          </ul>{:else}<p>{t("report.naturePending")}</p>{/if}
+          </ul>{:else}<p>{$t("report.naturePending")}</p>{/if}
       </aside>
     </div>
     <div class="analysis-details">
-      <Dropdown title={t("report.dataTitle")}>
-        <p>{getAnalysisNotice(report.analysis)}</p>
-        <p><Message
-          message="report.coverage"
-          values={{ tracks: percent(report.analysis.coverage_tracks), plays: percent(report.analysis.coverage_plays) }}
-          wrappers={{ value: sourceValue }}
-        /></p>
-        <p><Message
-          message="report.vocals"
-          values={{
-            tracks: report.analysis.vocal_presence.documented_tracks,
-            artists: report.analysis.vocal_presence.documented_artists,
-            plays: report.analysis.vocal_presence.documented_plays,
-            ratio: percent(report.analysis.vocal_presence.play_ratio),
-          }}
-          wrappers={{ value: sourceValue }}
-        /></p>
-        <p>{t("report.catalogLabel")} {#if report.analysis.catalog_version}<code class="source-value">{report.analysis.catalog_version}</code>{:else}{t("report.unpublished")}{/if}
-          <span class="separator-indicator" aria-hidden="true">·</span>{t("report.methodLabel")} <code class="source-value">{report.analysis.methodology_version}</code>
+      <Dropdown title={$t("report.dataTitle")}>
+        <p>{getAnalysisNotice(report.analysis, $localeStore)}</p>
+        <p>
+          <Message
+            message="report.coverage"
+            values={{
+              tracks: percent(report.analysis.coverage_tracks),
+              plays: percent(report.analysis.coverage_plays),
+            }}
+            wrappers={{ value: sourceValue }}
+          />
+        </p>
+        <p>
+          <Message
+            message="report.vocals"
+            values={{
+              tracks: report.analysis.vocal_presence.documented_tracks,
+              artists: report.analysis.vocal_presence.documented_artists,
+              plays: report.analysis.vocal_presence.documented_plays,
+              ratio: percent(report.analysis.vocal_presence.play_ratio),
+            }}
+            wrappers={{ value: sourceValue }}
+          />
+        </p>
+        <p>
+          {$t("report.catalogLabel")}
+          {#if report.analysis.catalog_version}<code class="source-value"
+              >{report.analysis.catalog_version}</code
+            >{:else}{$t("report.unpublished")}{/if}
+          <span class="separator-indicator" aria-hidden="true">·</span>{$t(
+            "report.methodLabel",
+          )}
+          <code class="source-value">{report.analysis.methodology_version}</code
+          >
         </p>
       </Dropdown>
     </div>
@@ -310,8 +272,8 @@
   >
     {#if discoveryAvailable && report.discovery}
       <div class="section-heading">
-        <p class="eyebrow">{t("report.discoveryHeading")}</p>
-        <h2 id="discovery-title">{t("report.discoveryTitle")}</h2>
+        <p class="eyebrow">{$t("report.discoveryHeading")}</p>
+        <h2 id="discovery-title">{$t("report.discoveryTitle")}</h2>
       </div>
       <div class="discovery-layout">
         {#if report.discovery.image?.variants.length}<figure
@@ -319,23 +281,28 @@
           >
             <img
               src={report.discovery.image.variants[0].url}
-              alt={getImageCopy(report.discovery.image).alt}
+              lang={report.discovery.image.alt
+                ? report.discovery.image.locale
+                : $localeStore}
+              alt={getImageCopy(report.discovery.image, $localeStore).alt}
               width={report.discovery.image.variants[0].width}
               height={report.discovery.image.variants[0].height}
               loading="lazy"
             />
             <figcaption class="photo-caption">
               <span class="photo-caption-text"
-                >{t("images.photoCaption", { caption: getImageCopy(report.discovery.image).label })}</span
+                >{$t("images.photoCaption", {
+                  caption: getImageCopy(report.discovery.image, $localeStore)
+                    .label,
+                })}</span
               >{#if report.discovery.image.credit.photographer_url}
                 <a
                   href={report.discovery.image.credit.photographer_url}
                   target="_blank"
                   rel="noreferrer"
-                  >{report.discovery.image.credit.photographer ?? t("images.viewCredit")}<Arrow
-                    direction="up-right"
-                  /></a
-              >{:else if report.discovery.image.credit.photographer}<span
+                  >{report.discovery.image.credit.photographer ??
+                    $t("images.viewCredit")}<Arrow direction="up-right" /></a
+                >{:else if report.discovery.image.credit.photographer}<span
                   >{report.discovery.image.credit.photographer}</span
                 >{/if}
             </figcaption>
@@ -344,13 +311,14 @@
           <h3>{discoveryCopy?.title}</h3>
           <p class="large-copy">{discoveryCopy?.summary}</p>
           <Button variant="secondary" on:click={onOpenInstrument}
-            >{t("actions.exploreInstrument")} <Arrow direction="right" /></Button
+            >{$t("actions.exploreInstrument")}
+            <Arrow direction="right" /></Button
           >
         </div>
       </div>
     {:else}
-      <p class="eyebrow">{t("report.discoveryHeading")}</p>
-      <p id="discovery-title">{t("report.noDiscovery")} </p>
+      <p class="eyebrow">{$t("report.discoveryHeading")}</p>
+      <p id="discovery-title">{$t("report.noDiscovery")}</p>
     {/if}
   </section>
   <section
@@ -359,40 +327,53 @@
     aria-labelledby="share-title"
   >
     <div class="share-copy">
-      <p class="eyebrow">04 / {isExample ? t("sharing.exampleHeading") : t("sharing.ownHeading")}</p>
+      <p class="eyebrow">
+        04 / {isExample
+          ? $t("sharing.exampleHeading")
+          : $t("sharing.ownHeading")}
+      </p>
       <h2 id="share-title">
-        <Message message={isExample ? "sharing.exampleLead" : "sharing.ownLead"} wrappers={{ line: nextLine }} /> </h2>
+        <Message
+          message={isExample ? "sharing.exampleLead" : "sharing.ownLead"}
+          wrappers={{ line: nextLine }}
+        />
+      </h2>
       <p class="large-copy">
-        {isExample
-          ? t("sharing.exampleIntro")
-          : t("sharing.ownIntro")}
+        {isExample ? $t("sharing.exampleIntro") : $t("sharing.ownIntro")}
       </p>
       <Button variant="primary" disabled={shareBusy} on:click={onGenerateShare}
         >{sharePreviewUrl
-          ? t("sharing.update")
+          ? $t("sharing.update")
           : isExample
-            ? t("sharing.prepareExample")
-            : t("sharing.prepareOwn")}
+            ? $t("sharing.prepareExample")
+            : $t("sharing.prepareOwn")}
         <Arrow direction="right" /></Button
       >{#if sharePreviewUrl}{#if canShareImage}<Button
-          variant="secondary"
-          on:click={onShareImage}>{t("actions.share")}</Button
-        >{/if}<Button
-          variant="secondary"
-          on:click={onDownloadShare}>{t("sharing.download")}</Button
+            variant="secondary"
+            on:click={onShareImage}>{$t("actions.share")}</Button
+          >{/if}<Button variant="secondary" on:click={onDownloadShare}
+          >{$t("sharing.download")}</Button
         >{/if}
       <p class="share-feedback" aria-live="polite">{shareFeedback}</p>
     </div>
     <div class="share-preview">
       {#if sharePreviewUrl}<img
           src={sharePreviewUrl}
-          alt={t("sharing.previewAlt", { listener: isExample ? report.profile.realname || t("example.displayName") : report.profile.username })}
+          alt={$t("sharing.previewAlt", {
+            listener: isExample
+              ? report.profile.realname || $t("example.displayName")
+              : report.profile.username,
+          })}
         />{:else}<div class="share-card-preview">
           <span class="eyebrow"
-            >{t("sharing.previewIdentity", { listener: isExample
-              ? report.profile.realname || t("example.displayName")
-              : `@${report.profile.username}` })} <span class="separator-indicator" aria-hidden="true">·</span>
-            {#if isExample}{t("example.badge")} <span class="separator-indicator" aria-hidden="true">·</span> {/if}
+            >{$t("sharing.previewIdentity", {
+              listener: isExample
+                ? report.profile.realname || $t("example.displayName")
+                : `@${report.profile.username}`,
+            })} <span class="separator-indicator" aria-hidden="true">·</span>
+            {#if isExample}{$t("example.badge")}
+              <span class="separator-indicator" aria-hidden="true">·</span>
+            {/if}
             {periodLabels[report.profile.period]}</span
           ><strong>{portrait.title}</strong>
           <p class="preview-summary">{portrait.summary}</p>
@@ -418,10 +399,9 @@
               </div>{/each}
           </div>
           <span class="preview-note"
-            >{t("sharing.interpretation")} <span
-              class="separator-indicator"
-              aria-hidden="true">·</span
-            > TIMBRE PALETTE</span
+            >{$t("sharing.interpretation")}
+            <span class="separator-indicator" aria-hidden="true">·</span> TIMBRE
+            PALETTE</span
           >
         </div>{/if}
     </div>
@@ -435,31 +415,11 @@
     margin: 0 auto;
     padding: 0 0 32px;
   }
-  .report-index {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px 30px;
-    padding: 20px 0;
-  }
-  .report-index a {
-    color: var(--muted);
-    font-family: var(--meta);
-    font-size: 12px;
-    text-decoration: none;
-  }
-  .report-index a:hover {
-    color: var(--ink);
-    text-decoration: underline;
-    text-underline-offset: 5px;
-  }
-  .report-index a[data-unavailable="true"] {
-    color: var(--quiet);
-  }
   .portrait {
     padding-top: 40px;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 220px;
-    gap: 32px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
   }
   .portrait-title {
     max-width: 950px;
@@ -489,18 +449,20 @@
     color: var(--muted);
     margin: 0;
   }
+  .portrait-scope {
+    margin: 0 0 8px;
+    color: var(--muted);
+    font-size: 14px;
+  }
   .portrait-caption {
-    display: grid;
-    align-content: end;
-    gap: 8px;
-    padding-bottom: 4px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px 20px;
+    margin-bottom: 16px;
     color: var(--muted);
     font-family: var(--meta);
     font-size: 13px;
-  }
-  .portrait-caption span:last-child {
-    margin-top: 12px;
-    font-family: var(--display);
   }
   .composition {
     grid-column: 1/-1;
@@ -548,8 +510,7 @@
   .instrument-name h2 {
     font-size: clamp(1.2rem, 1.8vw, 1.75rem);
   }
-  .family-card-link,
-  .family-link {
+  .family-card-link {
     padding: 0;
     border: 0;
     background: transparent;
@@ -558,7 +519,7 @@
     font: inherit;
     text-align: left;
     text-decoration: underline;
-    text-decoration-color: var(--muted);
+    text-decoration-color: var(--line-strong);
     text-decoration-thickness: 1px;
     text-underline-offset: 5px;
     transition:
@@ -566,9 +527,7 @@
       text-decoration-color 150ms ease;
   }
   .family-card-link:hover,
-  .family-card-link:focus-visible,
-  .family-link:hover,
-  .family-link:focus-visible {
+  .family-card-link:focus-visible {
     color: var(--family-tone-text);
     text-decoration-color: currentColor;
   }
@@ -578,8 +537,8 @@
     text-decoration: none;
     white-space: nowrap;
   }
-  :global(:root[data-theme="dark"]) .family-card-link:is(:hover, :focus-visible),
-  :global(:root[data-theme="dark"]) .family-link:is(:hover, :focus-visible) {
+  :global(:root[data-theme="dark"])
+    .family-card-link:is(:hover, :focus-visible) {
     color: var(--family-tone);
   }
   .instrument-name strong {
@@ -654,59 +613,6 @@
     display: grid;
     grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr);
     gap: 64px;
-  }
-  .family-list {
-    display: grid;
-    gap: 24px;
-  }
-  .family-row {
-    display: grid;
-    grid-template-columns: minmax(170px, 1fr) minmax(80px, 1.5fr) 48px;
-    gap: 20px;
-    align-items: center;
-  }
-  .family-label {
-    display: grid;
-    justify-items: start;
-    gap: 6px;
-  }
-  .family-label .family-link {
-    font-size: 17px;
-  }
-  .share-bar {
-    position: relative;
-    min-width: 0;
-    height: 28px;
-    border-bottom: 1px solid var(--line);
-  }
-  .family-texture {
-    display: block;
-    color: var(--family-texture-tone);
-    font: 14px/22px var(--meta);
-    letter-spacing: 0;
-    white-space: nowrap;
-    pointer-events: none;
-  }
-  :global(:root[data-theme="dark"]) .family-texture {
-    color: var(--family-tone);
-  }
-  .share-bar :global(.share-swatch) {
-    position: absolute;
-    inset: 0 auto 0 0;
-    height: 100%;
-    background: transparent;
-    border-bottom: 3px solid var(--swatch-color);
-  }
-  .share-bar :global(.share-swatch:hover),
-  .share-bar :global(.share-swatch:focus-visible),
-  .share-bar :global(.share-swatch[data-state="open"]) {
-    outline-offset: 2px;
-  }
-  .family-row > strong {
-    font-family: var(--meta);
-    font-size: 14px;
-    font-weight: 400;
-    text-align: right;
   }
   .compact-list {
     list-style: none;
@@ -850,9 +756,6 @@
     font-size: 14px;
   }
   @media (max-width: 800px) {
-    .report-index {
-      gap: 14px 20px;
-    }
     .portrait {
       grid-template-columns: 1fr;
       padding-top: 24px;
@@ -862,9 +765,6 @@
       display: flex;
       flex-wrap: wrap;
       gap: 12px;
-    }
-    .portrait-caption span:last-child {
-      margin: 0;
     }
     .instrument-grid {
       grid-template-columns: 1fr;
@@ -878,17 +778,6 @@
     .share-section {
       grid-template-columns: 1fr;
       gap: 32px;
-    }
-    .family-row {
-      grid-template-columns: 1fr 48px;
-      gap: 10px;
-    }
-    .family-row > strong {
-      grid-column: 2;
-      grid-row: 1;
-    }
-    .share-bar {
-      grid-column: 1/-1;
     }
     .archive-section {
       margin-top: 44px;

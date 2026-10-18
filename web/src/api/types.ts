@@ -103,6 +103,7 @@ export interface InstrumentImage {
 }
 
 export interface FamilyPresence {
+  locale?: string;
   slug: string;
   name: string;
   share: number;
@@ -122,6 +123,7 @@ export interface SoundBalance {
 }
 
 export interface Discovery {
+  locale?: string;
   instrument_slug: string;
   instrument_name: string;
   image: AnalysisImage | null;
@@ -141,6 +143,7 @@ export interface Temperament {
 
 /** Published image metadata, without generated presentation prose. */
 export interface AnalysisImage extends Omit<InstrumentImage, "alt" | "caption"> {
+  locale?: string;
   alt: string | null;
   depicted_name: string;
   family_name: string;
@@ -213,6 +216,7 @@ export interface VocabularyFeaturedArtist {
   mbid: string;
   name: string;
   families: {
+    locale?: string;
     slug: string;
     name: string;
     instruments: string[];
@@ -221,6 +225,7 @@ export interface VocabularyFeaturedArtist {
 }
 
 export interface VocabularyInstrument {
+  locale?: string;
   slug: string;
   name: string;
   distinct_recordings: number;
@@ -236,6 +241,7 @@ export interface VocabularyInstrument {
 }
 
 export interface VocabularyFamily {
+  locale?: string;
   slug: string;
   name: string;
   score: number;

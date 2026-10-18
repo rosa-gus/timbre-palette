@@ -1,8 +1,7 @@
 <script lang="ts">
   import { formatNumber, formatPercent, formatRegisteredDate } from "../i18n/formatters";
-  import { t } from "../i18n/runtime";
+  import { translation as t, localeStore } from "../i18n/runtime";
   import { Tabs } from "bits-ui";
-  import { tick } from "svelte";
   import { normalizePathname } from "../navigation";
   import { getAsciiLines, getFamilyTexture, hasAsciiDrawing } from "../sharing/ascii";
   import { fitFamilyTexture } from "../sharing/texture";
@@ -26,14 +25,11 @@
   import ReportView from "./ReportView.svelte";
 
   type SectionId = "portrait" | "palette" | "discovery" | "share";
-  type SectionOption = {
-    value: string;
-    label: string;
-    disabled?: boolean;
-    note?: string;
-  };
   export let result: ProfileAnalysisV3;
   export let revealReady = true;
+  export let localizationIncomplete = false;
+  export let localizationPending = false;
+  export let onRetryLocalization: () => void = () => undefined;
   export let period: ListeningPeriod = "1month";
   export let periods: { value: ListeningPeriod; label: string }[] = [];
   export let periodLoading = false;
@@ -45,7 +41,6 @@
   export let onPeriodChange: (value: ListeningPeriod) => void = () => undefined;
   export let activeView: AnalysisView;
   export let onSelectView: (view: AnalysisView) => void;
-  export let sectionOptions: SectionOption[] = [];
   export let periodLabels: Record<string, string>;
   export let statusLabels: Record<AnalysisStatus, string>;
   export let confidenceLabels: Record<Confidence, string>;
@@ -81,10 +76,10 @@
     vocabulary.status === "pending" ||
     (vocabulary.status === "available" && !vocabularyAvailable);
   $: vocabularyStatusLabel = vocabularyAvailable
-    ? t("availability.available")
+    ? $t("availability.available")
     : vocabularyPending
-      ? t("vocabulary.pending")
-      : t("status.insufficient");
+      ? $t("vocabulary.pending")
+      : $t("status.insufficient");
   $: predominantFamily = vocabulary.families.reduce<
     (typeof vocabulary.families)[number] | null
   >(
@@ -108,7 +103,7 @@
     ...option,
     disabled: periodLoading,
   }));
-  $: registeredLabel = formatRegisteredDate(result.profile.registered);
+  $: registeredLabel = formatRegisteredDate(result.profile.registered, $localeStore);
   $: showLowCoverageNotice =
     revealReady &&
     !periodLoading &&
@@ -119,15 +114,9 @@
     selectedPeriodButton !== null &&
     dismissedLowCoveragePeriod !== period;
 
-  function percent(value: number): string {
-    return formatPercent(value);
-  }
-  function coveragePercent(value: number): string {
-    return formatPercent(value, 1);
-  }
-  function count(value: number): string {
-    return formatNumber(value);
-  }
+  $: percent = (value: number): string => formatPercent(value, 0, $localeStore);
+  $: coveragePercent = (value: number): string => formatPercent(value, 1, $localeStore);
+  $: count = (value: number): string => formatNumber(value, undefined, $localeStore);
   function artistArtStyle(artist: VocabularyFeaturedArtist): string {
     const primary = artistArtColors(artist)[0];
     return `--art-primary:${primary}`;
@@ -222,7 +211,7 @@
   }
   function artistInstruments(
     artist: VocabularyFeaturedArtist,
-  ): { name: string; slug: string | null; tone: string }[] {
+  ): { name: string; locale?: string; slug: string | null; tone: string }[] {
     const seen = new Set<string>();
     return artist.families
       .flatMap((family) => {
@@ -231,6 +220,7 @@
         );
         return family.instruments.map((name) => ({
           name,
+          locale: listed?.instruments.find((item) => item.name === name)?.locale,
           slug: listed?.instruments.find((item) => item.name === name)?.slug ?? null,
           tone: listed?.tone?.highlight ?? "#F29191",
         }));
@@ -263,19 +253,19 @@
   function reasonText(reason: string): string {
     const reasons: Record<string, string> = {
       no_mapped_evidence:
-        t("vocabulary.noRecurringInstruments"),
+        $t("vocabulary.noRecurringInstruments"),
       insufficient_track_reach:
-        t("vocabulary.lowTrackReach"),
+        $t("vocabulary.lowTrackReach"),
       insufficient_play_reach:
-        t("vocabulary.lowPlayReach"),
+        $t("vocabulary.lowPlayReach"),
       insufficient_artist_diversity:
-        t("vocabulary.lowArtistDiversity"),
+        $t("vocabulary.lowArtistDiversity"),
       excessive_artist_concentration:
-        t("vocabulary.highConcentration"),
+        $t("vocabulary.highConcentration"),
     };
     return (
       reasons[reason] ??
-      t("vocabulary.insufficientEvidence")
+      $t("vocabulary.insufficientEvidence")
     );
   }
   function handleTabChange(value: string): void {
@@ -297,34 +287,22 @@
   function dismissLowCoverageNotice(): void {
     dismissedLowCoveragePeriod = period;
   }
-
-  async function showShareSection(event: MouseEvent): Promise<void> {
-    event.preventDefault();
-    if (activeView !== "track_palette") onSelectView("track_palette");
-    await tick();
-    const section = document.getElementById("share");
-    if (!section) return;
-    if (window.location.hash !== "#share") {
-      window.history.pushState({}, "", "#share");
-    }
-    section.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
 </script>
 
 <div class="results-view">
-  <div class="results-opening" class:reveal-ready={revealReady}>
-  <a class="back-link" href={homePath}><Arrow direction="left" />{t("navigation.backUpper")}</a>
+  <div class="results-opening">
+  <a class="back-link" href={homePath}><Arrow direction="left" />{$t("navigation.backUpper")}</a>
   <section
     class="profile-card"
     aria-labelledby="profile-title"
   >
     <div class="profile-avatar">
       {#if result.is_example}
-        <pre class="profile-avatar-drawing" role="img" aria-label={t("example.avatarAlt")}>{HERCULES_BEETLE_ASCII}</pre>
+        <pre class="profile-avatar-drawing" role="img" aria-label={$t("example.avatarAlt")}>{HERCULES_BEETLE_ASCII}</pre>
       {:else if result.profile.avatar_url}
         <img
           src={result.profile.avatar_url}
-          alt={t("profile.avatarAlt", { username: result.profile.username })}
+          alt={$t("profile.avatarAlt", { username: result.profile.username })}
           on:error={handleAvatarError}
         />
       {:else}
@@ -334,14 +312,11 @@
     <div class="profile-copy">
       <div class="profile-identity">
         <div class="profile-label">
-          {#if !result.is_example}
-          <p class="eyebrow">{t("profile.heading")} </p>
-          {/if}
-          {#if result.is_example}<Badge tone="accent">{t("example.badge")}</Badge>{/if}
+          {#if result.is_example}<Badge tone="accent">{$t("example.badge")}</Badge>{/if}
         </div>
         <h1 id="profile-title">
           {result.is_example
-            ? result.profile.realname || t("example.displayName")
+            ? result.profile.realname || $t("example.displayName")
             : result.profile.realname || `@${result.profile.username}`}
         </h1>
         {#if result.is_example}<p class="profile-username">
@@ -352,39 +327,32 @@
       </div>
       <div class="profile-footer">
         <div class="profile-meta">
-          {#if registeredLabel}<span>{t("profile.registered", { registeredLabel: registeredLabel })}</span
+          {#if registeredLabel}<span>{$t("profile.registered", { registeredLabel: registeredLabel })}</span
             >{/if}
-          {#if result.is_example}<span>{t("profile.exampleNotice")}</span>{/if}
+          {#if result.is_example}<span>{$t("profile.exampleNotice")}</span>{/if}
           {#if palette.analysis.data_source !== "catalog"}
             <span
               >{palette.analysis.data_source === "mock"
-                ? t("profile.demoData")
-                : t("profile.hybridData")}</span
+                ? $t("profile.demoData")
+                : $t("profile.hybridData")}</span
             >
           {/if}
         </div>
         <div class="profile-actions">
-          {#if directAvailable && !periodLoading}<a
-             class="profile-link"
-             href="#share"
-             on:click={showShareSection}
-              >{result.is_example ? t("sharing.viewExampleUpper") : t("sharing.viewOwnUpper")}
-              <Arrow direction="right" /></a
-            >{/if}
           {#if !result.is_example}<a
             class="profile-link"
             href={lastFmUrl}
             target="_blank"
             rel="noreferrer"
-          >{t("profile.openLastFm")} <Arrow direction="up-right" />
+          >{$t("profile.openLastFm")} <Arrow direction="up-right" />
           </a>{/if}
         </div>
       </div>
     </div>
     <div class="period-controls" aria-busy={periodLoading}>
-      <span class="period-label">{t("periods.analysisHeading")}</span>
+      <span class="period-label">{$t("periods.analysisHeading")}</span>
       <SegmentedControl
-        label={t("periods.analysisLabel")}
+        label={$t("periods.analysisLabel")}
         options={periodOptions}
         value={period}
         bind:selectedButton={selectedPeriodButton}
@@ -393,7 +361,7 @@
       {#if periodLoading}
         <p class="period-loading" role="status" aria-live="polite">
           <span class="loading-indicator" aria-hidden="true"></span>
-          <span>{t("periods.updating", { period: periodLabels[period] })}</span>
+          <span>{$t("periods.updating", { period: periodLabels[period] })}</span>
         </p>
       {:else if periodError}
         <p class="period-error" role="alert">{periodError}</p>
@@ -402,7 +370,7 @@
         <HistoryResumeNotice progress={resumeProgress} {waitSeconds} periodLabel={periodLabels[resumeProgress.period]} {onResume} />
       {/if}
       {#if periodRevealKey > 0 && !periodLoading && !periodError}
-        <p class="visually-hidden" role="status">{t("periods.updated", { period: periodLabels[period] })} </p>
+        <p class="visually-hidden" role="status">{$t("periods.updated", { period: periodLabels[period] })} </p>
       {/if}
       {#if showLowCoverageNotice}
         <Tooltip
@@ -411,7 +379,7 @@
           align="center"
           onClose={dismissLowCoverageNotice}
         >
-          <p aria-live="polite">{t("periods.lowCoverage", { period: periodLabels[period], coverage: coveragePercent(
+          <p aria-live="polite">{$t("periods.lowCoverage", { period: periodLabels[period], coverage: coveragePercent(
               palette.analysis.coverage_tracks,
             ) })} </p>
         </Tooltip>
@@ -432,10 +400,10 @@
   >
     <Tabs.List
       class={`view-switch${vocabulary.status === "insufficient" ? " view-switch-single" : ""}`}
-      aria-label={t("results.viewsLabel")}
+      aria-label={$t("results.viewsLabel")}
     >
       <Tabs.Trigger value="track_palette" class="view-tab view-tab-palette">
-        <span>{t("results.trackPaletteTab")}</span>
+        <span>{$t("results.trackPaletteTab")}</span>
         <small>{statusLabels[palette.analysis.status]}</small>
       </Tabs.Trigger>
       {#if vocabulary.status !== "insufficient"}
@@ -443,18 +411,38 @@
           value="artist_vocabulary"
           class="view-tab view-tab-vocabulary"
         >
-          <span>{t("results.artistVocabularyTab")}</span>
+          <span>{$t("results.artistVocabularyTab")}</span>
           <small>{vocabularyStatusLabel}</small>
         </Tabs.Trigger>
       {/if}
     </Tabs.List>
+
+    <p class="view-description">
+      <span aria-hidden="true">^ </span>
+      {activeView === "track_palette"
+        ? $t("results.trackPaletteDescription")
+        : $t("results.artistVocabularyDescription")}
+    </p>
+
+      {#if localizationIncomplete}
+        <div class="localization-notice">
+          <span class="localization-info" aria-hidden="true">[i]</span>
+          <p role="status">{localizationPending ? $t("localization.retrying") : $t("localization.partial")}</p>
+          <button
+            type="button"
+            disabled={localizationPending}
+            on:click={onRetryLocalization}
+          >{localizationPending ? $t("localization.pending") : $t("localization.retry")}
+            <span class="retry-arrow" aria-hidden="true">&#x21BB;&#xFE0E;</span>
+          </button>
+        </div>
+      {/if}
 
     <Tabs.Content value="track_palette" class="view-panel">
       {#if directAvailable}
         <ReportView
           report={palette}
           isExample={result.is_example}
-          {sectionOptions}
           {periodLabels}
           {confidenceLabels}
           {shareFeedback}
@@ -471,17 +459,17 @@
         />
       {:else}
         <section class="unavailable-reading" aria-labelledby="direct-title">
-          <p class="eyebrow">{t("results.trackPaletteHeading")} <span
+          <p class="eyebrow">{$t("results.trackPaletteHeading")} <span
               class="separator-indicator"
               aria-hidden="true">·</span
-            > {t("results.insufficientBadge")} </p>
-          <h2 id="direct-title">{t("results.noPortraitTitle")}</h2>
-          <p>{t("results.noPortraitDescription")} </p>
-          <p class="reading-measure">{t("results.trackCoverage", { coverage: percent(palette.analysis.coverage_tracks) })} <span class="separator-indicator" aria-hidden="true">·</span>{t("results.playCoverage", { coverage: percent(palette.analysis.coverage_plays) })} </p>
+            > {$t("results.insufficientBadge")} </p>
+          <h2 id="direct-title">{$t("results.noPortraitTitle")}</h2>
+          <p>{$t("results.noPortraitDescription")} </p>
+          <p class="reading-measure">{$t("results.trackCoverage", { coverage: percent(palette.analysis.coverage_tracks) })} <span class="separator-indicator" aria-hidden="true">·</span>{$t("results.playCoverage", { coverage: percent(palette.analysis.coverage_plays) })} </p>
           {#if vocabularyAvailable}<button
               type="button"
               on:click={() => onSelectView("artist_vocabulary")}
-              >{t("results.openVocabulary")}</button
+              >{$t("results.openVocabulary")}</button
             >{/if}
         </section>
       {/if}
@@ -491,23 +479,23 @@
         <section class="vocabulary-reading" aria-labelledby="vocabulary-title">
           <div class="vocabulary-lead">
             <div>
-              <p class="eyebrow">{t("vocabulary.heading")} <span
+              <p class="eyebrow">{$t("vocabulary.heading")} <span
                   class="separator-indicator"
                   aria-hidden="true">·</span
                 >
                 {vocabularyStatusLabel.toUpperCase()}
               </p>
-              <h2 id="vocabulary-title">{t("vocabulary.title")} </h2>
-              <p class="lead-copy">{t("vocabulary.description")} </p>
-              <p class="scope-note">{t("narrative.vocabulary.notice")}</p>
+              <h2 id="vocabulary-title">{$t("vocabulary.title")} </h2>
+              <p class="lead-copy">{$t("vocabulary.description")} </p>
+              <p class="scope-note">{$t("narrative.vocabulary.notice")}</p>
             </div>
             {#if predominantDrawing && predominantFamily}
               <figure
                 class="type-art"
-                aria-label={t("vocabulary.drawingAlt", { name: predominantFamily.name })}
+                aria-label={$t("vocabulary.drawingAlt", { name: predominantFamily.name })}
               >
                 <pre aria-hidden="true">{predominantDrawing}</pre>
-                <figcaption>{t("vocabulary.predominantFamily", { name: predominantFamily.name })} </figcaption>
+                <figcaption>{$t("vocabulary.predominantFamily", { name: predominantFamily.name })} </figcaption>
               </figure>
             {/if}
           </div>
@@ -516,7 +504,7 @@
             <div
               class="vocabulary-color-strip"
               role="img"
-              aria-label={t("vocabulary.colorsLabel", { families: vocabulary.families.map((family) => `${family.name} ${percent(family.share)}`).join(", ") })}
+              aria-label={$t("vocabulary.colorsLabel", { families: vocabulary.families.map((family) => `${family.name} ${percent(family.share)}`).join(", ") })}
             >
               {#each vocabulary.families as family (family.slug)}
                 <span
@@ -531,8 +519,8 @@
                 aria-labelledby="featured-artists-title"
               >
                 <div class="featured-heading">
-                  <h3 id="featured-artists-title">{t("vocabulary.featuredArtists")}</h3>
-                  <p>{t("vocabulary.featuredArtistsDescription")}</p>
+                  <h3 id="featured-artists-title">{$t("vocabulary.featuredArtists")}</h3>
+                  <p>{$t("vocabulary.featuredArtistsDescription")}</p>
                 </div>
                 <div class="artist-cards">
                   {#each vocabulary.featured_artists as artist, index (artist.mbid)}
@@ -551,13 +539,13 @@
                       </div>
                       <div class="artist-card-copy">
                         <span class="artist-card-index"
-                          >{t("vocabulary.artistIndex", { index: String(index + 1).padStart(2, "0") })}</span
+                          >{$t("vocabulary.artistIndex", { index: String(index + 1).padStart(2, "0") })}</span
                         >
                         <h4>{artist.name}</h4>
                         <p class="artist-families">
-                          {artist.families
-                            .map((family) => family.name)
-                            .join(" · ")}
+                          {#each artist.families as family, index}
+                            {#if index > 0} · {/if}<span lang={family.locale}>{family.name}</span>
+                          {/each}
                         </p>
                         <p class="artist-instruments">
                           {#each artistInstruments(artist) as instrument, instrumentIndex (instrument.name)}
@@ -573,47 +561,46 @@
                                   on:click={() =>
                                     instrument.slug &&
                                     onOpenInstrumentSlug(instrument.slug)}
+                                  lang={instrument.locale}
                                   >{instrument.name}</button
-                                >{:else}{instrument.name}{/if}
+                                >{:else}<span lang={instrument.locale}>{instrument.name}</span>{/if}
                             </span>
                           {/each}
                         </p>
-                        <p class="artist-card-note">{t("vocabulary.artistDescription")} </p>
+                        <p class="artist-card-note">{$t("vocabulary.artistDescription")} </p>
                       </div>
                     </article>
                   {/each}
                 </div>
               </section>
             {/if}
-            <div class="reach-grid" aria-label={t("vocabulary.reachLabel")}>
+            <div class="reach-grid" aria-label={$t("vocabulary.reachLabel")}>
               <div>
-                <span>{t("vocabulary.qualifiedTracksHeading")}</span><strong
+                <span>{$t("vocabulary.qualifiedTracksHeading")}</span><strong
                   >{count(vocabulary.reach.qualified_tracks)} / {count(
                     vocabulary.reach.total_tracks,
                   )}</strong
                 ><small
-                  >{t("vocabulary.trackReach", { coverage: percent(vocabulary.reach.track_reach) })}</small
+                  >{$t("vocabulary.trackReach", { coverage: percent(vocabulary.reach.track_reach) })}</small
                 >
               </div>
               <div>
-                <span>{t("vocabulary.playsHeading")}</span><strong
+                <span>{$t("vocabulary.playsHeading")}</span><strong
                   >{percent(vocabulary.reach.play_reach)}</strong
                 ><small
-                  >{t("vocabulary.playReach", { qualified: count(vocabulary.reach.qualified_plays), total: count(
-                    vocabulary.reach.total_plays,
-                  ) })}</small
+                  >{$t("vocabulary.playReach", { qualified: count(vocabulary.reach.qualified_plays), total: vocabulary.reach.total_plays })}</small
                 >
               </div>
               <div>
-                <span>{t("vocabulary.qualifiedArtistsHeading")}</span><strong
+                <span>{$t("vocabulary.qualifiedArtistsHeading")}</span><strong
                   >{count(vocabulary.reach.qualified_artists)} / {count(
                     vocabulary.reach.total_artists,
                   )}</strong
-                ><small>{t("vocabulary.recurringInstruments")}</small>
+                ><small>{$t("vocabulary.recurringInstruments")}</small>
               </div>
             </div>
             <div class="family-heading">
-              <span>{t("vocabulary.familiesHeading")}</span>
+              <span>{$t("vocabulary.familiesHeading")}</span>
             </div>
             <div class="vocabulary-families">
               {#each vocabulary.families as family, index}
@@ -629,18 +616,18 @@
                     <button
                       type="button"
                       class="family-ficha"
-                      aria-label={t("actions.openInstrument", { name: family.name })}
+                      aria-label={$t("actions.openInstrument", { name: family.name })}
                       on:click={() => onOpenInstrumentSlug(family.slug)}
-                    >{t("actions.open")}</button>
+                    >{$t("actions.open")}</button>
                   </div>
                   <div class="family-top">
-                    <h3>{family.name}</h3>
+                    <h3 lang={family.locale}>{family.name}</h3>
                     <strong>{percent(family.share)}</strong>
                   </div>
                   <div
                     class="vocabulary-bar"
                     role="img"
-                    aria-label={t("vocabulary.familyShareLabel", { name: family.name, share: percent(family.share) })}
+                    aria-label={$t("vocabulary.familyShareLabel", { name: family.name, share: percent(family.share) })}
                   >
                     <span
                       class="vocabulary-texture"
@@ -656,8 +643,8 @@
                       : "artistas com suporte"}
                   </p>
                   <div class="family-evidence">
-                    <Dropdown title={t("vocabulary.evidenceTitle")}>
-                      <p>{t("vocabulary.evidenceDescription")} </p>
+                    <Dropdown title={$t("vocabulary.evidenceTitle")}>
+                      <p>{$t("vocabulary.evidenceDescription")} </p>
                       <ul>
                         {#each family.instruments as instrument}<li>
                             <button
@@ -665,14 +652,15 @@
                               class="instrument-link"
                               on:click={() =>
                                 onOpenInstrumentSlug(instrument.slug)}
+                              lang={instrument.locale}
                               >{instrument.name}</button
                             ><span
-                              >{t("vocabulary.recordingCount", { count: count(instrument.distinct_recordings) })} <span
+                              >{$t("vocabulary.recordingCount", { count: instrument.distinct_recordings })} <span
                                 class="separator-indicator"
                                 aria-hidden="true">·</span
-                              >{t("vocabulary.creditScope", { scope: instrument.evidence.scope === "track"
-                                ? t("vocabulary.trackScope")
-                                : t("vocabulary.recordingScope") })}</span
+                              >{$t("vocabulary.creditScope", { scope: instrument.evidence.scope === "track"
+                                ? $t("vocabulary.trackScope")
+                                : $t("vocabulary.recordingScope") })}</span
                             >
                           </li>{/each}
                       </ul>
@@ -689,12 +677,12 @@
                 ></span>{/if}
               <h3>
                 {vocabularyPending
-                  ? t("vocabulary.pendingTitle")
-                  : t("vocabulary.unavailableTitle")}
+                  ? $t("vocabulary.pendingTitle")
+                  : $t("vocabulary.unavailableTitle")}
               </h3>
               <p>
                 {vocabularyPending
-                  ? t("vocabulary.pendingDescription")
+                  ? $t("vocabulary.pendingDescription")
                   : reasonText(vocabulary.availability.reason)}
               </p>
             </div>
@@ -702,16 +690,14 @@
 
           {#if vocabularyAvailable}
             <div class="vocabulary-method">
-              <Dropdown title={t("vocabulary.metricsTitle")}>
-                <p>{t("vocabulary.reachDescription")} </p>
-                <p>{t("vocabulary.shareDescription")} </p>
-                <p>{t("vocabulary.concentration", { share: percent(
+              <Dropdown title={$t("vocabulary.metricsTitle")}>
+                <p>{$t("vocabulary.reachDescription")} </p>
+                <p>{$t("vocabulary.shareDescription")} </p>
+                <p>{$t("vocabulary.concentration", { share: percent(
                     vocabulary.concentration,
                   ) })} </p>
-                <p>{t("vocabulary.unresolvedIdentities", { artists: count(vocabulary.reach.unresolved_artists), tracks: count(
-                    vocabulary.reach.unresolved_tracks,
-                  ) })} </p>
-                <p>{t("vocabulary.snapshot", { snapshot_version: result.snapshot.snapshot_version })} <span class="separator-indicator" aria-hidden="true">·</span>{t("vocabulary.methodology", { methodology_version: vocabulary.methodology_version })} </p>
+                <p>{$t("vocabulary.unresolvedIdentities", { artists: vocabulary.reach.unresolved_artists, tracks: vocabulary.reach.unresolved_tracks })} </p>
+                <p>{$t("vocabulary.snapshot", { snapshot_version: result.snapshot.snapshot_version })} <span class="separator-indicator" aria-hidden="true">·</span>{$t("vocabulary.methodology", { methodology_version: vocabulary.methodology_version })} </p>
               </Dropdown>
             </div>
           {/if}
@@ -724,6 +710,48 @@
 </div>
 
 <style>
+  .localization-notice {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0 12px;
+    padding-top: 8px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .localization-info { font-family: var(--meta); }
+  .localization-notice p { margin: 0; }
+  .localization-notice button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: start;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font: 12px/1.5 var(--meta);
+  }
+  .localization-notice button:is(:hover, :focus-visible):not(:disabled) {
+    color: var(--accent-soft);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+  .localization-notice button:disabled { cursor: wait; }
+  .retry-arrow {
+    font-family: var(--meta);
+    font-weight: 400;
+    font-size: 1.1em;
+    line-height: 1;
+  }
+  @media (max-width: 800px) {
+    .localization-notice { grid-template-columns: auto minmax(0, 1fr); align-items: baseline; }
+    .localization-notice button { grid-column: 2; justify-self: start; }
+  }
+
   .results-view {
     position: relative;
     isolation: isolate;
@@ -736,7 +764,6 @@
     margin: 0 auto;
     padding: 54px 0 32px;
   }
-  .results-opening::after,
   .period-reveal::after {
     position: absolute;
     z-index: 2;
@@ -752,15 +779,9 @@
     z-index: 1;
     isolation: isolate;
   }
-  .results-opening::after {
-    background: var(--paper);
-  }
-  .results-opening.reveal-ready::after {
-    animation: dither-resolve 560ms steps(1, end) forwards;
-  }
   .back-link {
     display: inline-block;
-    margin-bottom: 28px;
+    margin-bottom: 20px;
     color: var(--accent-soft);
     font: 13px var(--meta);
     letter-spacing: 0.06em;
@@ -779,11 +800,11 @@
   }
   .profile-card {
     display: grid;
-    grid-template-columns: 192px minmax(0, 1fr);
-    align-items: stretch;
-    gap: 24px;
+    grid-template-columns: 64px minmax(0, 1fr);
+    align-items: center;
+    gap: 16px 20px;
     padding: 0 0 24px;
-    margin-bottom: 38px;
+    margin-bottom: 24px;
     border-bottom: 1px solid var(--line-strong);
   }
   .profile-label {
@@ -793,7 +814,7 @@
   }
   .profile-avatar {
     display: grid;
-    width: 192px;
+    width: 64px;
     aspect-ratio: 1;
     align-self: center;
     overflow: hidden;
@@ -812,54 +833,54 @@
   .profile-avatar-drawing {
     margin: 0;
     color: var(--accent-soft);
-    font: 9px/1.1 var(--meta);
+    font: 3px/1.1 var(--meta);
     white-space: pre;
     transform: scaleX(1.3);
   }
   .profile-copy {
-    display: flex;
+    display: grid;
     min-width: 0;
-    flex-direction: column;
-    justify-content: space-between;
-    gap: 24px;
-  }
-  .profile-identity .eyebrow {
-    margin: 0;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 6px 24px;
   }
   .profile-identity h1 {
-    margin: 6px 0 0;
+    margin: 0;
     color: var(--ink);
-    font-size: clamp(1.8rem, 2.6vw, 2.6rem);
+    font-size: clamp(1.35rem, 2vw, 1.75rem);
     line-height: 1.1;
     overflow-wrap: anywhere;
   }
   .profile-username {
-    margin: 6px 0 0;
+    display: inline;
+    margin: 0;
     color: var(--muted);
     font: 14px var(--meta);
     overflow-wrap: anywhere;
   }
-  .profile-footer {
+  .profile-identity {
     display: flex;
-    align-items: end;
-    justify-content: space-between;
     flex-wrap: wrap;
-    gap: 16px 24px;
+    align-items: baseline;
+    gap: 4px 12px;
+    min-width: 0;
   }
+  .profile-label:empty { display: none; }
+  .profile-footer { display: contents; }
   .profile-meta {
+    grid-column: 1;
+    grid-row: 2;
     display: flex;
     flex-wrap: wrap;
     gap: 8px 18px;
-    color: var(--quiet);
-    font: 12px var(--meta);
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
+    color: var(--muted);
+    font: 12px/1.5 var(--meta);
   }
   .profile-actions {
+    grid-column: 2;
+    grid-row: 1 / 3;
     display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
+    align-items: center;
   }
   .profile-actions .profile-link {
     justify-content: space-between;
@@ -868,8 +889,7 @@
     display: inline-flex;
     align-items: center;
     min-height: 40px;
-    padding: 8px 12px;
-    border: 1px solid var(--line-strong);
+    padding: 4px 0;
     color: var(--muted);
     font: 12px var(--meta);
     letter-spacing: 0.04em;
@@ -878,17 +898,23 @@
   }
   .profile-link:hover,
   .profile-link:focus-visible {
-    border-color: var(--accent-soft);
     color: var(--accent-soft);
+    text-decoration: underline;
+    text-underline-offset: 4px;
   }
   .period-controls {
     grid-column: 1 / -1;
     display: grid;
     gap: 9px;
-    padding-top: 20px;
-    border-top: 1px solid var(--line);
+    padding-top: 0;
   }
   .period-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
     color: var(--muted);
     font: 12px var(--meta);
     letter-spacing: 0.05em;
@@ -947,13 +973,18 @@
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    .results-opening::after,
     .period-reveal::after {
       display: none;
     }
   }
   :global(.view-tabs) {
     width: 100%;
+  }
+  .view-description {
+    margin: 12px 0 0;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.5;
   }
   :global(.view-switch) {
     display: grid;
@@ -1316,7 +1347,7 @@
     font: inherit;
     text-align: left;
     text-decoration: underline;
-    text-decoration-color: var(--muted);
+    text-decoration-color: var(--line-strong);
     text-decoration-thickness: 1px;
     text-underline-offset: 4px;
     transition:
@@ -1360,31 +1391,35 @@
       padding-top: 32px;
     }
     .profile-card {
-      grid-template-columns: minmax(0, 1fr);
-      gap: 16px;
+      grid-template-columns: 48px minmax(0, 1fr);
+      gap: 12px;
       padding-bottom: 20px;
+      margin-bottom: 20px;
     }
     .profile-avatar {
-      width: 100%;
+      width: 48px;
+      align-self: start;
     }
-    .profile-avatar-drawing {
-      font-size: 5px;
-    }
-    .profile-identity h1 {
-      font-size: clamp(1.6rem, 6vw, 2.2rem);
-    }
+    .profile-avatar-drawing { font-size: 2.3px; }
+    .profile-identity h1 { font-size: 1.35rem; }
     .profile-copy {
-      gap: 18px;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 4px;
     }
-    .period-controls {
-      padding-top: 16px;
+    .profile-username { font-size: 12px; }
+    .profile-meta { font-size: 11px; }
+    .profile-actions {
+      grid-column: 1;
+      grid-row: 3;
     }
+    .profile-link { min-height: 32px; font-size: 11px; }
+    .period-controls { padding-top: 0; }
     :global(.view-tab) {
       flex-direction: column;
       align-items: flex-start;
       justify-content: center;
-      gap: 8px;
-      min-height: 80px;
+      gap: 4px;
+      min-height: 60px;
       padding: 12px 10px;
       font-size: 12px;
       line-height: 1.5;
