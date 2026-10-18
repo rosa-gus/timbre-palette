@@ -185,6 +185,7 @@
     "recurringInstruments": "com instrumentos recorrentes",
     "shareDescription": "A participação mostra o peso relativo calculado entre as famílias deste vocabulário. Não mede volume, duração ou presença do instrumento nas faixas ouvidas.",
     "snapshot": "Snapshot MusicBrainz {snapshot_version}",
+    "supportingArtistsCount": "{count, plural, =0 {# artistas com suporte} one {# artista com suporte} other {# artistas com suporte}}",
     "title": "Os sons documentados ao redor dos artistas.",
     "trackReach": "{coverage} das faixas",
     "trackScope": "faixa",

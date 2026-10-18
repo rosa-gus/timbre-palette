@@ -8,7 +8,7 @@ def generate(root: Path) -> None:
     content = root / "editorial/content"
     entities = json.loads((content / "entities.json").read_text())
     sources = {row["id"]: row for row in json.loads((content / "sources.json").read_text())}
-    entity = next(row for row in entities if row["slug"] == "synthesizer")
+    entity = next(row for row in entities if row["slug"] == "sampler")
     result = {}
     for locale in ("pt-BR", "en-US"):
         rows = json.loads((content / "locales" / f"{locale}.json").read_text())

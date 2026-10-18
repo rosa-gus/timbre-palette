@@ -638,10 +638,9 @@
                     ></span>
                   </div>
                   <p>
-                    {count(family.supporting_artists)}
-                    {family.supporting_artists === 1
-                      ? "artista com suporte"
-                      : "artistas com suporte"}
+                    {$t("vocabulary.supportingArtistsCount", {
+                      count: family.supporting_artists,
+                    })}
                   </p>
                   <div class="family-evidence">
                     <Dropdown title={$t("vocabulary.evidenceTitle")}>

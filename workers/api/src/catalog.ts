@@ -1,6 +1,7 @@
 import imageManifest from "../../../public/profile-analysis-catalog.json";
 import { API_VERSION } from "./version";
 import { ProtectionError } from "../../shared/protection";
+import { fallbackLocale, matchLocale } from "../../../shared/i18n/locales.mjs";
 
 type Row = Record<string, unknown>;
 type Env = Cloudflare.Env;
@@ -55,7 +56,7 @@ export async function getInstrument(
   env: Env,
   encodedSlug: string,
 ): Promise<Response> {
-  let requestedLocale = "pt-BR";
+  let requestedLocale = fallbackLocale;
   try {
     const locales = url.searchParams.getAll("locale");
     if (
@@ -63,8 +64,11 @@ export async function getInstrument(
       (locales.length && (!locales[0] || locales[0].length > 80))
     )
       throw new RangeError();
-    if (locales.length)
-      requestedLocale = Intl.getCanonicalLocales(locales[0])[0];
+    if (locales.length) {
+      const matchedLocale = matchLocale(locales[0]);
+      if (!matchedLocale) throw new RangeError();
+      requestedLocale = matchedLocale;
+    }
   } catch {
     return failure(
       "invalid_locale",
@@ -712,8 +716,8 @@ export function openApiDocument(): Response {
               in: "query",
               required: false,
               description:
-                "BCP 47 content locale. Defaults to pt-BR; unavailable or stale translations fall back to the complete pt-BR resource.",
-              schema: { type: "string", example: "en" },
+                "BCP 47 content locale. Defaults to en-US; registered language matches are normalized to their canonical locale, and unavailable or stale translations fall back to the complete pt-BR resource.",
+              schema: { type: "string", example: "en-US" },
             },
           ],
           responses: {

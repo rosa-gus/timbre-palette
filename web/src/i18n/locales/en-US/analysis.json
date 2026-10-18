@@ -185,6 +185,7 @@
     "recurringInstruments": "with recurring instruments",
     "shareDescription": "Share shows the calculated relative weight of families in this vocabulary. It does not measure the volume, duration, or presence of an instrument in the tracks you heard.",
     "snapshot": "MusicBrainz snapshot {snapshot_version}",
+    "supportingArtistsCount": "{count, plural, =0 {# supporting artists} one {# supporting artist} other {# supporting artists}}",
     "title": "The sounds documented around the artists.",
     "trackReach": "{coverage} of tracks",
     "trackScope": "track",

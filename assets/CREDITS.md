@@ -2,29 +2,17 @@
 
 This file records authorship and licensing for media distributed with the
 project. Catalog photographs under `assets/treated/` are processed with
-rosa-reticle 0.1.0 using the family tones defined in the image catalog.
+_rosa-reticle 0.1.0_ using the family tones defined in the image catalog.
 `assets/treated/manifest.json` records their generation parameters and hashes.
-
-## Product image
-
-- **Asset:** `treated/chladni-icon.png` (historical Chladni plate illustration)
-- **Source:** [Bowing Chladni plate](https://fr.wikipedia.org/wiki/Fichier:Bowing_chladni_plate.png), from William Henry Stone, _Elementary Lessons on Sound_ (1879), p. 26, fig. 12.
-- **Author:** Unknown; the illustration is in the public domain according to Wikimedia Commons.
-- **Changes:** Cropped to a square and treated in black-and-accent-pink duotone.
 
 ## Home media
 
-- **`ondas.jpg`**, `treated/ondas-desktop.png` and
-  `treated/ondas-mobile-poster.png`. Author: JOSE MIGUEL (source EXIF Artist field).
+- `treated/waves-desktop.png` and
+  `treated/waves-mobile-poster.png`. Author: JOSE MIGUEL.
   [Source photograph](https://www.pexels.com/pt-br/foto/ondas-tranquilas-e-azuis-do-oceano-em-portugal-39959129/).
   [Pexels License](https://www.pexels.com/license/). Derivatives use
-  rosa-reticle 0.1.0 in black/pink duotone, with separate landscape and portrait
+  _rosa-reticle 0.1.0_ in black/pink duotone, with separate landscape and portrait
   crops. Adjacent JSON files record treatment parameters, framing and hashes.
-
-- **`treated/chladni-hero.webm`** and `treated/chladni-hero.png`. Author:
-  cottonbro studio. [Source video](https://www.pexels.com/pt-br/video/diversidade-olhos-face-rosto-7859852/).
-  [Pexels License](https://www.pexels.com/pt-br/licenca/). The PNG is its static
-  poster/fallback.
 
 ## Family and instrument images
 

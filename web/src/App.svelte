@@ -1,6 +1,6 @@
 <script lang="ts">
-  import homePoster from "../../assets/treated/ondas-desktop.png";
-  import homeMobilePoster from "../../assets/treated/ondas-mobile-poster.png";
+  import homePoster from "../../assets/treated/waves-desktop.png";
+  import homeMobilePoster from "../../assets/treated/waves-mobile-poster.png";
   import {
     localizeAnalysis,
     type LocalizedAnalysis,
