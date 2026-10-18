@@ -4,11 +4,7 @@
     "name": "Acoustic keys",
     "description": "Acoustic instruments played through a system of keys.",
     "sound_production": "A key transfers the player's gesture to another resonating mechanism.",
-    "common_roles": [
-      "harmony",
-      "melody",
-      "accompaniment"
-    ],
+    "common_roles": ["harmony", "melody", "accompaniment"],
     "sections": [
       {
         "id": "family-acoustic-keys-curiosity",
@@ -17,9 +13,8 @@
         "review": {
           "source_metadata_verified": true,
           "claim_support_verified": true,
-          "reviewer": "Codex (translation review)",
-          "reviewed_at": "2026-10-16",
-          "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+          "reviewer": "rosa gus",
+          "reviewed_at": "2026-10-16"
         }
       }
     ],
@@ -31,7 +26,7 @@
     "review": {
       "source_metadata_verified": true,
       "claim_support_verified": true,
-      "reviewer": "Codex (translation review)",
+      "reviewer": "rosa gus",
       "reviewed_at": "2026-10-16",
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },
@@ -43,11 +38,7 @@
     "name": "Bowed strings",
     "description": "Strings kept vibrating primarily through friction from a bow.",
     "sound_production": "The bow repeatedly grips and releases the string, sustaining the sound.",
-    "common_roles": [
-      "melody",
-      "sustain",
-      "texture"
-    ],
+    "common_roles": ["melody", "sustain", "texture"],
     "sections": [
       {
         "id": "family-bowed-strings-curiosity",
@@ -56,9 +47,8 @@
         "review": {
           "source_metadata_verified": true,
           "claim_support_verified": true,
-          "reviewer": "Codex (translation review)",
-          "reviewed_at": "2026-10-16",
-          "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+          "reviewer": "rosa gus",
+          "reviewed_at": "2026-10-16"
         }
       }
     ],
@@ -70,9 +60,8 @@
     "review": {
       "source_metadata_verified": true,
       "claim_support_verified": true,
-      "reviewer": "Codex (translation review)",
-      "reviewed_at": "2026-10-16",
-      "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+      "reviewer": "rosa gus",
+      "reviewed_at": "2026-10-16"
     },
     "status": "reviewed",
     "source_revision": "6fd323c1bf10d82620cc36b13e1cf96e978ede127af05ddb916bcfd98831f449"
@@ -82,11 +71,7 @@
     "name": "Cello",
     "description": "A bowed string instrument with a low and middle register.",
     "sound_production": "A bow or the fingers set its strings vibrating.",
-    "common_roles": [
-      "bass line",
-      "melody",
-      "sustain"
-    ],
+    "common_roles": ["bass line", "melody", "sustain"],
     "sections": [
       {
         "id": "instrument-cello-curiosity",
@@ -95,9 +80,8 @@
         "review": {
           "source_metadata_verified": true,
           "claim_support_verified": true,
-          "reviewer": "Codex (translation review)",
-          "reviewed_at": "2026-10-16",
-          "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+          "reviewer": "rosa gus",
+          "reviewed_at": "2026-10-16"
         }
       }
     ],
@@ -109,9 +93,8 @@
     "review": {
       "source_metadata_verified": true,
       "claim_support_verified": true,
-      "reviewer": "Codex (translation review)",
-      "reviewed_at": "2026-10-16",
-      "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+      "reviewer": "rosa gus",
+      "reviewed_at": "2026-10-16"
     },
     "status": "reviewed",
     "source_revision": "799f360d29db5fa711af017ddbb271c46d6473cadce9d2a91fb41bf6395dcf25"
@@ -121,11 +104,7 @@
     "name": "Drum kit",
     "description": "A set of drums and cymbals arranged for a single performer.",
     "sound_production": "Sticks, pedals, and hands activate surfaces made of different materials.",
-    "common_roles": [
-      "pulse",
-      "dynamics",
-      "formal articulation"
-    ],
+    "common_roles": ["pulse", "dynamics", "formal articulation"],
     "sections": [
       {
         "id": "instrument-drums-curiosity",
@@ -134,9 +113,8 @@
         "review": {
           "source_metadata_verified": true,
           "claim_support_verified": true,
-          "reviewer": "Codex (translation review)",
-          "reviewed_at": "2026-10-16",
-          "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+          "reviewer": "rosa gus",
+          "reviewed_at": "2026-10-16"
         }
       }
     ],
@@ -148,9 +126,8 @@
     "review": {
       "source_metadata_verified": true,
       "claim_support_verified": true,
-      "reviewer": "Codex (translation review)",
-      "reviewed_at": "2026-10-16",
-      "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+      "reviewer": "rosa gus",
+      "reviewed_at": "2026-10-16"
     },
     "status": "reviewed",
     "source_revision": "adf7d1e770708d288c53807591cadc6d10ce7d03736dd53a2ac8aa71f30408d4"
@@ -173,9 +150,8 @@
         "review": {
           "source_metadata_verified": true,
           "claim_support_verified": true,
-          "reviewer": "Codex (translation review)",
-          "reviewed_at": "2026-10-16",
-          "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+          "reviewer": "rosa gus",
+          "reviewed_at": "2026-10-16"
         }
       }
     ],
@@ -187,9 +163,8 @@
     "review": {
       "source_metadata_verified": false,
       "claim_support_verified": true,
-      "reviewer": "Codex (translation review)",
-      "reviewed_at": "2026-10-16",
-      "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+      "reviewer": "rosa gus",
+      "reviewed_at": "2026-10-16"
     },
     "status": "reviewed",
     "source_revision": "f617464a21da5e9edb3207c3f4bfd30631ffda6380bbc40bf9aeb839d9c583e4"
@@ -199,11 +174,7 @@
     "name": "Electric guitar",
     "description": "An amplified string instrument open to extensive sound processing.",
     "sound_production": "Pickups convert string vibration into an electrical signal.",
-    "common_roles": [
-      "harmony",
-      "melody",
-      "texture"
-    ],
+    "common_roles": ["harmony", "melody", "texture"],
     "sections": [
       {
         "id": "instrument-electric-guitar-curiosity",
@@ -212,9 +183,8 @@
         "review": {
           "source_metadata_verified": true,
           "claim_support_verified": true,
-          "reviewer": "Codex (translation review)",
-          "reviewed_at": "2026-10-16",
-          "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+          "reviewer": "rosa gus",
+          "reviewed_at": "2026-10-16"
         }
       }
     ],
@@ -226,9 +196,8 @@
     "review": {
       "source_metadata_verified": false,
       "claim_support_verified": true,
-      "reviewer": "Codex (translation review)",
-      "reviewed_at": "2026-10-16",
-      "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+      "reviewer": "rosa gus",
+      "reviewed_at": "2026-10-16"
     },
     "status": "reviewed",
     "source_revision": "90c40006e676a767be4c5f875d940b5a159e2eee8f442d65d602a8fd4f16f58d"
@@ -238,11 +207,7 @@
     "name": "Percussion",
     "description": "A family of instruments activated mainly by striking, shaking, or scraping.",
     "sound_production": "A surface or body resonates after receiving energy.",
-    "common_roles": [
-      "pulse",
-      "texture",
-      "accents"
-    ],
+    "common_roles": ["pulse", "texture", "accents"],
     "sections": [
       {
         "id": "family-percussion-curiosity",
@@ -251,9 +216,8 @@
         "review": {
           "source_metadata_verified": true,
           "claim_support_verified": true,
-          "reviewer": "Codex (translation review)",
-          "reviewed_at": "2026-10-16",
-          "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+          "reviewer": "rosa gus",
+          "reviewed_at": "2026-10-16"
         }
       }
     ],
@@ -265,9 +229,8 @@
     "review": {
       "source_metadata_verified": false,
       "claim_support_verified": true,
-      "reviewer": "Codex (translation review)",
-      "reviewed_at": "2026-10-16",
-      "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+      "reviewer": "rosa gus",
+      "reviewed_at": "2026-10-16"
     },
     "status": "reviewed",
     "source_revision": "65dd55e72ad4eab3e9c1820942be28253e420bbdf02240f7f6880b2cad2e33ff"
@@ -277,11 +240,7 @@
     "name": "Piano",
     "description": "A keyboard instrument in which hammers strike tuned strings.",
     "sound_production": "Each key launches a hammer against a string and releases its damper.",
-    "common_roles": [
-      "harmony",
-      "melody",
-      "accompaniment"
-    ],
+    "common_roles": ["harmony", "melody", "accompaniment"],
     "sections": [
       {
         "id": "instrument-piano-curiosity",
@@ -290,9 +249,8 @@
         "review": {
           "source_metadata_verified": true,
           "claim_support_verified": true,
-          "reviewer": "Codex (translation review)",
-          "reviewed_at": "2026-10-16",
-          "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+          "reviewer": "rosa gus",
+          "reviewed_at": "2026-10-16"
         }
       }
     ],
@@ -304,9 +262,8 @@
     "review": {
       "source_metadata_verified": true,
       "claim_support_verified": true,
-      "reviewer": "Codex (translation review)",
-      "reviewed_at": "2026-10-16",
-      "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+      "reviewer": "rosa gus",
+      "reviewed_at": "2026-10-16"
     },
     "status": "reviewed",
     "source_revision": "59430d0ac7cfd4b1663006edd65f5cc12b013113f9dc08f5f6a8dbd37e7b11b5"
@@ -316,11 +273,7 @@
     "name": "Plucked strings",
     "description": "A family in which a string vibrates after being pulled by fingers, a pick, or an equivalent mechanism.",
     "sound_production": "The string is displaced and released, starting a free vibration.",
-    "common_roles": [
-      "harmony",
-      "melody",
-      "rhythmic foundation"
-    ],
+    "common_roles": ["harmony", "melody", "rhythmic foundation"],
     "sections": [
       {
         "id": "family-plucked-strings-curiosity",
@@ -329,9 +282,8 @@
         "review": {
           "source_metadata_verified": true,
           "claim_support_verified": true,
-          "reviewer": "Codex (translation review)",
-          "reviewed_at": "2026-10-16",
-          "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+          "reviewer": "rosa gus",
+          "reviewed_at": "2026-10-16"
         }
       }
     ],
@@ -343,9 +295,8 @@
     "review": {
       "source_metadata_verified": false,
       "claim_support_verified": true,
-      "reviewer": "Codex (translation review)",
-      "reviewed_at": "2026-10-16",
-      "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+      "reviewer": "rosa gus",
+      "reviewed_at": "2026-10-16"
     },
     "status": "reviewed",
     "source_revision": "a7496ba3fbeff6913e95f70f0187d6e8b641427b33a5d1f100d45102e2720618"
@@ -355,11 +306,7 @@
     "name": "Sampled sounds",
     "description": "Recordings reused as material for a new composition.",
     "sound_production": "A recorded excerpt is cut, triggered, and transformed.",
-    "common_roles": [
-      "rhythm",
-      "texture",
-      "sonic memory"
-    ],
+    "common_roles": ["rhythm", "texture", "sonic memory"],
     "sections": [
       {
         "id": "family-sampled-sounds-curiosity",
@@ -368,7 +315,7 @@
         "review": {
           "source_metadata_verified": true,
           "claim_support_verified": true,
-          "reviewer": "Codex (translation review)",
+          "reviewer": "rosa gus",
           "reviewed_at": "2026-10-16",
           "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
         }
@@ -382,7 +329,7 @@
     "review": {
       "source_metadata_verified": true,
       "claim_support_verified": true,
-      "reviewer": "Codex (translation review)",
+      "reviewer": "rosa gus",
       "reviewed_at": "2026-10-16",
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },
@@ -394,11 +341,7 @@
     "name": "Sampler",
     "description": "An instrument that records or plays controllable sound excerpts.",
     "sound_production": "Stored audio is triggered, cut, repeated, or transformed.",
-    "common_roles": [
-      "rhythm",
-      "texture",
-      "collage"
-    ],
+    "common_roles": ["rhythm", "texture", "collage"],
     "sections": [
       {
         "id": "instrument-sampler-curiosity",
@@ -407,7 +350,7 @@
         "review": {
           "source_metadata_verified": true,
           "claim_support_verified": true,
-          "reviewer": "Codex (translation review)",
+          "reviewer": "rosa gus",
           "reviewed_at": "2026-10-16",
           "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
         }
@@ -421,7 +364,7 @@
     "review": {
       "source_metadata_verified": false,
       "claim_support_verified": true,
-      "reviewer": "Codex (translation review)",
+      "reviewer": "rosa gus",
       "reviewed_at": "2026-10-16",
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },
@@ -433,12 +376,7 @@
     "name": "Synthesizer",
     "description": "An electronic instrument for creating and transforming timbres.",
     "sound_production": "Signals are generated or played back, then shaped through controls.",
-    "common_roles": [
-      "texture",
-      "harmony",
-      "melody",
-      "effects"
-    ],
+    "common_roles": ["texture", "harmony", "melody", "effects"],
     "sections": [
       {
         "id": "instrument-synthesizer-curiosity",
@@ -447,7 +385,7 @@
         "review": {
           "source_metadata_verified": true,
           "claim_support_verified": true,
-          "reviewer": "Codex (translation review)",
+          "reviewer": "rosa gus",
           "reviewed_at": "2026-10-16",
           "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
         }
@@ -461,7 +399,7 @@
     "review": {
       "source_metadata_verified": false,
       "claim_support_verified": true,
-      "reviewer": "Codex (translation review)",
+      "reviewer": "rosa gus",
       "reviewed_at": "2026-10-16",
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },
@@ -473,12 +411,7 @@
     "name": "Synthesizers",
     "description": "Electronic instruments that build or transform sound signals.",
     "sound_production": "Oscillators, samples, or other signals are shaped electronically.",
-    "common_roles": [
-      "texture",
-      "harmony",
-      "melody",
-      "effects"
-    ],
+    "common_roles": ["texture", "harmony", "melody", "effects"],
     "sections": [
       {
         "id": "family-synthesizers-curiosity",
@@ -487,7 +420,7 @@
         "review": {
           "source_metadata_verified": true,
           "claim_support_verified": true,
-          "reviewer": "Codex (translation review)",
+          "reviewer": "rosa gus",
           "reviewed_at": "2026-10-16",
           "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
         }
@@ -501,7 +434,7 @@
     "review": {
       "source_metadata_verified": false,
       "claim_support_verified": true,
-      "reviewer": "Codex (translation review)",
+      "reviewer": "rosa gus",
       "reviewed_at": "2026-10-16",
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },
@@ -513,11 +446,7 @@
     "name": "Woodwinds",
     "description": "Instruments in which a column of air vibrates inside a tube, with holes, keys, or a reed.",
     "sound_production": "Blowing sets the air vibrating; the tube's geometry and the way it is excited define the sound's color.",
-    "common_roles": [
-      "melody",
-      "countermelody",
-      "texture"
-    ],
+    "common_roles": ["melody", "countermelody", "texture"],
     "sections": [],
     "image": {
       "alt": "Light and dark recorders on a white surface.",
@@ -527,7 +456,7 @@
     "review": {
       "source_metadata_verified": false,
       "claim_support_verified": true,
-      "reviewer": "Codex (translation review)",
+      "reviewer": "rosa gus",
       "reviewed_at": "2026-10-16",
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },
@@ -539,11 +468,7 @@
     "name": "Brass",
     "description": "Wind instruments in which the performer's lips excite the air column inside a tube.",
     "sound_production": "Lip vibration is amplified by the tube, while valves or slides change its acoustic length.",
-    "common_roles": [
-      "melody",
-      "attack",
-      "sustain"
-    ],
+    "common_roles": ["melody", "attack", "sustain"],
     "sections": [],
     "image": {
       "alt": "Close-up of the bell and tubing of a golden trumpet against a dark background.",
@@ -553,7 +478,7 @@
     "review": {
       "source_metadata_verified": false,
       "claim_support_verified": true,
-      "reviewer": "Codex (translation review)",
+      "reviewer": "rosa gus",
       "reviewed_at": "2026-10-16",
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },
@@ -565,11 +490,7 @@
     "name": "Voice",
     "description": "Vocal presence documented in a recording, treated as its own family in the editorial catalog.",
     "sound_production": "Vocal fold vibration is shaped by the vocal tract and articulated as speech, singing, or a choir.",
-    "common_roles": [
-      "melody",
-      "lyrics",
-      "layer"
-    ],
+    "common_roles": ["melody", "lyrics", "layer"],
     "sections": [],
     "image": {
       "alt": "A woman singing into a microphone on stage, with lights in the background.",
@@ -579,7 +500,7 @@
     "review": {
       "source_metadata_verified": false,
       "claim_support_verified": true,
-      "reviewer": "Codex (translation review)",
+      "reviewer": "rosa gus",
       "reviewed_at": "2026-10-16",
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },
@@ -591,11 +512,7 @@
     "name": "Electric and electronic keys",
     "description": "Keyboard instruments in which pickup systems, amplification, or synthesis help form the sound.",
     "sound_production": "Key gestures trigger, modulate, or amplify an electric or electronic source.",
-    "common_roles": [
-      "harmony",
-      "melody",
-      "layer"
-    ],
+    "common_roles": ["harmony", "melody", "layer"],
     "sections": [],
     "image": {
       "alt": "Close-up of a person’s hands playing an electronic keyboard with a display and controls.",
@@ -605,7 +522,7 @@
     "review": {
       "source_metadata_verified": false,
       "claim_support_verified": true,
-      "reviewer": "Codex (translation review)",
+      "reviewer": "rosa gus",
       "reviewed_at": "2026-10-16",
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },
@@ -617,11 +534,7 @@
     "name": "Acoustic guitar",
     "description": "A plucked string instrument with an acoustic resonating body.",
     "sound_production": "Strings vibrate when plucked with fingers or a pick; the soundboard and resonating body radiate the sound.",
-    "common_roles": [
-      "harmony",
-      "melody",
-      "accompaniment"
-    ],
+    "common_roles": ["harmony", "melody", "accompaniment"],
     "sections": [
       {
         "id": "instrument-acoustic-guitar-curiosity",
@@ -630,7 +543,7 @@
         "review": {
           "source_metadata_verified": true,
           "claim_support_verified": true,
-          "reviewer": "Codex (translation review)",
+          "reviewer": "rosa gus",
           "reviewed_at": "2026-10-16",
           "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
         }
@@ -644,7 +557,7 @@
     "review": {
       "source_metadata_verified": false,
       "claim_support_verified": true,
-      "reviewer": "Codex (translation review)",
+      "reviewer": "rosa gus",
       "reviewed_at": "2026-10-16",
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },
@@ -656,11 +569,7 @@
     "name": "Cavaquinho",
     "description": "A small plucked string instrument with an acoustic resonating body.",
     "sound_production": "Strings plucked with fingers or a pick transmit vibration to the soundboard and resonating body.",
-    "common_roles": [
-      "harmony",
-      "rhythm",
-      "accompaniment"
-    ],
+    "common_roles": ["harmony", "rhythm", "accompaniment"],
     "sections": [
       {
         "id": "instrument-cavaquinho-curiosity",
@@ -683,7 +592,7 @@
     "review": {
       "source_metadata_verified": false,
       "claim_support_verified": true,
-      "reviewer": "Codex (translation review)",
+      "reviewer": "rosa gus",
       "reviewed_at": "2026-10-16",
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },
@@ -695,11 +604,7 @@
     "name": "Pandeiro",
     "description": "A frame drum with a membrane and small metal jingles called soalhas.",
     "sound_production": "Strikes and friction excite the membrane; movement of the frame also makes the jingles vibrate.",
-    "common_roles": [
-      "rhythm",
-      "accents",
-      "texture"
-    ],
+    "common_roles": ["rhythm", "accents", "texture"],
     "sections": [
       {
         "id": "instrument-pandeiro-curiosity",
@@ -708,7 +613,7 @@
         "review": {
           "source_metadata_verified": false,
           "claim_support_verified": true,
-          "reviewer": "Codex (translation review)",
+          "reviewer": "rosa gus",
           "reviewed_at": "2026-10-16",
           "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
         }
@@ -722,7 +627,7 @@
     "review": {
       "source_metadata_verified": false,
       "claim_support_verified": true,
-      "reviewer": "Codex (translation review)",
+      "reviewer": "rosa gus",
       "reviewed_at": "2026-10-16",
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },
@@ -734,11 +639,7 @@
     "name": "Surdo",
     "description": "A low-register drum used to mark rhythm in percussion ensembles.",
     "sound_production": "Striking the membrane sets the head and the air inside the resonating body vibrating; damping controls the sound's duration.",
-    "common_roles": [
-      "rhythm",
-      "timekeeping",
-      "bass line"
-    ],
+    "common_roles": ["rhythm", "timekeeping", "bass line"],
     "sections": [
       {
         "id": "instrument-surdo-curiosity",
@@ -747,7 +648,7 @@
         "review": {
           "source_metadata_verified": true,
           "claim_support_verified": true,
-          "reviewer": "Codex (translation review)",
+          "reviewer": "rosa gus",
           "reviewed_at": "2026-10-16",
           "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
         }
@@ -761,9 +662,8 @@
     "review": {
       "source_metadata_verified": false,
       "claim_support_verified": true,
-      "reviewer": "Codex (translation review)",
-      "reviewed_at": "2026-10-16",
-      "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
+      "reviewer": "rosa gus",
+      "reviewed_at": "2026-10-16"
     },
     "status": "reviewed",
     "source_revision": "67ae4f16ba16b5b13a8253c237fad342536bdc22d5d1d082b6511775004b4c91"
@@ -773,11 +673,7 @@
     "name": "Tamborim",
     "description": "A small single-headed frame drum played with a stick.",
     "sound_production": "The stick strikes the membrane stretched over the frame, producing short, defined attacks.",
-    "common_roles": [
-      "rhythm",
-      "accents",
-      "countermelody"
-    ],
+    "common_roles": ["rhythm", "accents", "countermelody"],
     "sections": [
       {
         "id": "instrument-tamborim-curiosity",
@@ -786,7 +682,7 @@
         "review": {
           "source_metadata_verified": true,
           "claim_support_verified": true,
-          "reviewer": "Codex (translation review)",
+          "reviewer": "rosa gus",
           "reviewed_at": "2026-10-16",
           "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
         }
@@ -800,7 +696,7 @@
     "review": {
       "source_metadata_verified": false,
       "claim_support_verified": true,
-      "reviewer": "Codex (translation review)",
+      "reviewer": "rosa gus",
       "reviewed_at": "2026-10-16",
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },
@@ -812,11 +708,7 @@
     "name": "Cuíca",
     "description": "A friction drum with a rod attached to the membrane on the inside.",
     "sound_production": "Rubbing the rod transmits vibration to the membrane; finger pressure on the head changes the sound.",
-    "common_roles": [
-      "rhythm",
-      "phrasing",
-      "texture"
-    ],
+    "common_roles": ["rhythm", "phrasing", "texture"],
     "sections": [
       {
         "id": "instrument-cuica-curiosity",
@@ -825,7 +717,7 @@
         "review": {
           "source_metadata_verified": true,
           "claim_support_verified": true,
-          "reviewer": "Codex (translation review)",
+          "reviewer": "rosa gus",
           "reviewed_at": "2026-10-16",
           "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
         }
@@ -839,7 +731,7 @@
     "review": {
       "source_metadata_verified": false,
       "claim_support_verified": true,
-      "reviewer": "Codex (translation review)",
+      "reviewer": "rosa gus",
       "reviewed_at": "2026-10-16",
       "editorial_note": "English translation checked against the Portuguese source. Original citations and attribution retained."
     },

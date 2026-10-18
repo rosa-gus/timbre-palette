@@ -8,10 +8,22 @@
   import ColorSwatch from "../components/ColorSwatch.svelte";
   import Dropdown from "../components/Dropdown.svelte";
   import Tooltip from "../components/Tooltip.svelte";
-  import { getPortraitCopy, getAnalysisNotice, getDiscoveryCopy, getImageCopy } from "../analysis/presentation";
+  import {
+    getPortraitCopy,
+    getAnalysisNotice,
+    getDiscoveryCopy,
+    getImageCopy,
+  } from "../analysis/presentation";
   import { createAsciiArtwork } from "../sharing/ascii";
   import FamilyPalette from "../components/FamilyPalette.svelte";
-  import { fallbackTone, parseHex, mix, hex, toneText, type Rgb } from "../sharing/palette-tones";
+  import {
+    fallbackTone,
+    parseHex,
+    mix,
+    hex,
+    toneText,
+    type Rgb,
+  } from "../sharing/palette-tones";
   import type {
     Confidence,
     PaletteReport,
@@ -24,7 +36,9 @@
   export let isExample = false;
   export let hydrationPending = false;
   $: portrait = getPortraitCopy(report, $localeStore);
-  $: discoveryCopy = report.discovery ? getDiscoveryCopy(report.discovery, $localeStore) : null;
+  $: discoveryCopy = report.discovery
+    ? getDiscoveryCopy(report.discovery, $localeStore)
+    : null;
   $: asciiArtwork = createAsciiArtwork(report.families);
   $: discoveryAvailable =
     !!report.discovery && getAvailability("discovery") === "available";
@@ -69,7 +83,8 @@
   };
 </script>
 
-{#snippet sourceValue(text: string)}<span class="source-value">{text}</span>{/snippet}
+{#snippet sourceValue(text: string)}<span class="source-value">{text}</span
+  >{/snippet}
 {#snippet nextLine(text: string)}<br />{text}{/snippet}
 
 <section
@@ -86,19 +101,27 @@
       </p>
       <p class="portrait-scope">{$t("report.portraitScope")}</p>
       <div class="portrait-caption">
-        <span>{$t("report.trackCount", { tracks_analyzed: report.profile.tracks_analyzed })}</span><span
-          >{$t("report.playCount", { total_plays: report.profile.total_plays })}</span
+        <span
+          >{$t("report.trackCount", {
+            tracks_analyzed: report.profile.tracks_analyzed,
+          })}</span
         ><span
-          >{$t("report.trackCoverage", { coverage: percent(report.analysis.coverage_tracks) })} <Tooltip ariaLabel={$t("report.coverageTitle")} triggerLabel="[i]">
-              <p>{$t("report.coverageDescription")} </p>
-              <p>{$t("report.excludedTracks")}</p>
-              {#if hydrationPending}<p class="tooltip-note">
-                  <span class="loading-indicator" aria-hidden="true"></span>
-                  <span>{$t("report.hydrationNotice")}</span>
-                </p>{/if}
-            </Tooltip>
-          </span
-        >
+          >{$t("report.playCount", {
+            total_plays: report.profile.total_plays,
+          })}</span
+        ><span
+          >{$t("report.trackCoverage", {
+            coverage: percent(report.analysis.coverage_tracks),
+          })}
+          <Tooltip ariaLabel={$t("report.coverageTitle")} triggerLabel="[i]">
+            <p>{$t("report.coverageDescription")}</p>
+            <p>{$t("report.excludedTracks")}</p>
+            {#if hydrationPending}<p class="tooltip-note">
+                <span class="loading-indicator" aria-hidden="true"></span>
+                <span>{$t("report.hydrationNotice")}</span>
+              </p>{/if}
+          </Tooltip>
+        </span>
       </div>
       {#if portrait.disclaimer}<p class="disclaimer">
           {portrait.disclaimer}
@@ -113,7 +136,7 @@
           style={`flex-grow:${family.share};`}
         />{/each}
     </div>
-    <p class="color-hint">{$t("report.copyHint")} </p>
+    <p class="color-hint">{$t("report.copyHint")}</p>
     <div class="instrument-grid">
       {#each report.families.slice(0, 3) as family, index}
         <figure
@@ -123,14 +146,17 @@
           <figcaption>
             <div class="instrument-heading">
               <span class="eyebrow"
-                >{$t("report.dominantPresence", { index: String(index + 1).padStart(2, "0") })}</span
+                >{$t("report.dominantPresence", {
+                  index: String(index + 1).padStart(2, "0"),
+                })}</span
               >
               <button
                 type="button"
                 class="family-card-link"
                 aria-label={$t("actions.openInstrument", { name: family.name })}
                 on:click={() => onOpenInstrumentSlug(family.slug)}
-              >{$t("actions.open")}</button>
+                >{$t("actions.open")}</button
+              >
             </div>
             <div class="instrument-name">
               <h2 lang={family.locale}>{family.name}</h2>
@@ -157,14 +183,15 @@
           </div>
           {#if family.image?.variants.length}<p class="photo-caption">
               <span class="photo-caption-text"
-                >{$t("images.photoCaption", { caption: getImageCopy(family.image, $localeStore).label })}</span
+                >{$t("images.photoCaption", {
+                  caption: getImageCopy(family.image, $localeStore).label,
+                })}</span
               >{#if family.image.credit.photographer_url}<a
                   href={family.image.credit.photographer_url}
                   target="_blank"
                   rel="noreferrer"
-                  >{family.image.credit.photographer ?? $t("images.viewCredit")}<Arrow
-                    direction="up-right"
-                  /></a
+                  >{family.image.credit.photographer ??
+                    $t("images.viewCredit")}<Arrow direction="up-right" /></a
                 >{:else if family.image.credit.photographer}<span
                   >{family.image.credit.photographer}</span
                 >{/if}
@@ -180,7 +207,11 @@
       <p class="palette-scope">{$t("report.identifiedSources")}</p>
     </div>
     <div class="palette-layout">
-      <FamilyPalette families={report.families} {confidenceLabels} {onOpenInstrumentSlug} />
+      <FamilyPalette
+        families={report.families}
+        {confidenceLabels}
+        {onOpenInstrumentSlug}
+      />
       <aside>
         <p class="eyebrow">{$t("report.natureHeading")}</p>
         {#if report.sound_balance}<ul class="compact-list">
@@ -197,23 +228,38 @@
     <div class="analysis-details">
       <Dropdown title={$t("report.dataTitle")}>
         <p>{getAnalysisNotice(report.analysis, $localeStore)}</p>
-        <p><Message
-          message="report.coverage"
-          values={{ tracks: percent(report.analysis.coverage_tracks), plays: percent(report.analysis.coverage_plays) }}
-          wrappers={{ value: sourceValue }}
-        /></p>
-        <p><Message
-          message="report.vocals"
-          values={{
-            tracks: report.analysis.vocal_presence.documented_tracks,
-            artists: report.analysis.vocal_presence.documented_artists,
-            plays: report.analysis.vocal_presence.documented_plays,
-            ratio: percent(report.analysis.vocal_presence.play_ratio),
-          }}
-          wrappers={{ value: sourceValue }}
-        /></p>
-        <p>{$t("report.catalogLabel")} {#if report.analysis.catalog_version}<code class="source-value">{report.analysis.catalog_version}</code>{:else}{$t("report.unpublished")}{/if}
-          <span class="separator-indicator" aria-hidden="true">·</span>{$t("report.methodLabel")} <code class="source-value">{report.analysis.methodology_version}</code>
+        <p>
+          <Message
+            message="report.coverage"
+            values={{
+              tracks: percent(report.analysis.coverage_tracks),
+              plays: percent(report.analysis.coverage_plays),
+            }}
+            wrappers={{ value: sourceValue }}
+          />
+        </p>
+        <p>
+          <Message
+            message="report.vocals"
+            values={{
+              tracks: report.analysis.vocal_presence.documented_tracks,
+              artists: report.analysis.vocal_presence.documented_artists,
+              plays: report.analysis.vocal_presence.documented_plays,
+              ratio: percent(report.analysis.vocal_presence.play_ratio),
+            }}
+            wrappers={{ value: sourceValue }}
+          />
+        </p>
+        <p>
+          {$t("report.catalogLabel")}
+          {#if report.analysis.catalog_version}<code class="source-value"
+              >{report.analysis.catalog_version}</code
+            >{:else}{$t("report.unpublished")}{/if}
+          <span class="separator-indicator" aria-hidden="true">·</span>{$t(
+            "report.methodLabel",
+          )}
+          <code class="source-value">{report.analysis.methodology_version}</code
+          >
         </p>
       </Dropdown>
     </div>
@@ -235,7 +281,9 @@
           >
             <img
               src={report.discovery.image.variants[0].url}
-              lang={report.discovery.image.alt ? report.discovery.image.locale : $localeStore}
+              lang={report.discovery.image.alt
+                ? report.discovery.image.locale
+                : $localeStore}
               alt={getImageCopy(report.discovery.image, $localeStore).alt}
               width={report.discovery.image.variants[0].width}
               height={report.discovery.image.variants[0].height}
@@ -243,16 +291,18 @@
             />
             <figcaption class="photo-caption">
               <span class="photo-caption-text"
-                >{$t("images.photoCaption", { caption: getImageCopy(report.discovery.image, $localeStore).label })}</span
+                >{$t("images.photoCaption", {
+                  caption: getImageCopy(report.discovery.image, $localeStore)
+                    .label,
+                })}</span
               >{#if report.discovery.image.credit.photographer_url}
                 <a
                   href={report.discovery.image.credit.photographer_url}
                   target="_blank"
                   rel="noreferrer"
-                  >{report.discovery.image.credit.photographer ?? $t("images.viewCredit")}<Arrow
-                    direction="up-right"
-                  /></a
-              >{:else if report.discovery.image.credit.photographer}<span
+                  >{report.discovery.image.credit.photographer ??
+                    $t("images.viewCredit")}<Arrow direction="up-right" /></a
+                >{:else if report.discovery.image.credit.photographer}<span
                   >{report.discovery.image.credit.photographer}</span
                 >{/if}
             </figcaption>
@@ -261,13 +311,14 @@
           <h3>{discoveryCopy?.title}</h3>
           <p class="large-copy">{discoveryCopy?.summary}</p>
           <Button variant="secondary" on:click={onOpenInstrument}
-            >{$t("actions.exploreInstrument")} <Arrow direction="right" /></Button
+            >{$t("actions.exploreInstrument")}
+            <Arrow direction="right" /></Button
           >
         </div>
       </div>
     {:else}
       <p class="eyebrow">{$t("report.discoveryHeading")}</p>
-      <p id="discovery-title">{$t("report.noDiscovery")} </p>
+      <p id="discovery-title">{$t("report.noDiscovery")}</p>
     {/if}
   </section>
   <section
@@ -276,13 +327,19 @@
     aria-labelledby="share-title"
   >
     <div class="share-copy">
-      <p class="eyebrow">04 / {isExample ? $t("sharing.exampleHeading") : $t("sharing.ownHeading")}</p>
+      <p class="eyebrow">
+        04 / {isExample
+          ? $t("sharing.exampleHeading")
+          : $t("sharing.ownHeading")}
+      </p>
       <h2 id="share-title">
-        <Message message={isExample ? "sharing.exampleLead" : "sharing.ownLead"} wrappers={{ line: nextLine }} /> </h2>
+        <Message
+          message={isExample ? "sharing.exampleLead" : "sharing.ownLead"}
+          wrappers={{ line: nextLine }}
+        />
+      </h2>
       <p class="large-copy">
-        {isExample
-          ? $t("sharing.exampleIntro")
-          : $t("sharing.ownIntro")}
+        {isExample ? $t("sharing.exampleIntro") : $t("sharing.ownIntro")}
       </p>
       <Button variant="primary" disabled={shareBusy} on:click={onGenerateShare}
         >{sharePreviewUrl
@@ -292,24 +349,31 @@
             : $t("sharing.prepareOwn")}
         <Arrow direction="right" /></Button
       >{#if sharePreviewUrl}{#if canShareImage}<Button
-          variant="secondary"
-          on:click={onShareImage}>{$t("actions.share")}</Button
-        >{/if}<Button
-          variant="secondary"
-          on:click={onDownloadShare}>{$t("sharing.download")}</Button
+            variant="secondary"
+            on:click={onShareImage}>{$t("actions.share")}</Button
+          >{/if}<Button variant="secondary" on:click={onDownloadShare}
+          >{$t("sharing.download")}</Button
         >{/if}
       <p class="share-feedback" aria-live="polite">{shareFeedback}</p>
     </div>
     <div class="share-preview">
       {#if sharePreviewUrl}<img
           src={sharePreviewUrl}
-          alt={$t("sharing.previewAlt", { listener: isExample ? report.profile.realname || $t("example.displayName") : report.profile.username })}
+          alt={$t("sharing.previewAlt", {
+            listener: isExample
+              ? report.profile.realname || $t("example.displayName")
+              : report.profile.username,
+          })}
         />{:else}<div class="share-card-preview">
           <span class="eyebrow"
-            >{$t("sharing.previewIdentity", { listener: isExample
-              ? report.profile.realname || $t("example.displayName")
-              : `@${report.profile.username}` })} <span class="separator-indicator" aria-hidden="true">·</span>
-            {#if isExample}{$t("example.badge")} <span class="separator-indicator" aria-hidden="true">·</span> {/if}
+            >{$t("sharing.previewIdentity", {
+              listener: isExample
+                ? report.profile.realname || $t("example.displayName")
+                : `@${report.profile.username}`,
+            })} <span class="separator-indicator" aria-hidden="true">·</span>
+            {#if isExample}{$t("example.badge")}
+              <span class="separator-indicator" aria-hidden="true">·</span>
+            {/if}
             {periodLabels[report.profile.period]}</span
           ><strong>{portrait.title}</strong>
           <p class="preview-summary">{portrait.summary}</p>
@@ -335,10 +399,9 @@
               </div>{/each}
           </div>
           <span class="preview-note"
-            >{$t("sharing.interpretation")} <span
-              class="separator-indicator"
-              aria-hidden="true">·</span
-            > TIMBRE PALETTE</span
+            >{$t("sharing.interpretation")}
+            <span class="separator-indicator" aria-hidden="true">·</span> TIMBRE
+            PALETTE</span
           >
         </div>{/if}
     </div>
@@ -474,7 +537,8 @@
     text-decoration: none;
     white-space: nowrap;
   }
-  :global(:root[data-theme="dark"]) .family-card-link:is(:hover, :focus-visible) {
+  :global(:root[data-theme="dark"])
+    .family-card-link:is(:hover, :focus-visible) {
     color: var(--family-tone);
   }
   .instrument-name strong {

@@ -369,7 +369,7 @@
                       {#each related as item}<button
                           type="button"
                           on:click={() => onOpenRelated(item.slug)}
-                          >{item.name} <Arrow direction="up-right" /></button
+                          >{item.name}</button
                         >{/each}
                     </div>
                     {#if relationsLoading}<p

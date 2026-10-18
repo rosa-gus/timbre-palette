@@ -55,8 +55,17 @@
   function loadPreviewExample(): Promise<ProfileAnalysisV3> {
     if (!examplePromise) {
       examplePromise = import("../analysis/browser")
-        .then(({ getBrowserExampleAnalysis }) => getBrowserExampleAnalysis("1month", previewController.signal, "entry-palette-preview"))
-        .catch((error) => { examplePromise = null; throw error; });
+        .then(({ getBrowserExampleAnalysis }) =>
+          getBrowserExampleAnalysis(
+            "1month",
+            previewController.signal,
+            "entry-palette-preview",
+          ),
+        )
+        .catch((error) => {
+          examplePromise = null;
+          throw error;
+        });
     }
     return examplePromise;
   }
@@ -82,21 +91,30 @@
     try {
       await tick();
       // Let the existing loading indicator paint before rendering the canvas.
-      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      );
       const [example, { createShareImage }] = await Promise.all([
-        loadPreviewExample(), import("../sharing/share"),
+        loadPreviewExample(),
+        import("../sharing/share"),
       ]);
       if (previewController.signal.aborted || request !== shareRequest) return;
       const blob = await createShareImage(example.track_palette, undefined, {
         isExample: true,
         displayName: example.profile.realname || $t("example.displayName"),
       });
-      if (previewController.signal.aborted || request !== shareRequest || $localeStore !== language) return;
+      if (
+        previewController.signal.aborted ||
+        request !== shareRequest ||
+        $localeStore !== language
+      )
+        return;
       const url = URL.createObjectURL(blob);
       shareImages.set(language, url);
       sharePreviewUrl = url;
     } catch {
-      if (!previewController.signal.aborted && request === shareRequest) sharePreviewError = true;
+      if (!previewController.signal.aborted && request === shareRequest)
+        sharePreviewError = true;
     } finally {
       if (request === shareRequest) {
         sharePreviewLoading = false;
@@ -105,7 +123,9 @@
     }
   }
 
-  async function showPreview(kind: "palette" | "instrument" | "share"): Promise<void> {
+  async function showPreview(
+    kind: "palette" | "instrument" | "share",
+  ): Promise<void> {
     if (loading) return;
     if (previewOpen === kind) {
       previewOpen = null;
@@ -120,7 +140,8 @@
     previewError = false;
     try {
       const example = await loadPreviewExample();
-      if (!previewController.signal.aborted) previewFamilies = example.track_palette.families.slice(0, 3);
+      if (!previewController.signal.aborted)
+        previewFamilies = example.track_palette.families.slice(0, 3);
     } catch {
       if (!previewController.signal.aborted) previewError = true;
     } finally {
@@ -142,7 +163,8 @@
       pronunciationAudio.currentTime = 0;
       return;
     }
-    if (!pronunciationAudio.getAttribute("src")) pronunciationAudio.src = pronunciationUrl;
+    if (!pronunciationAudio.getAttribute("src"))
+      pronunciationAudio.src = pronunciationUrl;
     else if (pronunciationAudio.error) pronunciationAudio.load();
     try {
       await pronunciationAudio.play();
@@ -155,7 +177,9 @@
 
   onDestroy(() => pronunciationAudio?.pause());
   onDestroy(() => previewController.abort());
-  onDestroy(() => { for (const url of shareImages.values()) URL.revokeObjectURL(url); });
+  onDestroy(() => {
+    for (const url of shareImages.values()) URL.revokeObjectURL(url);
+  });
 
   function submitProfile(): void {
     if (loading || waitSeconds > 0) return;
@@ -177,169 +201,287 @@
       title={loadingTitle}
       context={$t("loading.profileContext", {
         username: username ? `@${username}` : $t("example.displayName"),
-        period: periods.find((option) => option.value === period)?.label ?? period,
+        period:
+          periods.find((option) => option.value === period)?.label ?? period,
       })}
       detail={loadingDetail}
     />
   {:else}
-  <div class="entry-intro">
-    <h1 id="entry-title" class="entry-tagline"><Message message="entry.title" wrappers={{ emphasis: titleEmphasis }} />
-    </h1>
-    <p class="entry-subtitle">{$t("entry.subtitle")}</p>
-    <div class="entry-pronunciation">
-      <button
-        class="pronunciation-button"
-        type="button"
-        aria-label={pronunciationPlaying ? $t("entry.pronunciationStop") : $t("entry.pronunciationPlay")}
-        aria-pressed={pronunciationPlaying}
-        on:click={togglePronunciation}
-      >
-        <span lang="en-GB" aria-hidden="true">/ˈtæm.bə ˈpæl.ət/</span>
-        <span class="pronunciation-symbol" class:playing={pronunciationPlaying} aria-hidden="true"></span>
-      </button>
-      <audio
-        bind:this={pronunciationAudio}
-        preload="none"
-        hidden
-        on:play={() => pronunciationPlaying = true}
-        on:pause={() => pronunciationPlaying = false}
-        on:ended={() => pronunciationPlaying = false}
-        on:error={() => { pronunciationPlaying = false; pronunciationError = true; }}
-      ></audio>
-      {#if pronunciationError}<p class="pronunciation-error" role="status">{$t("entry.pronunciationError")}</p>{/if}
+    <div class="entry-intro">
+      <h1 id="entry-title" class="entry-tagline">
+        <Message message="entry.title" wrappers={{ emphasis: titleEmphasis }} />
+      </h1>
+      <p class="entry-subtitle">{$t("entry.subtitle")}</p>
+      <div class="entry-pronunciation">
+        <button
+          class="pronunciation-button"
+          type="button"
+          aria-label={pronunciationPlaying
+            ? $t("entry.pronunciationStop")
+            : $t("entry.pronunciationPlay")}
+          aria-pressed={pronunciationPlaying}
+          on:click={togglePronunciation}
+        >
+          <span lang="en-GB" aria-hidden="true">/ˈtæm.bə ˈpæl.ət/</span>
+          <span
+            class="pronunciation-symbol"
+            class:playing={pronunciationPlaying}
+            aria-hidden="true"
+          ></span>
+        </button>
+        <audio
+          bind:this={pronunciationAudio}
+          preload="none"
+          hidden
+          on:play={() => (pronunciationPlaying = true)}
+          on:pause={() => (pronunciationPlaying = false)}
+          on:ended={() => (pronunciationPlaying = false)}
+          on:error={() => {
+            pronunciationPlaying = false;
+            pronunciationError = true;
+          }}
+        ></audio>
+        {#if pronunciationError}<p class="pronunciation-error" role="status">
+            {$t("entry.pronunciationError")}
+          </p>{/if}
+      </div>
+      <ul class="entry-description" role="list">
+        <li>
+          <span class="entry-list-marker" aria-hidden="true"></span><button
+            class="entry-preview-trigger"
+            type="button"
+            aria-expanded={previewOpen === "palette" && !loading}
+            aria-controls="entry-preview"
+            disabled={loading}
+            on:click={() => showPreview("palette")}
+            >{$t("entry.discover")}</button
+          >
+        </li>
+        <li>
+          <span class="entry-list-marker" aria-hidden="true"></span><button
+            class="entry-preview-trigger"
+            type="button"
+            aria-expanded={previewOpen === "instrument" && !loading}
+            aria-controls="entry-preview"
+            disabled={loading}
+            on:click={() => showPreview("instrument")}
+            >{$t("entry.explore")}</button
+          >
+        </li>
+        <li>
+          <span class="entry-list-marker" aria-hidden="true"></span><button
+            class="entry-preview-trigger"
+            type="button"
+            aria-expanded={previewOpen === "share" && !loading}
+            aria-controls="entry-preview"
+            disabled={loading}
+            on:click={() => showPreview("share")}>{$t("entry.share")}</button
+          >
+        </li>
+      </ul>
+      <p class="entry-preview-hint">{$t("entry.previewHint")}</p>
+      <p class="entry-source-note">{$t("entry.sourceNote")}</p>
+      {#if catalogSize !== null}
+        <p class="entry-catalog-size">
+          <Message
+            message="entry.catalogSize"
+            values={{ count: catalogSize }}
+            wrappers={{ value: catalogCount }}
+          />
+        </p>
+      {/if}
     </div>
-    <ul class="entry-description" role="list">
-      <li><span class="entry-list-marker" aria-hidden="true"></span><button class="entry-preview-trigger" type="button" aria-expanded={previewOpen === "palette" && !loading} aria-controls="entry-preview" disabled={loading} on:click={() => showPreview("palette")}>{$t("entry.discover")}</button></li>
-      <li><span class="entry-list-marker" aria-hidden="true"></span><button class="entry-preview-trigger" type="button" aria-expanded={previewOpen === "instrument" && !loading} aria-controls="entry-preview" disabled={loading} on:click={() => showPreview("instrument")}>{$t("entry.explore")}</button></li>
-      <li><span class="entry-list-marker" aria-hidden="true"></span><button class="entry-preview-trigger" type="button" aria-expanded={previewOpen === "share" && !loading} aria-controls="entry-preview" disabled={loading} on:click={() => showPreview("share")}>{$t("entry.share")}</button></li>
-    </ul>
-    <p class="entry-preview-hint">{$t("entry.previewHint")}</p>
-    <p class="entry-source-note">{$t("entry.sourceNote")}</p>
-    {#if catalogSize !== null}
-      <p class="entry-catalog-size">
-        <Message message="entry.catalogSize" values={{ count: catalogSize }} wrappers={{ value: catalogCount }} />
-      </p>
-    {/if}
-  </div>
 
-  <div class="entry-action-area">
-    {#if !loading}
-      {#each previewOpen ? [previewOpen] : [] as previewKind (previewKind)}
-      <div id="entry-preview" class="entry-preview" in:dialogFade|global out:dialogFade|global aria-busy={(previewKind === "palette" && previewLoading) || (previewKind === "share" && sharePreviewLoading)}>
-        <div class="preview-heading">
-          <p class="eyebrow" tabindex="-1" bind:this={previewHeading}>{previewKind === "palette" ? $t("entry.previewHeading") : previewKind === "instrument" ? $t("entry.instrumentPreviewHeading") : $t("sharing.exampleHeading")}</p>
-          <button type="button" class="preview-close" aria-label={$t("entry.previewClose")} on:click={returnToForm}>[×]</button>
-        </div>
-        {#if previewKind === "share"}
-          {#if sharePreviewLoading}
-            <p class="share-preview-status" role="status">
-              <span class="loading-indicator" aria-hidden="true"></span>
-              <span>{$t("entry.sharePreviewLoading")}</span>
-            </p>
-          {:else if sharePreviewError}
-            <p class="entry-source-note" role="status">{$t("sharing.failed")}</p>
-          {:else if sharePreviewUrl}
-            <img class="share-preview-image" src={sharePreviewUrl} width="1200" height="1500" alt={$t("sharing.previewAlt", { listener: $t("example.displayName") })} />
-          {/if}
-        {:else if previewKind === "instrument"}
-          <div class="instrument-preview" lang={$localeStore}>
-            <h2>{previewInstrument.name}</h2>
-            <p class="instrument-preview-family">{previewInstrument.family}</p>
-            <section class="instrument-block" aria-labelledby="preview-sound-production">
-              <h3 id="preview-sound-production" class="eyebrow"><Message message="instrument.soundProductionHeading" /></h3>
-              <p>{previewInstrument.soundProduction}</p>
-            </section>
-            <section class="instrument-block" aria-labelledby="preview-curiosity">
-              <h3 id="preview-curiosity" class="eyebrow"><Message message="instrument.curiosityHeading" /></h3>
-              <p>{previewInstrument.curiosity}</p>
-            </section>
-            <div class="instrument-preview-sources">
-              <p class="eyebrow"><Message message="instrument.sourcesHeading" /></p>
-              {#each previewInstrument.sources as source}
-                <a href={source.url} title={source.title} target="_blank" rel="noreferrer">{source.publisher}<Arrow direction="up-right" /></a>
-              {/each}
+    <div class="entry-action-area">
+      {#if !loading}
+        {#each previewOpen ? [previewOpen] : [] as previewKind (previewKind)}
+          <div
+            id="entry-preview"
+            class="entry-preview"
+            in:dialogFade|global
+            out:dialogFade|global
+            aria-busy={(previewKind === "palette" && previewLoading) ||
+              (previewKind === "share" && sharePreviewLoading)}
+          >
+            <div class="preview-heading">
+              <p class="eyebrow" tabindex="-1" bind:this={previewHeading}>
+                {previewKind === "palette"
+                  ? $t("entry.previewHeading")
+                  : previewKind === "instrument"
+                    ? $t("entry.instrumentPreviewHeading")
+                    : $t("sharing.exampleHeading")}
+              </p>
+              <button
+                type="button"
+                class="preview-close"
+                aria-label={$t("entry.previewClose")}
+                on:click={returnToForm}>[×]</button
+              >
+            </div>
+            {#if previewKind === "share"}
+              {#if sharePreviewLoading}
+                <p class="share-preview-status" role="status">
+                  <span class="loading-indicator" aria-hidden="true"></span>
+                  <span>{$t("entry.sharePreviewLoading")}</span>
+                </p>
+              {:else if sharePreviewError}
+                <p class="entry-source-note" role="status">
+                  {$t("sharing.failed")}
+                </p>
+              {:else if sharePreviewUrl}
+                <img
+                  class="share-preview-image"
+                  src={sharePreviewUrl}
+                  width="1200"
+                  height="1500"
+                  alt={$t("sharing.previewAlt", {
+                    listener: $t("example.displayName"),
+                  })}
+                />
+              {/if}
+            {:else if previewKind === "instrument"}
+              <div class="instrument-preview" lang={$localeStore}>
+                <h2>{previewInstrument.name}</h2>
+                <p class="instrument-preview-family">
+                  {previewInstrument.family}
+                </p>
+                <section
+                  class="instrument-block"
+                  aria-labelledby="preview-sound-production"
+                >
+                  <h3 id="preview-sound-production" class="eyebrow">
+                    <Message message="instrument.soundProductionHeading" />
+                  </h3>
+                  <p>{previewInstrument.soundProduction}</p>
+                </section>
+                <section
+                  class="instrument-block"
+                  aria-labelledby="preview-curiosity"
+                >
+                  <h3 id="preview-curiosity" class="eyebrow">
+                    <Message message="instrument.curiosityHeading" />
+                  </h3>
+                  <p>{previewInstrument.curiosity}</p>
+                </section>
+                <div class="instrument-preview-sources">
+                  <p class="eyebrow">
+                    <Message message="instrument.sourcesHeading" />
+                  </p>
+                  {#each previewInstrument.sources as source}
+                    <a
+                      href={source.url}
+                      title={source.title}
+                      target="_blank"
+                      rel="noreferrer"
+                      >{source.publisher}<Arrow direction="up-right" /></a
+                    >
+                  {/each}
+                </div>
+              </div>
+            {:else if previewLoading}
+              <p class="entry-source-note" role="status">
+                {$t("loading.catalog")}
+              </p>
+            {:else if previewError}
+              <p class="entry-source-note" role="status">
+                {$t("entry.previewUnavailable")}
+              </p>
+            {:else}
+              <p class="palette-preview-intro">{$t("entry.previewIntro")}</p>
+              <FamilyPalette families={previewFamilies} compact />
+              <p class="entry-source-note">{$t("entry.previewScope")}</p>
+            {/if}
+            <div class="preview-actions">
+              <Button variant="primary" on:click={returnToForm}
+                ><span>{$t("entry.previewConsult")}</span><Arrow
+                  direction="right"
+                /></Button
+              >
+              <button class="example-button" type="button" on:click={onExample}
+                >{$t("entry.previewFull")}<Arrow direction="right" /></button
+              >
             </div>
           </div>
-        {:else if previewLoading}
-          <p class="entry-source-note" role="status">{$t("loading.catalog")}</p>
-        {:else if previewError}
-          <p class="entry-source-note" role="status">{$t("entry.previewUnavailable")}</p>
-        {:else}
-          <p class="palette-preview-intro">{$t("entry.previewIntro")}</p>
-          <FamilyPalette families={previewFamilies} compact />
-          <p class="entry-source-note">{$t("entry.previewScope")}</p>
-        {/if}
-        <div class="preview-actions">
-          <Button variant="primary" on:click={returnToForm}><span>{$t("entry.previewConsult")}</span><Arrow direction="right" /></Button>
-          <button class="example-button" type="button" on:click={onExample}>{$t("entry.previewFull")}<Arrow direction="right" /></button>
-        </div>
-      </div>
-      {/each}
-    {/if}
-    <form
-      class="profile-form"
-      hidden={previewOpen !== null && !loading}
-      inert={loading}
-      aria-hidden={loading}
-      on:submit|preventDefault={submitProfile}
-    >
-      <div class="field-block">
-        <div class="field-heading">
-          <label for="username">{$t("entry.profileLabel")}</label>
-        </div>
-        <div class="username-field">
-          <span id="username-prefix" class="username-prefix"
-            >last.fm/user/</span
-          >
-          <input
-            bind:this={usernameInput}
-            id="username"
-            aria-describedby="username-prefix"
-            value={username}
-            on:input={(event) => onUsernameChange(event.currentTarget.value)}
-            autocomplete="username"
-            spellcheck="false"
-            placeholder={$t("entry.usernamePlaceholder")}
-            aria-invalid={formError ? "true" : undefined}
-            aria-errormessage={formError ? "profile-error" : undefined}
-            required
-            maxlength="64"
-          />
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="field-block period-field">
-          <span class="field-label">{$t("periods.label")}</span>
-          <SegmentedControl
-            label={$t("periods.listeningLabel")}
-            options={periods}
-            value={period}
-            onChange={(value) => onPeriodChange(value as ListeningPeriod)}
-          />
-        </div>
-        <Button variant="primary" type="submit" disabled={waitSeconds > 0}>
-          <span>{resumeProgress?.pages ? $t("actions.resume") : $t("actions.search")}</span>
-          <span class="submit-arrow" aria-hidden="true"><Arrow direction="right" /></span>
-        </Button>
-      </div>
-      {#if formError}<p id="profile-error" class="form-error" role="alert">{formError}</p>{/if}
-      {#if !loading && resumeProgress}
-        <HistoryResumeNotice progress={resumeProgress} {waitSeconds} showResume={false} />
-      {:else if !loading && waitSeconds > 0}
-        <p class="form-error">{$t("history.wait", { duration: formatWaitDuration(waitSeconds) })}</p>
+        {/each}
       {/if}
-      <div class="entry-secondary">
-        <button
-          class="example-button"
-          type="button"
-          disabled={loading}
-          on:click={onExample}
-        >{$t("entry.example")}<Arrow direction="right" />
-        </button>
-        {#if !loading}<div class="entry-limits"><AnalysisLimits /></div>{/if}
-      </div>
-    </form>
-  </div>
+      <form
+        class="profile-form"
+        hidden={previewOpen !== null && !loading}
+        inert={loading}
+        aria-hidden={loading}
+        on:submit|preventDefault={submitProfile}
+      >
+        <div class="field-block">
+          <div class="field-heading">
+            <label for="username">{$t("entry.profileLabel")}</label>
+          </div>
+          <div class="username-field">
+            <span id="username-prefix" class="username-prefix"
+              >last.fm/user/</span
+            >
+            <input
+              bind:this={usernameInput}
+              id="username"
+              aria-describedby="username-prefix"
+              value={username}
+              on:input={(event) => onUsernameChange(event.currentTarget.value)}
+              autocomplete="username"
+              spellcheck="false"
+              placeholder={$t("entry.usernamePlaceholder")}
+              aria-invalid={formError ? "true" : undefined}
+              aria-errormessage={formError ? "profile-error" : undefined}
+              required
+              maxlength="64"
+            />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field-block period-field">
+            <span class="field-label">{$t("periods.label")}</span>
+            <SegmentedControl
+              label={$t("periods.listeningLabel")}
+              options={periods}
+              value={period}
+              onChange={(value) => onPeriodChange(value as ListeningPeriod)}
+            />
+          </div>
+          <Button variant="primary" type="submit" disabled={waitSeconds > 0}>
+            <span
+              >{resumeProgress?.pages
+                ? $t("actions.resume")
+                : $t("actions.search")}</span
+            >
+            <span class="submit-arrow" aria-hidden="true"
+              ><Arrow direction="right" /></span
+            >
+          </Button>
+        </div>
+        {#if formError}<p id="profile-error" class="form-error" role="alert">
+            {formError}
+          </p>{/if}
+        {#if !loading && resumeProgress}
+          <HistoryResumeNotice
+            progress={resumeProgress}
+            {waitSeconds}
+            showResume={false}
+          />
+        {:else if !loading && waitSeconds > 0}
+          <p class="form-error">
+            {$t("history.wait", { duration: formatWaitDuration(waitSeconds) })}
+          </p>
+        {/if}
+        <div class="entry-secondary">
+          <button
+            class="example-button"
+            type="button"
+            disabled={loading}
+            on:click={onExample}
+            >{$t("entry.example")}<Arrow direction="right" />
+          </button>
+          {#if !loading}<div class="entry-limits"><AnalysisLimits /></div>{/if}
+        </div>
+      </form>
+    </div>
   {/if}
 </section>
 
@@ -361,7 +503,9 @@
     justify-items: center;
     gap: 0;
   }
-  .entry-intro { min-width: 0; }
+  .entry-intro {
+    min-width: 0;
+  }
   .entry-tagline {
     max-width: none;
     margin: 0;
@@ -372,7 +516,9 @@
     line-height: 1.08;
     text-wrap: wrap;
   }
-  .entry-tagline span { display: block; }
+  .entry-tagline span {
+    display: block;
+  }
   .entry-subtitle {
     max-width: 44ch;
     margin: 16px 0 0;
@@ -381,7 +527,9 @@
     line-height: 1.6;
     text-wrap: pretty;
   }
-  .entry-pronunciation { margin-top: 12px; }
+  .entry-pronunciation {
+    margin-top: 12px;
+  }
   .pronunciation-button {
     display: inline-flex;
     align-items: center;
@@ -395,7 +543,9 @@
     cursor: pointer;
   }
   .pronunciation-button:is(:hover, :focus-visible),
-  .pronunciation-button[aria-pressed="true"] { color: var(--accent-soft); }
+  .pronunciation-button[aria-pressed="true"] {
+    color: var(--accent-soft);
+  }
   .pronunciation-symbol {
     display: inline-flex;
     align-items: center;
@@ -494,7 +644,9 @@
     margin-bottom: 24px;
     color: var(--muted);
   }
-  .preview-heading p { margin: 0; }
+  .preview-heading p {
+    margin: 0;
+  }
   .preview-close {
     padding: 0;
     border: 0;
@@ -503,7 +655,9 @@
     font: 12px/1.5 var(--meta);
     cursor: pointer;
   }
-  .preview-close:hover { color: var(--ink); }
+  .preview-close:hover {
+    color: var(--ink);
+  }
   .share-preview-status {
     display: flex;
     align-items: baseline;
@@ -528,7 +682,9 @@
     color: var(--muted);
     font: 12px/1.5 var(--meta);
   }
-  .instrument-block { margin: 0 0 24px; }
+  .instrument-block {
+    margin: 0 0 24px;
+  }
   .instrument-block .eyebrow,
   .instrument-preview-sources .eyebrow {
     margin: 0 0 12px;
@@ -546,8 +702,14 @@
     font: 12px/1.5 var(--meta);
     text-underline-offset: 4px;
   }
-  .instrument-preview-sources a:is(:hover, :focus-visible) { color: var(--ink); }
-  .preview-actions { display: grid; gap: 8px; margin-top: 24px; }
+  .instrument-preview-sources a:is(:hover, :focus-visible) {
+    color: var(--ink);
+  }
+  .preview-actions {
+    display: grid;
+    gap: 8px;
+    margin-top: 24px;
+  }
   .preview-actions :global(.ui-button) {
     display: flex;
     align-items: center;
@@ -580,9 +742,17 @@
     margin-top: clamp(80px, 15svh, 160px);
     justify-self: end;
   }
-  .profile-form { grid-area: 1 / 1; width: 100%; }
-  .field-block { display: grid; gap: 10px; }
-  .field-heading { display: flex; }
+  .profile-form {
+    grid-area: 1 / 1;
+    width: 100%;
+  }
+  .field-block {
+    display: grid;
+    gap: 10px;
+  }
+  .field-heading {
+    display: flex;
+  }
   .field-block label,
   .field-label {
     color: var(--muted);
@@ -610,7 +780,10 @@
     text-decoration: underline;
     text-underline-offset: 4px;
   }
-  .example-button:disabled { cursor: not-allowed; opacity: 0.6; }
+  .example-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
   .username-field {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
@@ -642,8 +815,13 @@
     color: var(--ink);
     font-size: 1rem;
   }
-  input::placeholder { color: var(--quiet); opacity: 1; }
-  input:focus { outline: 0; }
+  input::placeholder {
+    color: var(--quiet);
+    opacity: 1;
+  }
+  input:focus {
+    outline: 0;
+  }
   .form-row {
     display: grid;
     gap: 24px;
@@ -671,8 +849,13 @@
     width: 100%;
     min-height: 48px;
   }
-  .submit-arrow { display: inline-flex; flex-shrink: 0; }
-  .submit-arrow :global(.icon-arrow) { margin: 0; }
+  .submit-arrow {
+    display: inline-flex;
+    flex-shrink: 0;
+  }
+  .submit-arrow :global(.icon-arrow) {
+    margin: 0;
+  }
   .form-error {
     margin: 16px 0 0;
     color: var(--accent-soft);
@@ -688,10 +871,17 @@
     margin-top: 12px;
     min-width: 0;
   }
-  .entry-limits { width: 100%; min-width: 0; }
+  .entry-limits {
+    width: 100%;
+    min-width: 0;
+  }
   @media (max-width: 1000px) and (min-width: 801px) {
-    .entry-view { gap: 40px; }
-    .entry-tagline { font-size: clamp(2rem, 3vw, 2.5rem); }
+    .entry-view {
+      gap: 40px;
+    }
+    .entry-tagline {
+      font-size: clamp(2rem, 3vw, 2.5rem);
+    }
   }
   @media (max-width: 800px) {
     .entry-view {
@@ -706,13 +896,28 @@
       letter-spacing: -0.045em;
       line-height: 1.1;
     }
-    .entry-description { font-size: 14px; }
-    .entry-preview { padding: 16px; }
-    .entry-action-area { max-width: none; margin-top: 0; }
+    .entry-description {
+      font-size: 14px;
+    }
+    .entry-preview {
+      padding: 16px;
+    }
+    .entry-action-area {
+      max-width: none;
+      margin-top: 0;
+    }
   }
   @media (max-width: 380px) {
-    .username-prefix { padding-inline: 10px; font-size: 11px; }
-    input { padding-inline: 10px; }
-    .period-field :global(.segment-button) { padding-inline: 4px; font-size: 11px; }
+    .username-prefix {
+      padding-inline: 10px;
+      font-size: 11px;
+    }
+    input {
+      padding-inline: 10px;
+    }
+    .period-field :global(.segment-button) {
+      padding-inline: 4px;
+      font-size: 11px;
+    }
   }
 </style>

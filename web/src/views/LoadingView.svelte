@@ -51,7 +51,9 @@
     overflow-wrap: anywhere;
   }
   @media (prefers-reduced-motion: reduce) {
-    .loading-view { animation: none; }
+    .loading-view {
+      animation: none;
+    }
   }
   @keyframes appear {
     from {
