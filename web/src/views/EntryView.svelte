@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onDestroy, tick } from "svelte";
-  import { dialogFade } from "../transitions/dialog";
+  import { fadeTransition } from "../transitions/dialog";
   import FamilyPalette from "../components/FamilyPalette.svelte";
   import instrumentPreview from "../analysis/instrument-preview.generated.json";
   import type { FamilyPresence, ProfileAnalysisV3 } from "../api/types";
@@ -299,8 +299,8 @@
             id="entry-preview"
             class="entry-preview"
             class:instrument-preview-shell={previewKind === "instrument"}
-            in:dialogFade|global
-            out:dialogFade|global
+            in:fadeTransition|global
+            out:fadeTransition|global
             aria-busy={(previewKind === "palette" && previewLoading) ||
               (previewKind === "share" && sharePreviewLoading)}
           >

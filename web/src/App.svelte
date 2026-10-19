@@ -864,7 +864,7 @@
             href="https://rosa-gus.github.io/portfolio"
             target="_blank"
             rel="noreferrer noopener">rosa gus</a
-          > <span class="separator-indicator" aria-hidden="true">·</span>
+          > <span class="inline-divider" aria-hidden="true"></span>
           {$t("footer.license")}
           <a
             href="https://www.gnu.org/licenses/gpl-3.0.html"

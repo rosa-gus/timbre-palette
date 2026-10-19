@@ -239,8 +239,14 @@ main {
 .wordmark,
 .header-meta,
 .header-status,
-.theme-toggle,
-.eyebrow,
+.theme-toggle {
+  font-family: var(--meta);
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.065em;
+  line-height: 1.5;
+  text-transform: uppercase;
+}
 .metadata-note,
 .field-help,
 .section-note,
@@ -252,6 +258,14 @@ main {
   font-weight: 400;
   letter-spacing: 0.065em;
   line-height: 1.5;
+  text-transform: uppercase;
+}
+.eyebrow {
+  font-family: var(--meta);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.07em;
+  line-height: 1.6;
   text-transform: uppercase;
 }
 .wordmark {
@@ -305,11 +319,14 @@ main {
   content: "* . . .";
   animation: loading-indicator 1.2s step-end infinite;
 }
-.separator-indicator {
+.inline-divider {
   display: inline-block;
-  padding-inline: 0.45em;
+  width: 4px;
+  height: 4px;
+  margin-inline: 0.6em;
+  background: color-mix(in srgb, currentColor 65%, black);
   color: var(--muted);
-  white-space: nowrap;
+  vertical-align: middle;
 }
 :is(
     .app-tooltip,
