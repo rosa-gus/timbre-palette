@@ -1,7 +1,7 @@
 import { env } from "cloudflare:workers";
 import { applyD1Migrations } from "cloudflare:test";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { getInstrument } from "../src/catalog";
+import { getInstrument, getInstrumentResources } from "../src/catalog";
 
 beforeAll(async () => { await applyD1Migrations(env.DB, env.TEST_MIGRATIONS!); });
 beforeEach(async () => {
@@ -11,6 +11,7 @@ beforeEach(async () => {
 });
 
 const read = (query = "", slug = "piano") => getInstrument(new URL(`https://api.test/v2/instruments/${slug}${query}`), env, slug);
+const readBatch = (query = "") => getInstrumentResources(new URL(`https://api.test/v2/catalog/resources${query}`), env);
 const base = { name: "Piano", description: "Descrição original.", sound_production: "Produção original.", common_roles: ["harmonia"],
   sections: [], sources: [{ id: "source", title: "Original English title", language: "en" }], further_reading: [], image: null };
 async function store(locale: string, content: object, status = "published", source = "source-v1") {
@@ -23,6 +24,16 @@ async function store(locale: string, content: object, status = "published", sour
 }
 
 describe("editorial content locales", () => {
+  it("deduplicates bounded batch resources and preserves missing slugs", async () => {
+    const response = await readBatch("?slug=piano&slug=piano&slug=missing");
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      requested_locale: "en-US",
+      resources: [{ slug: "piano" }],
+      missing: ["missing"],
+    });
+  });
+
   it("preserves the default response before the first localized publication", async () => {
     const response = await read();
     expect(response.status).toBe(200);

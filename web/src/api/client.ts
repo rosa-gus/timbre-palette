@@ -5,6 +5,7 @@ export { isProfileAnalysisV3 } from "./report-validation";
 import { locale, t, type Locale } from "../i18n/runtime";
 import type {
   InstrumentResource,
+  InstrumentResourceBatch,
   ListeningPeriod,
   ProfileAnalysisV3,
 } from "./types";
@@ -236,6 +237,37 @@ export async function getInstrument(
     );
   }
   return sanitizeInstrumentResource(result.data);
+}
+
+export async function getInstrumentResources(
+  slugs: string[],
+  signal: AbortSignal,
+  language: Locale = locale,
+): Promise<InstrumentResourceBatch> {
+  const params = new URLSearchParams({ locale: language });
+  for (const slug of [...new Set(slugs)]) params.append("slug", slug);
+  const result = await getJson<InstrumentResourceBatch>(
+    `/v2/catalog/resources?${params.toString()}`,
+    signal,
+  );
+  if (
+    !isRecord(result.data) ||
+    typeof result.data.requested_locale !== "string" ||
+    !Array.isArray(result.data.resources) ||
+    !Array.isArray(result.data.missing)
+  )
+    throw new PaletteApiError(
+      t("errors.invalidInstrument"),
+      result.response.status,
+      "invalid_instrument",
+    );
+  return {
+    requested_locale: result.data.requested_locale,
+    resources: result.data.resources
+      .filter(isInstrumentResource)
+      .map(sanitizeInstrumentResource),
+    missing: result.data.missing.filter((slug): slug is string => typeof slug === "string"),
+  };
 }
 
 export function getApiErrorMessage(error: unknown): string {

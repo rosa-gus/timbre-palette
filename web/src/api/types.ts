@@ -328,6 +328,12 @@ export interface FurtherReading {
   publisher: string | null;
 }
 
+export interface InstrumentResourceBatch {
+  requested_locale: string;
+  resources: InstrumentResource[];
+  missing: string[];
+}
+
 export interface InstrumentResource {
   locale?: string;
   requested_locale?: string;

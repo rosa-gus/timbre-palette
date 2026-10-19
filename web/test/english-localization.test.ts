@@ -64,9 +64,10 @@ it("localizes report display through catalog resources without fetching listenin
     artist_vocabulary: { families: [], featured_artists: [] } } as unknown as import("../src/api/types").ProfileAnalysisV3;
   const before = JSON.stringify(source);
   const fetch = vi.fn(async (url: string) => {
-    expect(url).toContain("/v2/instruments/percussion?locale=en-US");
-    return Response.json({ slug: "percussion", name: "Percussion", description: "Description", sound_production: "Sound", common_roles: [],
-      related_slugs: [], sections: [], sources: [], further_reading: [], image: null, tone: null, locale: "en-US" });
+    expect(url).toContain("/v2/catalog/resources?locale=en-US");
+    return Response.json({ requested_locale: "en-US", resources: [{ slug: "percussion", name: "Percussion", description: "Description", sound_production: "Sound", common_roles: [],
+        related_slugs: [], sections: [], sources: [], further_reading: [], image: null, tone: null, locale: "en-US" }],
+      missing: [] });
   });
   vi.stubGlobal("fetch", fetch);
   await setLocale("en-US", { persist: false, updateUrl: false });

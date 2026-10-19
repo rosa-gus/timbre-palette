@@ -47,7 +47,7 @@ Revision schema 2 excludes that operational metadata. Existing legacy digests ma
 
 Preserve withdrawal status through editing, saving, export, and publication. An old approval must never turn deprecated source content into published content. A missing or unapproved source makes its translations unavailable, even when they retain approval. Deleted blocks and withdrawn claims must not return through a translation or fallback.
 
-The API serves a complete eligible resource in the requested language, otherwise the complete eligible Portuguese source. Resource-level fallback preserves a coherent reviewed text; UI message fallback does not authorize mixing editorial fields. If the source is unavailable, return `404` without exposing compatibility text. Omitted locale remains `pt-BR`; malformed or repeated locale parameters return `422`.
+The API serves a complete eligible resource in the requested language, otherwise the complete eligible Portuguese source. Resource-level fallback preserves a coherent reviewed text; UI message fallback does not authorize mixing editorial fields. If the source is unavailable, return `404` without exposing compatibility text. Omitted locale defaults to `en-US`; malformed or repeated locale parameters return `422`.
 
 Declare the effective resource language in `locale` and `Content-Language`, preserve `requested_locale`, and expose source, content, and publication revisions. Distinguish requested languages in cache identity. Follow the [publication workflow](editorial-publishing.md).
 
@@ -55,7 +55,9 @@ Declare the effective resource language in `locale` and `Content-Language`, pres
 
 Changing UI language must not recollect listening history, recalculate analysis, or mutate the neutral report. Localize presentation fields separately, including discovery image subjects. Preserve each resource's effective language and mark standalone translated labels accordingly.
 
-Resolve report resources with at most four concurrent requests and one total five-second deadline. Keep completed translations and declared editorial fallbacks. On failure or timeout, retain the original report labels, disclose partial localization, and cancel pending requests. Late responses must not change the consolidated presentation.
+Resolve all missing report resources with one bounded `/v2/catalog/resources` request per locale, up to 50 deduplicated slugs. Keep completed translations and declared editorial fallbacks in a cache keyed by requested locale and slug. Consolidate the presentation only after the batch response; on failure, retain the original report labels and disclose partial localization. Late responses must not change the consolidated presentation.
+
+Calculate partial localization only from resources actually rendered in the current report page: visible palette families, visible discovery content and image subjects, and artist vocabulary only when that view is available. Auxiliary resources fetched for future views, unavailable sections, or metadata not rendered on the page must not trigger the partial-localization notice. Track each resource as `translated`, `fallback`, or `missing`; do not infer `pt-BR` for an absent resource. The notice is shown when a visible resource is not `translated`.
 
 Allow translation retries without rerunning analysis; bypass cached fallbacks on an explicit retry. Concurrent requests for the same resource slug and requested locale share one API request. Cancelling one consumer must not cancel others; abort the shared request when its last consumer leaves. Failures and abandoned responses must not populate the cache.
 

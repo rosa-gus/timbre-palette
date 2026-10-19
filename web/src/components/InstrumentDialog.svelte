@@ -211,7 +211,7 @@
             <div class="instrument-sheet" data-instrument={resource.slug}>
               <aside
                 class="instrument-visual"
-                aria-label={$t("instrument.imageLabel")}
+                aria-label={$t("instrument.imageCatalogLabel")}
               >
                 <figure class="instrument-photo">
                   {#if resource.image?.variants.length}
