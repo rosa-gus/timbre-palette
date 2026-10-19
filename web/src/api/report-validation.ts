@@ -10,24 +10,42 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
-function isCount(value: unknown, max = Number.MAX_SAFE_INTEGER): value is number {
-  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0 && value <= max;
+function isCount(
+  value: unknown,
+  max = Number.MAX_SAFE_INTEGER,
+): value is number {
+  return (
+    typeof value === "number" &&
+    Number.isSafeInteger(value) &&
+    value >= 0 &&
+    value <= max
+  );
 }
 
 function isUnitFraction(value: unknown): value is number {
   return isFiniteNumber(value) && value >= 0 && value <= 1;
 }
 
-function isOptionalText(value: unknown, maxLength = 512): value is string | null | undefined {
-  return value === undefined || value === null ||
-    (typeof value === "string" && value.length <= maxLength && !value.includes("\u0000"));
+function isOptionalText(
+  value: unknown,
+  maxLength = 512,
+): value is string | null | undefined {
+  return (
+    value === undefined ||
+    value === null ||
+    (typeof value === "string" &&
+      value.length <= maxLength &&
+      !value.includes("\u0000"))
+  );
 }
 
 function isProfileSummary(value: unknown): value is ProfileSummary {
   if (!isRecord(value)) return false;
   return (
     boundedText(value.username, 64) !== null &&
-    ["overall", "7day", "1month", "3month", "6month", "12month"].includes(value.period as string) &&
+    ["overall", "7day", "1month", "3month", "6month", "12month"].includes(
+      value.period as string,
+    ) &&
     isCount(value.tracks_analyzed, 200) &&
     isCount(value.total_plays) &&
     isOptionalText(value.profile_url, 2_048) &&
@@ -79,52 +97,79 @@ function isPaletteReport(value: unknown): value is PaletteReport {
     isUnitFraction(vocalPresence.track_ratio) &&
     isUnitFraction(vocalPresence.play_ratio) &&
     isRecord(availability) &&
-    [
-      "families",
-      "sound_balance",
-      "discovery",
-      "temperament",
-    ].every((key) => isAvailability(availability[key])) &&
-    Array.isArray(families) && families.length <= 50 &&
+    ["families", "sound_balance", "discovery", "temperament"].every((key) =>
+      isAvailability(availability[key]),
+    ) &&
+    Array.isArray(families) &&
+    families.length <= 50 &&
     families.every(
       (family) =>
         isRecord(family) &&
         boundedText(family.slug, 80) !== null &&
         boundedText(family.name, 256) !== null &&
         isCount(family.evidence_count) &&
-        ["documented", "strongly_associated", "estimated"].includes(family.confidence as string) &&
+        ["documented", "strongly_associated", "estimated"].includes(
+          family.confidence as string,
+        ) &&
         isUnitFraction(family.share),
     ) &&
-    (value.discovery === null || (isRecord(value.discovery) &&
-      boundedText(value.discovery.instrument_slug, 80) !== null &&
-      boundedText(value.discovery.instrument_name, 256) !== null &&
-      !("title" in value.discovery) && !("summary" in value.discovery))) &&
-    (value.temperament === null || (isRecord(value.temperament) &&
-      boundedText(value.temperament.primary_family_slug, 80) !== null &&
-      TEMPERAMENT_RULES.includes(value.temperament.rule as typeof TEMPERAMENT_RULES[number]) &&
-      ["acoustic", "electric", "electronic", "sampled", "hybrid"].includes(value.temperament.primary_nature as string) &&
-      families.some((family) => isRecord(family) && family.slug === (value.temperament as Record<string, unknown>).primary_family_slug) &&
-      !("title" in value.temperament) && !("summary" in value.temperament))) &&
-    Array.isArray(recordings) && recordings.length <= 200 &&
+    (value.discovery === null ||
+      (isRecord(value.discovery) &&
+        boundedText(value.discovery.instrument_slug, 80) !== null &&
+        boundedText(value.discovery.instrument_name, 256) !== null &&
+        !("title" in value.discovery) &&
+        !("summary" in value.discovery))) &&
+    (value.temperament === null ||
+      (isRecord(value.temperament) &&
+        boundedText(value.temperament.primary_family_slug, 80) !== null &&
+        TEMPERAMENT_RULES.includes(
+          value.temperament.rule as (typeof TEMPERAMENT_RULES)[number],
+        ) &&
+        ["acoustic", "electric", "electronic", "sampled", "hybrid"].includes(
+          value.temperament.primary_nature as string,
+        ) &&
+        families.some(
+          (family) =>
+            isRecord(family) &&
+            family.slug ===
+              (value.temperament as Record<string, unknown>)
+                .primary_family_slug,
+        ) &&
+        !("title" in value.temperament) &&
+        !("summary" in value.temperament))) &&
+    Array.isArray(recordings) &&
+    recordings.length <= 200 &&
     recordings.every(
       (recording) =>
         isRecord(recording) &&
         boundedText(recording.title, 512) !== null &&
         boundedText(recording.artist, 256) !== null &&
         isCount(recording.play_count) &&
-        ["resolved", "unresolved_identity", "pending_enrichment", "ambiguous", "resolved_without_evidence", "transient_failure", "terminal_failure"].includes(recording.status as string) &&
+        [
+          "resolved",
+          "unresolved_identity",
+          "pending_enrichment",
+          "ambiguous",
+          "resolved_without_evidence",
+          "transient_failure",
+          "terminal_failure",
+        ].includes(recording.status as string) &&
         !("status_detail" in recording),
     )
   );
 }
 
-export function isProfileAnalysisV3(value: unknown): value is ProfileAnalysisV3 {
+export function isProfileAnalysisV3(
+  value: unknown,
+): value is ProfileAnalysisV3 {
   if (!isRecord(value)) return false;
   const snapshot = value.snapshot;
   const hydration = value.hydration;
   const vocabulary = value.artist_vocabulary;
   const reach = isRecord(vocabulary) ? vocabulary.reach : null;
-  const vocabularyAvailability = isRecord(vocabulary) ? vocabulary.availability : null;
+  const vocabularyAvailability = isRecord(vocabulary)
+    ? vocabulary.availability
+    : null;
   const availableViews = value.available_views;
   const defaultView = value.default_view;
   return (
@@ -140,44 +185,74 @@ export function isProfileAnalysisV3(value: unknown): value is ProfileAnalysisV3 
     typeof snapshot.methodology_version === "string" &&
     isPaletteReport(value.track_palette) &&
     isRecord(vocabulary) &&
-    ["available", "pending", "insufficient"].includes(vocabulary.status as string) &&
+    ["available", "pending", "insufficient"].includes(
+      vocabulary.status as string,
+    ) &&
     !("notice" in vocabulary) &&
     typeof vocabulary.methodology_version === "string" &&
     isRecord(vocabularyAvailability) &&
     typeof vocabularyAvailability.reason === "string" &&
     isRecord(reach) &&
     ["track_reach", "play_reach"].every((key) => isUnitFraction(reach[key])) &&
-    ["qualified_artists", "total_artists", "qualified_tracks", "total_tracks",
-      "qualified_plays", "total_plays", "unresolved_artists", "unresolved_tracks"]
-      .every((key) => isCount(reach[key])) &&
+    [
+      "qualified_artists",
+      "total_artists",
+      "qualified_tracks",
+      "total_tracks",
+      "qualified_plays",
+      "total_plays",
+      "unresolved_artists",
+      "unresolved_tracks",
+    ].every((key) => isCount(reach[key])) &&
     isUnitFraction(vocabulary.concentration) &&
-    Array.isArray(vocabulary.families) && vocabulary.families.length <= 50 &&
-    vocabulary.families.every((family) => isRecord(family) &&
-      typeof family.name === "string" && isUnitFraction(family.share) &&
-      isCount(family.supporting_artists) && Array.isArray(family.instruments) &&
-      family.instruments.length <= 100 &&
-      (family.tone === null || (isRecord(family.tone) &&
-        typeof family.tone.shadow === "string" &&
-        typeof family.tone.highlight === "string")) &&
-      family.instruments.every((instrument) => isRecord(instrument) &&
-        typeof instrument.name === "string" &&
-        isFiniteNumber(instrument.distinct_recordings) &&
-        isRecord(instrument.evidence) &&
-        (instrument.evidence.scope === "recording" || instrument.evidence.scope === "track"))) &&
+    Array.isArray(vocabulary.families) &&
+    vocabulary.families.length <= 50 &&
+    vocabulary.families.every(
+      (family) =>
+        isRecord(family) &&
+        typeof family.name === "string" &&
+        isUnitFraction(family.share) &&
+        isCount(family.supporting_artists) &&
+        Array.isArray(family.instruments) &&
+        family.instruments.length <= 100 &&
+        (family.tone === null ||
+          (isRecord(family.tone) &&
+            typeof family.tone.shadow === "string" &&
+            typeof family.tone.highlight === "string")) &&
+        family.instruments.every(
+          (instrument) =>
+            isRecord(instrument) &&
+            typeof instrument.name === "string" &&
+            isFiniteNumber(instrument.distinct_recordings) &&
+            isRecord(instrument.evidence) &&
+            (instrument.evidence.scope === "recording" ||
+              instrument.evidence.scope === "track"),
+        ),
+    ) &&
     Array.isArray(vocabulary.featured_artists) &&
     vocabulary.featured_artists.length <= 3 &&
-    vocabulary.featured_artists.every((artist) => isRecord(artist) &&
-      typeof artist.mbid === "string" && typeof artist.name === "string" &&
-      Array.isArray(artist.families) && artist.families.every((family) =>
-        isRecord(family) && typeof family.slug === "string" &&
-        typeof family.name === "string" && Array.isArray(family.instruments) &&
-        family.instruments.every((name) => typeof name === "string") &&
-        (family.tone === null || (isRecord(family.tone) &&
-          typeof family.tone.shadow === "string" &&
-          typeof family.tone.highlight === "string")))) &&
+    vocabulary.featured_artists.every(
+      (artist) =>
+        isRecord(artist) &&
+        typeof artist.mbid === "string" &&
+        typeof artist.name === "string" &&
+        Array.isArray(artist.families) &&
+        artist.families.every(
+          (family) =>
+            isRecord(family) &&
+            typeof family.slug === "string" &&
+            typeof family.name === "string" &&
+            Array.isArray(family.instruments) &&
+            family.instruments.every((name) => typeof name === "string") &&
+            (family.tone === null ||
+              (isRecord(family.tone) &&
+                typeof family.tone.shadow === "string" &&
+                typeof family.tone.highlight === "string")),
+        ),
+    ) &&
     Array.isArray(availableViews) &&
-    availableViews.every((view) =>
-      view === "track_palette" || view === "artist_vocabulary",
+    availableViews.every(
+      (view) => view === "track_palette" || view === "artist_vocabulary",
     ) &&
     (defaultView === null ||
       defaultView === "track_palette" ||
@@ -189,4 +264,3 @@ export function isProfileAnalysisV3(value: unknown): value is ProfileAnalysisV3 
     isCount(hydration.pending_aliases, 50)
   );
 }
-

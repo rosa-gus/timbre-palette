@@ -129,11 +129,22 @@ export interface Discovery {
   image: AnalysisImage | null;
 }
 
-export type SoundNature = "acoustic" | "electric" | "electronic" | "sampled" | "hybrid";
+export type SoundNature =
+  | "acoustic"
+  | "electric"
+  | "electronic"
+  | "sampled"
+  | "hybrid";
 export const TEMPERAMENT_RULES = [
-  "recurring-percussion-synthesizers", "electric-plucked-strings",
-  "recurring-sampled", "recurring-electronic", "dominant-acoustic",
-  "dominant-electric", "dominant-electronic", "dominant-sampled", "dominant-hybrid",
+  "recurring-percussion-synthesizers",
+  "electric-plucked-strings",
+  "recurring-sampled",
+  "recurring-electronic",
+  "dominant-acoustic",
+  "dominant-electric",
+  "dominant-electronic",
+  "dominant-sampled",
+  "dominant-hybrid",
 ] as const;
 export interface Temperament {
   rule: (typeof TEMPERAMENT_RULES)[number];
@@ -142,7 +153,10 @@ export interface Temperament {
 }
 
 /** Published image metadata, without generated presentation prose. */
-export interface AnalysisImage extends Omit<InstrumentImage, "alt" | "caption"> {
+export interface AnalysisImage extends Omit<
+  InstrumentImage,
+  "alt" | "caption"
+> {
   locale?: string;
   alt: string | null;
   depicted_name: string;
@@ -312,6 +326,12 @@ export interface FurtherReading {
   title: string;
   url: string;
   publisher: string | null;
+}
+
+export interface InstrumentResourceBatch {
+  requested_locale: string;
+  resources: InstrumentResource[];
+  missing: string[];
 }
 
 export interface InstrumentResource {

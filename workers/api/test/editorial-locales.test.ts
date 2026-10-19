@@ -1,7 +1,7 @@
 import { env } from "cloudflare:workers";
 import { applyD1Migrations } from "cloudflare:test";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { getInstrument } from "../src/catalog";
+import { getInstrument, getInstrumentResources } from "../src/catalog";
 
 beforeAll(async () => { await applyD1Migrations(env.DB, env.TEST_MIGRATIONS!); });
 beforeEach(async () => {
@@ -11,6 +11,7 @@ beforeEach(async () => {
 });
 
 const read = (query = "", slug = "piano") => getInstrument(new URL(`https://api.test/v2/instruments/${slug}${query}`), env, slug);
+const readBatch = (query = "") => getInstrumentResources(new URL(`https://api.test/v2/catalog/resources${query}`), env);
 const base = { name: "Piano", description: "Descrição original.", sound_production: "Produção original.", common_roles: ["harmonia"],
   sections: [], sources: [{ id: "source", title: "Original English title", language: "en" }], further_reading: [], image: null };
 async function store(locale: string, content: object, status = "published", source = "source-v1") {
@@ -23,11 +24,21 @@ async function store(locale: string, content: object, status = "published", sour
 }
 
 describe("editorial content locales", () => {
+  it("deduplicates bounded batch resources and preserves missing slugs", async () => {
+    const response = await readBatch("?slug=piano&slug=piano&slug=missing");
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      requested_locale: "en-US",
+      resources: [{ slug: "piano" }],
+      missing: ["missing"],
+    });
+  });
+
   it("preserves the default response before the first localized publication", async () => {
     const response = await read();
     expect(response.status).toBe(200);
     expect(response.headers.get("Content-Language")).toBe("pt-BR");
-    expect(await response.json()).toMatchObject({ slug: "piano", name: "Piano", locale: "pt-BR" });
+    expect(await response.json()).toMatchObject({ slug: "piano", name: "Piano", locale: "pt-BR", requested_locale: "en-US" });
   });
 
   it("serves a complete translation and keeps bibliography, image rights and identifiers", async () => {
@@ -36,36 +47,42 @@ describe("editorial content locales", () => {
     await store("pt-BR", { ...base, image: imageText });
     const translated = { ...base, name: "Piano in English", description: "English description.", sound_production: "English mechanism.",
       common_roles: ["harmony"], image: imageText ? { ...imageText, alt: "Piano keys.", caption: "A piano." } : null };
-    await store("en", translated);
-    const response = await read("?locale=en");
-    expect(response.headers.get("Content-Language")).toBe("en");
-    expect(response.headers.get("ETag")).toContain("content-en");
-    expect(await response.json()).toMatchObject({ ...translated, slug: "piano", locale: "en", requested_locale: "en", editorial_revision: "locale-test" });
+    await store("en-US", translated);
+    for (const alias of ["en", "EN", "EN-us", "en-US"]) {
+      const response = await read(`?locale=${alias}`);
+      expect(response.headers.get("Content-Language")).toBe("en-US");
+      expect(response.headers.get("ETag")).toContain("content-en-US");
+      expect(await response.json()).toMatchObject({ ...translated, slug: "piano", locale: "en-US", requested_locale: "en-US", editorial_revision: "locale-test" });
+    }
   });
 
   it.each(["draft", "stale", "deprecated"])("falls back as a whole when translation is %s", async (status) => {
     await store("pt-BR", base);
-    await store("en", { ...base, name: "Unavailable English name" }, status);
+    await store("en-US", { ...base, name: "Unavailable English name" }, status);
     const response = await read("?locale=en");
     expect(response.headers.get("Content-Language")).toBe("pt-BR");
-    expect(await response.json()).toMatchObject({ name: "Piano", description: base.description, locale: "pt-BR", requested_locale: "en" });
+    expect(await response.json()).toMatchObject({ name: "Piano", description: base.description, locale: "pt-BR", requested_locale: "en-US" });
   });
 
   it("checks source revision and image identity even for approved translations", async () => {
     await store("pt-BR", base);
-    await store("en", { ...base, name: "Old translation" }, "published", "old-source");
+    await store("en-US", { ...base, name: "Old translation" }, "published", "old-source");
     expect(await (await read("?locale=en")).json()).toMatchObject({ name: "Piano", locale: "pt-BR" });
-    await env.DB.prepare("UPDATE editorial_resource_translations SET source_revision='source-v1' WHERE locale='en'").run();
+    await env.DB.prepare("UPDATE editorial_resource_translations SET source_revision='source-v1' WHERE locale='en-US'").run();
     // The piano image is present in the image catalog; untranslated captions prevent partial publication.
     expect(await (await read("?locale=en")).json()).toMatchObject({ name: "Piano", locale: "pt-BR" });
   });
 
   it("canonicalizes requested locales and distinguishes their cache metadata", async () => {
     await store("pt-BR", base);
-    const response = await read("?locale=EN-us");
+    for (const alias of ["en", "EN", "EN-us"]) {
+      const response = await read(`?locale=${alias}`);
+      expect(await response.json()).toMatchObject({ locale: "pt-BR", requested_locale: "en-US" });
+    }
+    const response = await read("?locale=en-US");
     expect(await response.json()).toMatchObject({ locale: "pt-BR", requested_locale: "en-US" });
     expect(response.headers.get("ETag")).toContain("en-US");
-    expect(response.headers.get("ETag")).not.toBe((await read()).headers.get("ETag"));
+    expect(response.headers.get("ETag")).not.toBe((await read("?locale=pt-BR")).headers.get("ETag"));
   });
 
   it.each(["?locale=", "?locale=en_US", "?locale=en&locale=es"])("rejects malformed locale input: %s", async (query) => {
@@ -76,7 +93,7 @@ describe("editorial content locales", () => {
 
   it("withholds a withdrawn source when no publishable version remains", async () => {
     await store("pt-BR", base, "draft");
-    await store("en", { ...base, name: "Old translation" }, "stale");
+    await store("en-US", { ...base, name: "Old translation" }, "stale");
     expect((await read("?locale=en")).status).toBe(404);
   });
 

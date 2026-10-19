@@ -1,4 +1,4 @@
-import { getInstrument } from "../api/client";
+import { getInstrument, getInstrumentResources } from "../api/client";
 import type {
   AnalysisImage,
   InstrumentResource,
@@ -49,6 +49,7 @@ export async function localizedInstrument(
     pendingResources.set(key, entry);
     pending = entry;
   }
+
   const entry = pending;
   entry.consumers++;
   return new Promise<InstrumentResource>((resolve, reject) => {
@@ -74,9 +75,43 @@ export async function localizedInstrument(
   });
 }
 
+async function localizedInstruments(
+  slugs: string[],
+  signal: AbortSignal,
+  language: Locale,
+  refresh: boolean,
+): Promise<Map<string, InstrumentResource>> {
+  const missing = slugs.filter((slug) => {
+    const key = `${language}:${slug}`;
+    if (refresh) cache.delete(key);
+    const saved = cache.get(key);
+    return !saved || saved.expires <= Date.now();
+  });
+  const resources = new Map<string, InstrumentResource>();
+  for (const slug of slugs) {
+    const saved = cache.get(`${language}:${slug}`);
+    if (saved && saved.expires > Date.now()) resources.set(slug, saved.resource);
+  }
+  if (!missing.length) return resources;
+  const batch = await getInstrumentResources(missing, signal, language);
+  for (const resource of batch.resources) {
+    resources.set(resource.slug, resource);
+    cache.set(`${language}:${resource.slug}`, {
+      resource,
+      expires: Date.now() + 300_000,
+    });
+  }
+  return resources;
+}
+
 export const LOCALIZATION_DEADLINE_MS = 5_000;
+export type LocalizationStatus = "translated" | "fallback" | "missing";
 export type LocalizedAnalysis = ProfileAnalysisV3 & {
-  localization: { incomplete: boolean; localeBySlug: Record<string, string> };
+  localization: {
+    incomplete: boolean;
+    localeBySlug: Record<string, string | null>;
+    statusBySlug: Record<string, LocalizationStatus>;
+  };
 };
 
 /** Localize display fields without changing analytical facts or cached evidence. */
@@ -88,48 +123,50 @@ export async function localizeAnalysis(
 ): Promise<LocalizedAnalysis> {
   signal.throwIfAborted();
   const slugs = new Set(source.track_palette.families.map(({ slug }) => slug));
-  if (source.track_palette.discovery)
+  const visibleSlugs = new Set(slugs);
+  const discoveryVisible =
+    source.track_palette.discovery &&
+    source.track_palette.analysis.section_availability.discovery === "available";
+  if (source.track_palette.discovery) {
     slugs.add(source.track_palette.discovery.instrument_slug);
-  for (const family of source.artist_vocabulary.families) {
-    slugs.add(family.slug);
-    family.instruments.forEach(({ slug }) => slugs.add(slug));
+    if (discoveryVisible)
+      visibleSlugs.add(source.track_palette.discovery.instrument_slug);
   }
-  for (const family of source.track_palette.families)
-    if (family.image) slugs.add(family.image.depicted_instrument_slug);
-  if (source.track_palette.discovery?.image)
-    slugs.add(source.track_palette.discovery.image.depicted_instrument_slug);
-  const resources = new Map<string, InstrumentResource>();
-  const request = new AbortController();
-  let closed = false;
-  let finish!: () => void;
-  const stopped = new Promise<void>((resolve) => { finish = resolve; });
-  const stop = () => { closed = true; request.abort(); finish(); };
-  signal.addEventListener("abort", stop, { once: true });
-  const timer = setTimeout(stop, LOCALIZATION_DEADLINE_MS);
-  const pending = [...slugs];
-  const work = Promise.all(
-    Array.from({ length: Math.min(4, pending.length) }, async () => {
-      while (pending.length && !closed) {
-        const slug = pending.shift()!;
-        try {
-          if (refresh) cache.delete(`${language}:${slug}`);
-          const resource = await localizedInstrument(slug, request.signal, language);
-          if (!closed) resources.set(slug, resource);
-        } catch {
-          /* Preserve original labels when a resource is unavailable. */
-        }
-      }
-    }),
+  const vocabularyVisible =
+    source.artist_vocabulary.status === "available" &&
+    source.available_views.includes("artist_vocabulary");
+  if (vocabularyVisible) {
+    for (const family of source.artist_vocabulary.families) {
+      slugs.add(family.slug);
+      visibleSlugs.add(family.slug);
+      family.instruments.forEach(({ slug }) => {
+        slugs.add(slug);
+        visibleSlugs.add(slug);
+      });
+    }
+  } else {
+    for (const family of source.artist_vocabulary.families) {
+      slugs.add(family.slug);
+      family.instruments.forEach(({ slug }) => slugs.add(slug));
+    }
+  }
+  const resources = await localizedInstruments([...slugs], signal, language, refresh);
+  const localeBySlug = Object.fromEntries(
+    [...slugs].map((slug) => [slug, resources.get(slug)?.locale ?? null]),
   );
-  try {
-    await Promise.race([work, stopped]);
-  } finally {
-    clearTimeout(timer);
-    signal.removeEventListener("abort", stop);
-    stop();
-  }
-  signal.throwIfAborted();
-  const localeBySlug = Object.fromEntries([...slugs].map((slug) => [slug, resources.get(slug)?.locale ?? "pt-BR"]));
+  const statusBySlug = Object.fromEntries(
+    [...slugs].map((slug) => {
+      const effectiveLocale = resources.get(slug)?.locale;
+      return [
+        slug,
+        !effectiveLocale
+          ? "missing"
+          : effectiveLocale === language
+            ? "translated"
+            : "fallback",
+      ];
+    }),
+  ) as Record<string, LocalizationStatus>;
   const name = (slug: string, original: string) =>
     resources.get(slug)?.name ?? original;
   const originalNames = new Map<string, string>();
@@ -146,22 +183,20 @@ export async function localizeAnalysis(
       );
   const image = (item: AnalysisImage | null): AnalysisImage | null => {
     if (!item) return null;
-    const resource = resources.get(item.depicted_instrument_slug);
     return {
       ...item,
-      locale: resource?.locale ?? "pt-BR",
-      depicted_name: name(item.depicted_instrument_slug, item.depicted_name),
       family_name: originalNames.get(item.family_name) ?? item.family_name,
-      alt:
-        resource?.image?.asset_id === item.asset_id ? resource.image.alt : null,
     };
   };
   const discovery = source.track_palette.discovery;
   return {
     ...source,
     localization: {
-      incomplete: [...slugs].some((slug) => !resources.has(slug) || localeBySlug[slug] !== language),
+      incomplete: [...visibleSlugs].some(
+        (slug) => statusBySlug[slug] !== "translated",
+      ),
       localeBySlug,
+      statusBySlug,
     },
     profile: source.is_example
       ? { ...source.profile, realname: t("example.displayName") }
@@ -171,13 +206,13 @@ export async function localizeAnalysis(
       families: source.track_palette.families.map((family) => ({
         ...family,
         name: name(family.slug, family.name),
-        locale: localeBySlug[family.slug],
+        locale: localeBySlug[family.slug] ?? undefined,
         image: image(family.image),
       })),
       discovery: discovery
         ? {
             ...discovery,
-            locale: localeBySlug[discovery.instrument_slug],
+            locale: localeBySlug[discovery.instrument_slug] ?? undefined,
             instrument_name: name(
               discovery.instrument_slug,
               discovery.instrument_name,
@@ -191,11 +226,11 @@ export async function localizeAnalysis(
       families: source.artist_vocabulary.families.map((family) => ({
         ...family,
         name: name(family.slug, family.name),
-        locale: localeBySlug[family.slug],
+        locale: localeBySlug[family.slug] ?? undefined,
         instruments: family.instruments.map((instrument) => ({
           ...instrument,
           name: name(instrument.slug, instrument.name),
-          locale: localeBySlug[instrument.slug],
+          locale: localeBySlug[instrument.slug] ?? undefined,
         })),
       })),
       featured_artists: source.artist_vocabulary.featured_artists.map(
@@ -204,7 +239,7 @@ export async function localizeAnalysis(
           families: artist.families.map((family) => ({
             ...family,
             name: name(family.slug, family.name),
-            locale: localeBySlug[family.slug],
+            locale: localeBySlug[family.slug] ?? undefined,
             instruments: family.instruments.map(
               (instrument) => originalNames.get(instrument) ?? instrument,
             ),

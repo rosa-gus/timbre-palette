@@ -255,7 +255,7 @@
           {#if report.analysis.catalog_version}<code class="source-value"
               >{report.analysis.catalog_version}</code
             >{:else}{$t("report.unpublished")}{/if}
-          <span class="separator-indicator" aria-hidden="true">·</span>{$t(
+          <span class="inline-divider" aria-hidden="true"></span>{$t(
             "report.methodLabel",
           )}
           <code class="source-value">{report.analysis.methodology_version}</code
@@ -370,9 +370,9 @@
               listener: isExample
                 ? report.profile.realname || $t("example.displayName")
                 : `@${report.profile.username}`,
-            })} <span class="separator-indicator" aria-hidden="true">·</span>
+            })} <span class="inline-divider" aria-hidden="true"></span>
             {#if isExample}{$t("example.badge")}
-              <span class="separator-indicator" aria-hidden="true">·</span>
+              <span class="inline-divider" aria-hidden="true"></span>
             {/if}
             {periodLabels[report.profile.period]}</span
           ><strong>{portrait.title}</strong>
@@ -400,7 +400,7 @@
           </div>
           <span class="preview-note"
             >{$t("sharing.interpretation")}
-            <span class="separator-indicator" aria-hidden="true">·</span> TIMBRE
+            <span class="inline-divider" aria-hidden="true"></span> TIMBRE
             PALETTE</span
           >
         </div>{/if}
@@ -489,10 +489,6 @@
   }
   .instrument-card figcaption {
     padding: 4px 0 18px;
-  }
-  .instrument-card .eyebrow {
-    font-size: 11px;
-    color: var(--muted);
   }
   .instrument-heading {
     display: flex;

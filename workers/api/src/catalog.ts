@@ -1,6 +1,7 @@
 import imageManifest from "../../../public/profile-analysis-catalog.json";
 import { API_VERSION } from "./version";
 import { ProtectionError } from "../../shared/protection";
+import { fallbackLocale, matchLocale } from "../../../shared/i18n/locales.mjs";
 
 type Row = Record<string, unknown>;
 type Env = Cloudflare.Env;
@@ -55,7 +56,7 @@ export async function getInstrument(
   env: Env,
   encodedSlug: string,
 ): Promise<Response> {
-  let requestedLocale = "pt-BR";
+  let requestedLocale = fallbackLocale;
   try {
     const locales = url.searchParams.getAll("locale");
     if (
@@ -63,8 +64,11 @@ export async function getInstrument(
       (locales.length && (!locales[0] || locales[0].length > 80))
     )
       throw new RangeError();
-    if (locales.length)
-      requestedLocale = Intl.getCanonicalLocales(locales[0])[0];
+    if (locales.length) {
+      const matchedLocale = matchLocale(locales[0]);
+      if (!matchedLocale) throw new RangeError();
+      requestedLocale = matchedLocale;
+    }
   } catch {
     return failure(
       "invalid_locale",
@@ -290,6 +294,92 @@ export async function getInstrument(
     console.error({
       event: "instrument_catalog_failed",
       slug,
+      error_type: errorType(error),
+    });
+    return failure(
+      "catalog_unavailable",
+      "The instrument catalog is unavailable.",
+      503,
+    );
+  }
+}
+
+export async function getInstrumentResources(
+  url: URL,
+  env: Env,
+): Promise<Response> {
+  let requestedLocale = fallbackLocale;
+  try {
+    const locales = url.searchParams.getAll("locale");
+    if (
+      locales.length > 1 ||
+      (locales.length && (!locales[0] || locales[0].length > 80))
+    )
+      throw new RangeError();
+    if (locales.length) {
+      const matchedLocale = matchLocale(locales[0]);
+      if (!matchedLocale) throw new RangeError();
+      requestedLocale = matchedLocale;
+    }
+  } catch {
+    return failure(
+      "invalid_locale",
+      "The content locale must be a valid BCP 47 tag.",
+      422,
+    );
+  }
+  const requested = url.searchParams.getAll("slug");
+  if (!requested.length || requested.length > 50)
+    return failure("invalid_slug_list", "The instrument slug list is invalid.", 422);
+  const slugs = [...new Set(requested.map((slug) => slug.trim().toLowerCase()))];
+  if (
+    slugs.some(
+      (slug) =>
+        !slug ||
+        slug.length > 80 ||
+        !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug),
+    )
+  )
+    return failure("invalid_slug_list", "The instrument slug list is invalid.", 422);
+
+  try {
+    const responses = await Promise.all(
+      slugs.map((slug) =>
+        getInstrument(
+          new URL(
+            `/v2/instruments/${encodeURIComponent(slug)}?locale=${encodeURIComponent(requestedLocale)}`,
+            url,
+          ),
+          env,
+          slug,
+        ),
+      ),
+    );
+    const resources: Row[] = [];
+    const missing: string[] = [];
+    for (const [index, response] of responses.entries()) {
+      if (response.status === 200) {
+        resources.push((await response.json()) as Row);
+      } else {
+        missing.push(slugs[index]);
+      }
+    }
+    return json(
+      {
+        requested_locale: requestedLocale,
+        resources,
+        missing,
+      },
+      200,
+      {
+        "Cache-Control": "public, max-age=300, s-maxage=300",
+        "Vary": "Accept",
+      },
+    );
+  } catch (error) {
+    if (error instanceof ProtectionError) throw error;
+    console.error({
+      event: "instrument_catalog_batch_failed",
       error_type: errorType(error),
     });
     return failure(
@@ -712,8 +802,8 @@ export function openApiDocument(): Response {
               in: "query",
               required: false,
               description:
-                "BCP 47 content locale. Defaults to pt-BR; unavailable or stale translations fall back to the complete pt-BR resource.",
-              schema: { type: "string", example: "en" },
+                "BCP 47 content locale. Defaults to en-US; registered language matches are normalized to their canonical locale, and unavailable or stale translations fall back to the complete pt-BR resource.",
+              schema: { type: "string", example: "en-US" },
             },
           ],
           responses: {
@@ -744,6 +834,46 @@ export function openApiDocument(): Response {
               },
             },
             ...errorResponses(["404", "422", "429", "503"]),
+          },
+        },
+      },
+      "/v2/catalog/resources": {
+        get: {
+          summary: "Read a bounded batch of reviewed catalog resources",
+          description:
+            "Resolves up to 50 unique instrument or sound-family slugs in one request. Repeated slugs are deduplicated; omitted locale defaults to en-US.",
+          parameters: [
+            {
+              name: "slug",
+              in: "query",
+              required: true,
+              style: "form",
+              explode: true,
+              schema: {
+                type: "array",
+                minItems: 1,
+                maxItems: 50,
+                items: { type: "string" },
+              },
+            },
+            {
+              name: "locale",
+              in: "query",
+              required: false,
+              schema: { type: "string", example: "en-US" },
+            },
+          ],
+          responses: {
+            "200": response("Editorial resource batch", {
+              type: "object",
+              required: ["requested_locale", "resources", "missing"],
+              properties: {
+                requested_locale: { type: "string" },
+                resources: { type: "array", items: { type: "object" } },
+                missing: { type: "array", items: { type: "string" } },
+              },
+            }),
+            ...errorResponses(["422", "429", "503"]),
           },
         },
       },

@@ -211,7 +211,7 @@
             <div class="instrument-sheet" data-instrument={resource.slug}>
               <aside
                 class="instrument-visual"
-                aria-label={$t("instrument.imageLabel")}
+                aria-label={$t("instrument.imageCatalogLabel")}
               >
                 <figure class="instrument-photo">
                   {#if resource.image?.variants.length}
@@ -337,8 +337,8 @@
                                 {date(
                                   section.review.reviewed_at,
                                 )}{#if section.review.reviewer}<span
-                                    class="separator-indicator"
-                                    aria-hidden="true">·</span
+                                    class="inline-divider"
+                                    aria-hidden="true"></span
                                   >{section.review.reviewer}{/if}
                               </dd>
                             </div>{/if}
@@ -352,8 +352,8 @@
                                   $t("instrument.referenceMissing") })}</strong
                               >
                               {citation.locator ?? ""}{#if citation.note}<span
-                                  class="separator-indicator"
-                                  aria-hidden="true">·</span
+                                  class="inline-divider"
+                                  aria-hidden="true"></span
                                 >{citation.note}{/if}
                             </p>{/if}{/each}
                       </div>
@@ -430,8 +430,8 @@
                               >{/if}
                             <p class="instrument-source-meta">
                               {#each sourceMetaParts(source) as part, index}{#if index > 0}<span
-                                    class="separator-indicator"
-                                    aria-hidden="true">·</span
+                                    class="inline-divider"
+                                    aria-hidden="true"></span
                                   >{/if}{part}{/each}
                             </p>
                             <Dropdown title={$t("instrument.sourceDetails")}>

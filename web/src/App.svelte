@@ -1,6 +1,6 @@
 <script lang="ts">
-  import homePoster from "../../assets/treated/ondas-desktop.png";
-  import homeMobilePoster from "../../assets/treated/ondas-mobile-poster.png";
+  import homePoster from "../../assets/treated/waves-desktop.png";
+  import homeMobilePoster from "../../assets/treated/waves-mobile-poster.png";
   import {
     localizeAnalysis,
     type LocalizedAnalysis,
@@ -176,12 +176,11 @@
   let displayResult: LocalizedAnalysis | null = null;
   let localizationPending = false;
   let localizationController: AbortController | null = null;
-  $: void updatePresentation(result, $localeStore);
   async function updatePresentation(
     source: ProfileAnalysisV3 | null,
     language: typeof $localeStore,
     refresh = false,
-  ) {
+  ): Promise<void> {
     localizationController?.abort();
     if (refresh) {
       if (sharePreviewUrl) URL.revokeObjectURL(sharePreviewUrl);
@@ -191,9 +190,11 @@
     }
     const request = new AbortController();
     localizationController = request;
-    if (!refresh) displayResult = null;
     localizationPending = Boolean(source);
-    if (!source) return;
+    if (!source) {
+      localizationPending = false;
+      return;
+    }
     try {
       const translated = await localizeAnalysis(
         source,
@@ -218,6 +219,7 @@
     if (dialogOpen && requestedInstrumentSlug)
       void loadInstrument(requestedInstrumentSlug);
     loadingDetail = $t(isExample ? "loading.catalog" : "loading.historyDetail");
+    if (result) void updatePresentation(result, $localeStore);
   }
   let activeAnalysisView: AnalysisView = "track_palette";
   let formErrorSource: unknown = null;
@@ -413,6 +415,14 @@
           : await getAnalysis(username, period, signal);
       signal.throwIfAborted();
       if (controller !== request) return;
+      if (!preserveReport) {
+        preparingReport = true;
+        loadingStage = "palette";
+        loadingDetail = $t("loading.revealDetail");
+      }
+      await updatePresentation(next, $localeStore);
+      signal.throwIfAborted();
+      if (controller !== request) return;
       result = next;
       if (preserveReport) periodRevealKey += 1;
       isExample = next.is_example;
@@ -428,9 +438,6 @@
           : null;
       activeAnalysisView = resolveAnalysisView(next, requestedAnalysisView);
       if (!preserveReport) {
-        preparingReport = true;
-        loadingStage = "palette";
-        loadingDetail = $t("loading.revealDetail");
         await prepareReport(signal);
         if (controller !== request) return;
         if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -857,7 +864,7 @@
             href="https://rosa-gus.github.io/portfolio"
             target="_blank"
             rel="noreferrer noopener">rosa gus</a
-          > <span class="separator-indicator" aria-hidden="true">·</span>
+          > <span class="inline-divider" aria-hidden="true"></span>
           {$t("footer.license")}
           <a
             href="https://www.gnu.org/licenses/gpl-3.0.html"

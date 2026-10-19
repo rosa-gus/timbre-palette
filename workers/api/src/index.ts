@@ -1,4 +1,9 @@
-import { catalogStats, getInstrument, openApiDocument } from "./catalog";
+import {
+  catalogStats,
+  getInstrument,
+  getInstrumentResources,
+  openApiDocument,
+} from "./catalog";
 import { apiDocs } from "./docs";
 import { API_VERSION } from "./version";
 import { budgetedDatabase, boundedText, limitVisitor, ProtectionError, protectionResponse } from "../../shared/protection";
@@ -97,6 +102,13 @@ async function routeRequest(request: Request, env: Env): Promise<Response> {
   if (request.method === "GET" && url.pathname === "/v2/catalog/stats") {
     await limitVisitor(request, env.D1_VISITOR_LIMITER, "catalog");
     return catalogStats({ ...env, DB: budgetedDatabase(env.DB, env.RESOURCE_GUARD) });
+  }
+  if (request.method === "GET" && url.pathname === "/v2/catalog/resources") {
+    await limitVisitor(request, env.D1_VISITOR_LIMITER, "catalog");
+    return getInstrumentResources(url, {
+      ...env,
+      DB: budgetedDatabase(env.DB, env.RESOURCE_GUARD),
+    });
   }
   const instrumentMatch = /^\/v2\/instruments\/([^/]+)$/.exec(url.pathname);
   if (request.method === "GET" && instrumentMatch) {

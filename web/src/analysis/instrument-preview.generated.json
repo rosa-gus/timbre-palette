@@ -1,29 +1,69 @@
 {
   "pt-BR": {
-    "slug": "synthesizer",
-    "name": "Sintetizador",
-    "family": "Sintetizadores",
-    "soundProduction": "Sinais são gerados ou reproduzidos e depois moldados por controles.",
-    "curiosity": "O Minimoog popularizou a roda de pitch bend (pitch wheel), uma das invenções mais marcantes da música moderna. Ela foi criada especificamente para que os tecladistas pudessem dobrar a afinação das notas em tempo real e rivalizar com a expressividade e os solos das guitarras elétricas no palco.",
+    "slug": "sampler",
+    "name": "Sampler",
+    "family": "Sons sampleados",
+    "image": {
+      "url": "instruments/sampler-ricardo-abreu-01/3f82882afae0/detail.png",
+      "alt": "Controlador preto com uma grade de pads iluminados, visor, botões e cabos, visto de cima.",
+      "caption": "Controlador de pads",
+      "credit": {
+        "photographer": "Ricardo Abreu",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/ativada-a-barra-de-lancamento-digital-dZPp5ZVMcN0",
+        "photographer_url": "https://unsplash.com/@txbrown",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license",
+        "note": "Autoria, URLs e licença gratuita informadas pelo responsável pelo projeto. A fotografia mostra um controlador de pads associado à prática de sampling; não comprova um sampler autônomo."
+      },
+      "width": 1200,
+      "height": 800,
+      "tone": {
+        "shadow": "#000000",
+        "highlight": "#9EBBD1"
+      }
+    },
+    "soundProduction": "Áudio armazenado é disparado, recortado, repetido ou transformado.",
+    "curiosity": "O som de vidro quebrando em “Babooshka”, de Kate Bush, veio de um Fairlight CMI e é citado como um dos primeiros usos marcantes do instrumento.",
     "sources": [
       {
-        "title": "Minimoog: The First Truly Portable Synthesizer",
-        "publisher": "Red Bull Music Academy",
-        "url": "https://daily.redbullmusicacademy.com/2017/10/instrumental-instruments-minimoog"
+        "title": "Fairlight CMI",
+        "publisher": "National Film and Sound Archive of Australia",
+        "url": "https://www.nfsa.gov.au/collection/item/103332-fairlight-cmi"
       }
     ]
   },
   "en-US": {
-    "slug": "synthesizer",
-    "name": "Synthesizer",
-    "family": "Synthesizers",
-    "soundProduction": "Signals are generated or played back, then shaped through controls.",
-    "curiosity": "The Minimoog popularized the pitch-bend wheel, one of modern music's most notable inventions. It was created specifically so keyboard players could bend the pitch of notes in real time and rival the expressiveness and solos of electric guitars on stage.",
+    "slug": "sampler",
+    "name": "Sampler",
+    "family": "Sampled sounds",
+    "image": {
+      "url": "instruments/sampler-ricardo-abreu-01/3f82882afae0/detail.png",
+      "alt": "A black controller with a grid of illuminated pads, a display, buttons, and cables, viewed from above.",
+      "caption": "Controlador de pads",
+      "credit": {
+        "photographer": "Ricardo Abreu",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/ativada-a-barra-de-lancamento-digital-dZPp5ZVMcN0",
+        "photographer_url": "https://unsplash.com/@txbrown",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license",
+        "note": "Autoria, URLs e licença gratuita informadas pelo responsável pelo projeto. A fotografia mostra um controlador de pads associado à prática de sampling; não comprova um sampler autônomo."
+      },
+      "width": 1200,
+      "height": 800,
+      "tone": {
+        "shadow": "#000000",
+        "highlight": "#9EBBD1"
+      }
+    },
+    "soundProduction": "Stored audio is triggered, cut, repeated, or transformed.",
+    "curiosity": "The breaking-glass sound in Kate Bush's “Babooshka” came from a Fairlight CMI and is cited as one of the instrument's early notable uses.",
     "sources": [
       {
-        "title": "Minimoog: The First Truly Portable Synthesizer",
-        "publisher": "Red Bull Music Academy",
-        "url": "https://daily.redbullmusicacademy.com/2017/10/instrumental-instruments-minimoog"
+        "title": "Fairlight CMI",
+        "publisher": "National Film and Sound Archive of Australia",
+        "url": "https://www.nfsa.gov.au/collection/item/103332-fairlight-cmi"
       }
     ]
   }

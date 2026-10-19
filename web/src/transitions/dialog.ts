@@ -17,7 +17,7 @@ function dialogEasing(progress: number, entering: boolean): number {
   return 3 * (1 - t) * t ** 2 + t ** 3;
 }
 
-export function dialogFade(
+export function fadeTransition(
   node: Element,
   _params: undefined,
   { direction }: { direction: "in" | "out" | "both" },

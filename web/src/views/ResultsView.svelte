@@ -6,6 +6,7 @@
   import { getAsciiLines, getFamilyTexture, hasAsciiDrawing } from "../sharing/ascii";
   import { fitFamilyTexture } from "../sharing/texture";
   import { HERCULES_BEETLE_ASCII } from "../sharing/beetle";
+  import { fadeTransition } from "../transitions/dialog";
   import Arrow from "../components/Arrow.svelte";
   import Badge from "../components/Badge.svelte";
   import Dropdown from "../components/Dropdown.svelte";
@@ -424,8 +425,7 @@
         : $t("results.artistVocabularyDescription")}
     </p>
 
-      <!-- TODO -->
-      <!-- {#if localizationIncomplete}
+      {#if localizationIncomplete}
         <div class="localization-notice">
           <span class="localization-info" aria-hidden="true">[i]</span>
           <p role="status">{localizationPending ? $t("localization.retrying") : $t("localization.partial")}</p>
@@ -437,9 +437,11 @@
             <span class="retry-arrow" aria-hidden="true">&#x21BB;&#xFE0E;</span>
           </button>
         </div>
-      {/if} -->
+      {/if}
 
     <Tabs.Content value="track_palette" class="view-panel">
+      {#if activeView === "track_palette"}
+        <div in:fadeTransition|global out:fadeTransition|global>
       {#if directAvailable}
         <ReportView
           report={palette}
@@ -460,13 +462,10 @@
         />
       {:else}
         <section class="unavailable-reading" aria-labelledby="direct-title">
-          <p class="eyebrow">{$t("results.trackPaletteHeading")} <span
-              class="separator-indicator"
-              aria-hidden="true">·</span
-            > {$t("results.insufficientBadge")} </p>
+          <p class="eyebrow">{$t("results.trackPaletteHeading")}</p>
           <h2 id="direct-title">{$t("results.noPortraitTitle")}</h2>
           <p>{$t("results.noPortraitDescription")} </p>
-          <p class="reading-measure">{$t("results.trackCoverage", { coverage: percent(palette.analysis.coverage_tracks) })} <span class="separator-indicator" aria-hidden="true">·</span>{$t("results.playCoverage", { coverage: percent(palette.analysis.coverage_plays) })} </p>
+          <p class="reading-measure">{$t("results.trackCoverage", { coverage: percent(palette.analysis.coverage_tracks) })} <span class="inline-divider" aria-hidden="true"></span>{$t("results.playCoverage", { coverage: percent(palette.analysis.coverage_plays) })} </p>
           {#if vocabularyAvailable}<button
               type="button"
               on:click={() => onSelectView("artist_vocabulary")}
@@ -474,18 +473,17 @@
             >{/if}
         </section>
       {/if}
+        </div>
+      {/if}
     </Tabs.Content>
     {#if vocabulary.status !== "insufficient"}
       <Tabs.Content value="artist_vocabulary" class="view-panel">
+        {#if activeView === "artist_vocabulary"}
+          <div in:fadeTransition|global out:fadeTransition|global>
         <section class="vocabulary-reading" aria-labelledby="vocabulary-title">
           <div class="vocabulary-lead">
             <div>
-              <p class="eyebrow">{$t("vocabulary.heading")} <span
-                  class="separator-indicator"
-                  aria-hidden="true">·</span
-                >
-                {vocabularyStatusLabel.toUpperCase()}
-              </p>
+              <p class="eyebrow">{$t("vocabulary.heading")}</p>
               <h2 id="vocabulary-title">{$t("vocabulary.title")} </h2>
               <p class="lead-copy">{$t("vocabulary.description")} </p>
               <p class="scope-note">{$t("narrative.vocabulary.notice")}</p>
@@ -545,16 +543,13 @@
                         <h4>{artist.name}</h4>
                         <p class="artist-families">
                           {#each artist.families as family, index}
-                            {#if index > 0} · {/if}<span lang={family.locale}>{family.name}</span>
+                            {#if index > 0}<span class="inline-divider" aria-hidden="true"></span>{/if}<span lang={family.locale}>{family.name}</span>
                           {/each}
                         </p>
                         <p class="artist-instruments">
                           {#each artistInstruments(artist) as instrument, instrumentIndex (instrument.name)}
                             <span class="artist-instrument-entry">
-                              {#if instrumentIndex > 0}<span
-                                  class="separator-indicator"
-                                  aria-hidden="true">·</span
-                                >{/if}
+                              {#if instrumentIndex > 0}<span class="inline-divider" aria-hidden="true"></span>{/if}
                               {#if instrument.slug}<button
                                   type="button"
                                   class="instrument-link"
@@ -638,10 +633,9 @@
                     ></span>
                   </div>
                   <p>
-                    {count(family.supporting_artists)}
-                    {family.supporting_artists === 1
-                      ? "artista com suporte"
-                      : "artistas com suporte"}
+                    {$t("vocabulary.supportingArtistsCount", {
+                      count: family.supporting_artists,
+                    })}
                   </p>
                   <div class="family-evidence">
                     <Dropdown title={$t("vocabulary.evidenceTitle")}>
@@ -657,8 +651,8 @@
                               >{instrument.name}</button
                             ><span
                               >{$t("vocabulary.recordingCount", { count: instrument.distinct_recordings })} <span
-                                class="separator-indicator"
-                                aria-hidden="true">·</span
+                                class="inline-divider"
+                                aria-hidden="true"></span
                               >{$t("vocabulary.creditScope", { scope: instrument.evidence.scope === "track"
                                 ? $t("vocabulary.trackScope")
                                 : $t("vocabulary.recordingScope") })}</span
@@ -698,11 +692,13 @@
                     vocabulary.concentration,
                   ) })} </p>
                 <p>{$t("vocabulary.unresolvedIdentities", { artists: vocabulary.reach.unresolved_artists, tracks: vocabulary.reach.unresolved_tracks })} </p>
-                <p>{$t("vocabulary.snapshot", { snapshot_version: result.snapshot.snapshot_version })} <span class="separator-indicator" aria-hidden="true">·</span>{$t("vocabulary.methodology", { methodology_version: vocabulary.methodology_version })} </p>
+                <p>{$t("vocabulary.snapshot", { snapshot_version: result.snapshot.snapshot_version })} <span class="inline-divider" aria-hidden="true"></span>{$t("vocabulary.methodology", { methodology_version: vocabulary.methodology_version })} </p>
               </Dropdown>
             </div>
           {/if}
         </section>
+          </div>
+        {/if}
       </Tabs.Content>
     {/if}
   </Tabs.Root>
@@ -790,14 +786,6 @@
   }
   .back-link:hover {
     color: var(--ink);
-  }
-  .eyebrow {
-    font: 12px var(--meta);
-    letter-spacing: 0.07em;
-    line-height: 1.6;
-  }
-  .eyebrow {
-    color: var(--muted);
   }
   .profile-card {
     display: grid;

@@ -140,7 +140,6 @@ export type MessageParameters = {
   "instrument.fact": never;
   "instrument.familyBadge": never;
   "instrument.imageCatalogLabel": never;
-  "instrument.imageLabel": never;
   "instrument.imageUnavailable": never;
   "instrument.instrumentBadge": never;
   "instrument.languageLabel": never;
@@ -421,6 +420,7 @@ export type MessageParameters = {
   "vocabulary.recurringInstruments": never;
   "vocabulary.shareDescription": never;
   "vocabulary.snapshot": "snapshot_version";
+  "vocabulary.supportingArtistsCount": "count";
   "vocabulary.title": never;
   "vocabulary.trackReach": "coverage";
   "vocabulary.trackScope": never;
@@ -436,6 +436,7 @@ export type PluralMessages = {
   "report.vocals": "artists" | "plays" | "tracks";
   "vocabulary.playReach": "total";
   "vocabulary.recordingCount": "count";
+  "vocabulary.supportingArtistsCount": "count";
   "vocabulary.unresolvedIdentities": "artists" | "tracks";
 };
 export type PluralParameters = { [Key in keyof MessageParameters]: Key extends keyof PluralMessages ? PluralMessages[Key] : never };
