@@ -48,7 +48,13 @@ const RECORDING_STATUSES: RecordingStatus[] = [
   "transient_failure",
   "terminal_failure",
 ];
-const NATURES = ["acoustic", "electric", "electronic", "sampled", "hybrid"] as const;
+const NATURES = [
+  "acoustic",
+  "electric",
+  "electronic",
+  "sampled",
+  "hybrid",
+] as const;
 type SoundNature = (typeof NATURES)[number];
 type ClaimLevel = "instrument" | "family";
 type Row = Record<string, unknown>;
@@ -174,7 +180,10 @@ function artistKey(track: ListeningTrack): string {
 
 function validMbid(value: unknown): string | null {
   const text = cleanText(value);
-  return text && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(text)
+  return text &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      text,
+    )
     ? text.toLowerCase()
     : null;
 }
@@ -185,11 +194,18 @@ function validSlug(value: unknown): string | null {
 }
 
 function nonnegativeInteger(value: unknown): number | null {
-  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0 ? value : null;
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0
+    ? value
+    : null;
 }
 
 function unitFraction(value: unknown): number | null {
-  return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1 ? value : null;
+  return typeof value === "number" &&
+    Number.isFinite(value) &&
+    value >= 0 &&
+    value <= 1
+    ? value
+    : null;
 }
 
 async function fetchJson(
@@ -201,27 +217,48 @@ async function fetchJson(
   try {
     response = await fetch(url, { ...init, signal });
   } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") throw error;
-    throw new PaletteApiError("Analysis service connection failed.", 0, "network_error");
+    if (error instanceof DOMException && error.name === "AbortError")
+      throw error;
+    throw new PaletteApiError(
+      "Analysis service connection failed.",
+      0,
+      "network_error",
+    );
   }
 
   let value: unknown;
   try {
     value = await readBoundedJson(response);
   } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") throw error;
-    throw new PaletteApiError("The service returned invalid JSON.", response.status, "invalid_json");
+    if (error instanceof DOMException && error.name === "AbortError")
+      throw error;
+    throw new PaletteApiError(
+      "The service returned invalid JSON.",
+      response.status,
+      "invalid_json",
+    );
   }
   if (!response.ok) {
-    const code = isRecord(value) && typeof value.error === "string"
-      ? value.error
-      : isRecord(value) && typeof value.code === "string" ? value.code : "api_request_failed";
-    throw new PaletteApiError(code, response.status, code, retryAfterSeconds(response));
+    const code =
+      isRecord(value) && typeof value.error === "string"
+        ? value.error
+        : isRecord(value) && typeof value.code === "string"
+          ? value.code
+          : "api_request_failed";
+    throw new PaletteApiError(
+      code,
+      response.status,
+      code,
+      retryAfterSeconds(response),
+    );
   }
   if (isRecord(value) && value.error !== undefined) {
-    const code = Number(value.error) === 6 ? "lastfm_profile_not_found"
-      : Number(value.error) === 29 ? "lastfm_rate_limited"
-      : "lastfm_unavailable";
+    const code =
+      Number(value.error) === 6
+        ? "lastfm_profile_not_found"
+        : Number(value.error) === 29
+          ? "lastfm_rate_limited"
+          : "lastfm_unavailable";
     throw new PaletteApiError(code, 502, code);
   }
   return value;
@@ -230,10 +267,13 @@ async function fetchJson(
 function parseTrack(value: unknown): ListeningTrack | null {
   if (!isRecord(value)) return null;
   const artistData = value.artist;
-  const artist = isRecord(artistData) ? boundedText(artistData.name, 256) : boundedText(artistData, 256);
+  const artist = isRecord(artistData)
+    ? boundedText(artistData.name, 256)
+    : boundedText(artistData, 256);
   const title = boundedText(value.name, 512);
   const playCount = Number(value.playcount);
-  if (!title || !artist || !Number.isSafeInteger(playCount) || playCount < 0) return null;
+  if (!title || !artist || !Number.isSafeInteger(playCount) || playCount < 0)
+    return null;
   const album = isRecord(value.album) ? value.album : null;
   return {
     title,
@@ -248,27 +288,45 @@ function parseTrack(value: unknown): ListeningTrack | null {
   };
 }
 
-function parsePage(value: unknown, fallbackUsername: string): {
+function parsePage(
+  value: unknown,
+  fallbackUsername: string,
+): {
   username: string;
   tracks: ListeningTrack[];
   totalPages: number | null;
 } {
-  const topTracks = isRecord(value) && isRecord(value.toptracks) ? value.toptracks : null;
+  const topTracks =
+    isRecord(value) && isRecord(value.toptracks) ? value.toptracks : null;
   if (!topTracks) {
-    throw new PaletteApiError("Last.fm returned invalid history.", 502, "invalid_lastfm_response");
+    throw new PaletteApiError(
+      "Last.fm returned invalid history.",
+      502,
+      "invalid_lastfm_response",
+    );
   }
   const attributes = isRecord(topTracks["@attr"]) ? topTracks["@attr"] : {};
-  const rawTracks = Array.isArray(topTracks.track) ? topTracks.track
-    : topTracks.track === undefined ? [] : [topTracks.track];
+  const rawTracks = Array.isArray(topTracks.track)
+    ? topTracks.track
+    : topTracks.track === undefined
+      ? []
+      : [topTracks.track];
   if (rawTracks.length > PAGE_SIZE) {
-    throw new PaletteApiError("Last.fm exceeded the allowed page size.", 502, "invalid_lastfm_response");
+    throw new PaletteApiError(
+      "Last.fm exceeded the allowed page size.",
+      502,
+      "invalid_lastfm_response",
+    );
   }
-  const tracks = rawTracks.map(parseTrack).filter((track): track is ListeningTrack => track !== null);
+  const tracks = rawTracks
+    .map(parseTrack)
+    .filter((track): track is ListeningTrack => track !== null);
   const totalPages = Number(attributes.totalPages);
   return {
     username: boundedText(attributes.user, 64) ?? fallbackUsername,
     tracks,
-    totalPages: Number.isInteger(totalPages) && totalPages > 0 ? totalPages : null,
+    totalPages:
+      Number.isInteger(totalPages) && totalPages > 0 ? totalPages : null,
   };
 }
 
@@ -277,7 +335,9 @@ function parseMetadata(value: unknown, fallbackUsername: string): Metadata {
   const user = isRecord(payload.profile) ? payload.profile : {};
   const images = Array.isArray(user.image) ? user.image : [user.image];
   const avatar = images.reduce<string | null>((found, candidate) => {
-    const raw = isRecord(candidate) ? candidate["#text"] ?? candidate.url : candidate;
+    const raw = isRecord(candidate)
+      ? (candidate["#text"] ?? candidate.url)
+      : candidate;
     return safeLastFmAvatarUrl(raw) ?? found;
   }, null);
   const registration = isRecord(user.registered) ? user.registered : {};
@@ -319,29 +379,65 @@ function rows(value: unknown): Row[] {
 }
 
 function mergeEvidence(state: EvidenceState, value: unknown): void {
-  if (!isRecord(value)) throw new PaletteApiError("Invalid evidence response.", 502, "invalid_evidence");
+  if (!isRecord(value))
+    throw new PaletteApiError(
+      "Invalid evidence response.",
+      502,
+      "invalid_evidence",
+    );
   const snapshot = isRecord(value.snapshot) ? value.snapshot : null;
-  if (!snapshot || !["aliases", "recording_statuses", "recording_claims", "artist_statuses", "artist_vocabulary"]
-    .every((key) => Array.isArray(value[key]))) {
-    throw new PaletteApiError("Invalid evidence response.", 502, "invalid_evidence");
+  if (
+    !snapshot ||
+    ![
+      "aliases",
+      "recording_statuses",
+      "recording_claims",
+      "artist_statuses",
+      "artist_vocabulary",
+    ].every((key) => Array.isArray(value[key]))
+  ) {
+    throw new PaletteApiError(
+      "Invalid evidence response.",
+      502,
+      "invalid_evidence",
+    );
   }
   {
     const snapshotVersion = boundedText(snapshot.snapshot_version, 128);
-    const schemaVersion = cleanText(snapshot.index_schema_version ?? snapshot.schema_version);
+    const schemaVersion = cleanText(
+      snapshot.index_schema_version ?? snapshot.schema_version,
+    );
     const manifestHash = boundedText(snapshot.manifest_hash, 64);
-    if (!snapshotVersion || schemaVersion !== SNAPSHOT_SCHEMA ||
-        !manifestHash || !/^[0-9a-f]{64}$/i.test(manifestHash)) {
-      throw new PaletteApiError("unsupported_snapshot_schema", 503, "unsupported_snapshot_schema");
+    if (
+      !snapshotVersion ||
+      schemaVersion !== SNAPSHOT_SCHEMA ||
+      !manifestHash ||
+      !/^[0-9a-f]{64}$/i.test(manifestHash)
+    ) {
+      throw new PaletteApiError(
+        "unsupported_snapshot_schema",
+        503,
+        "unsupported_snapshot_schema",
+      );
     }
     const nextSnapshot: SnapshotInfo = {
       snapshot_version: snapshotVersion,
       schema_version: schemaVersion,
       manifest_hash: manifestHash,
       object_prefix: boundedText(snapshot.object_prefix, 256) ?? "",
-      methodology_version: boundedText(snapshot.methodology_version, 128) ?? VOCABULARY_METHODOLOGY,
+      methodology_version:
+        boundedText(snapshot.methodology_version, 128) ??
+        VOCABULARY_METHODOLOGY,
     };
-    if (state.snapshot && state.snapshot.snapshot_version !== nextSnapshot.snapshot_version) {
-      throw new PaletteApiError("The pinned snapshot changed during collection.", 503, "snapshot_changed");
+    if (
+      state.snapshot &&
+      state.snapshot.snapshot_version !== nextSnapshot.snapshot_version
+    ) {
+      throw new PaletteApiError(
+        "The pinned snapshot changed during collection.",
+        503,
+        "snapshot_changed",
+      );
     }
     state.snapshot = nextSnapshot;
   }
@@ -353,7 +449,12 @@ function mergeEvidence(state: EvidenceState, value: unknown): void {
   for (const row of rows(value.recording_statuses)) {
     const mbid = validMbid(row.recording_mbid);
     const status = row.status;
-    if (mbid && ["pending", "complete", "complete_empty", "failed"].includes(status as string)) {
+    if (
+      mbid &&
+      ["pending", "complete", "complete_empty", "failed"].includes(
+        status as string,
+      )
+    ) {
       state.recordingStatuses.set(mbid, status as string);
     }
   }
@@ -362,10 +463,17 @@ function mergeEvidence(state: EvidenceState, value: unknown): void {
     const subject = validSlug(row.subject_slug);
     const family = validSlug(row.family_slug);
     const level = row.claim_level;
-    const instrument = row.instrument_slug === null ? null : validSlug(row.instrument_slug);
-    if (!recording || !subject || !family || (level !== "instrument" && level !== "family") ||
-        (level === "instrument" && instrument !== subject) ||
-        (level === "family" && (instrument !== null || subject !== family))) continue;
+    const instrument =
+      row.instrument_slug === null ? null : validSlug(row.instrument_slug);
+    if (
+      !recording ||
+      !subject ||
+      !family ||
+      (level !== "instrument" && level !== "family") ||
+      (level === "instrument" && instrument !== subject) ||
+      (level === "family" && (instrument !== null || subject !== family))
+    )
+      continue;
     state.recordingClaims.push({
       recording_mbid: recording,
       subject_slug: subject,
@@ -374,13 +482,20 @@ function mergeEvidence(state: EvidenceState, value: unknown): void {
       instrument_slug: instrument,
       instrument_name: boundedText(row.instrument_name, 256),
       family_name: boundedText(row.family_name, 256),
-      sound_nature: NATURES.includes(row.sound_nature as SoundNature) ? row.sound_nature : null,
+      sound_nature: NATURES.includes(row.sound_nature as SoundNature)
+        ? row.sound_nature
+        : null,
     });
   }
   for (const row of rows(value.artist_statuses)) {
     const mbid = validMbid(row.artist_mbid);
     const status = row.status;
-    if (mbid && ["pending", "complete", "complete_empty", "failed"].includes(status as string)) {
+    if (
+      mbid &&
+      ["pending", "complete", "complete_empty", "failed"].includes(
+        status as string,
+      )
+    ) {
       state.artistStatuses.set(mbid, status as string);
     }
   }
@@ -394,9 +509,18 @@ function mergeEvidence(state: EvidenceState, value: unknown): void {
     const documentedRecordings = nonnegativeInteger(row.documented_recordings);
     const prevalence = unitFraction(row.prevalence);
     const evidenceQuality = unitFraction(row.evidence_quality);
-    if (!artist || !instrument || !family || !instrumentName || !familyName ||
-        distinctRecordings === null || documentedRecordings === null ||
-        prevalence === null || evidenceQuality === null) continue;
+    if (
+      !artist ||
+      !instrument ||
+      !family ||
+      !instrumentName ||
+      !familyName ||
+      distinctRecordings === null ||
+      documentedRecordings === null ||
+      prevalence === null ||
+      evidenceQuality === null
+    )
+      continue;
     state.vocabularyRows.push({
       artist_mbid: artist,
       instrument_slug: instrument,
@@ -416,10 +540,14 @@ async function loadImageCatalog(signal: AbortSignal): Promise<ImageCatalog> {
   const empty: ImageCatalog = { catalog_version: "images-0.1.0" };
   try {
     const base = staticAssetBaseUrl();
-    const value = await fetchJson(new URL("profile-analysis-catalog.json", base).toString(), signal);
-    return isRecord(value) ? value as unknown as ImageCatalog : empty;
+    const value = await fetchJson(
+      new URL("profile-analysis-catalog.json", base).toString(),
+      signal,
+    );
+    return isRecord(value) ? (value as unknown as ImageCatalog) : empty;
   } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") throw error;
+    if (error instanceof DOMException && error.name === "AbortError")
+      throw error;
     return empty;
   }
 }
@@ -428,7 +556,10 @@ function staticAssetBaseUrl(): URL {
   return new URL(import.meta.env.BASE_URL, window.location.href);
 }
 
-function familyTone(catalog: ImageCatalog, familySlug: string): { shadow: string; highlight: string } | null {
+function familyTone(
+  catalog: ImageCatalog,
+  familySlug: string,
+): { shadow: string; highlight: string } | null {
   const tones = isRecord(catalog.family_tones) ? catalog.family_tones : {};
   const tone = tones[familySlug];
   if (!isRecord(tone)) return null;
@@ -437,35 +568,70 @@ function familyTone(catalog: ImageCatalog, familySlug: string): { shadow: string
   return shadow && highlight ? { shadow, highlight } : null;
 }
 
-function resolveImage(catalog: ImageCatalog, slug: string, familySlug: string | null): AnalysisImage | null {
-  const instrumentImages = isRecord(catalog.instrument_images) ? catalog.instrument_images : {};
-  const fallbacks = isRecord(catalog.instrument_fallbacks) ? catalog.instrument_fallbacks : {};
-  const familyImages = isRecord(catalog.family_images) ? catalog.family_images : {};
-  const candidates: { assetId: string; resolution: "exact" | "related" | "family" }[] = [];
+function resolveImage(
+  catalog: ImageCatalog,
+  slug: string,
+  familySlug: string | null,
+): AnalysisImage | null {
+  const instrumentImages = isRecord(catalog.instrument_images)
+    ? catalog.instrument_images
+    : {};
+  const fallbacks = isRecord(catalog.instrument_fallbacks)
+    ? catalog.instrument_fallbacks
+    : {};
+  const familyImages = isRecord(catalog.family_images)
+    ? catalog.family_images
+    : {};
+  const candidates: {
+    assetId: string;
+    resolution: "exact" | "related" | "family";
+  }[] = [];
   const exact = cleanText(instrumentImages[slug]);
   const related = cleanText(fallbacks[slug]);
   const familyEntry = familySlug ? familyImages[familySlug] : null;
-  const familyAsset = isRecord(familyEntry) ? cleanText(familyEntry.asset_id) : null;
+  const familyAsset = isRecord(familyEntry)
+    ? cleanText(familyEntry.asset_id)
+    : null;
   if (exact) candidates.push({ assetId: exact, resolution: "exact" });
   if (related) candidates.push({ assetId: related, resolution: "related" });
-  if (familyAsset) candidates.push({ assetId: familyAsset, resolution: "family" });
-  const imageItems = Array.isArray(catalog.images) ? catalog.images.filter(isRecord) : [];
-  const images = new Map(imageItems.map((item) => [String(item.slug ?? ""), item]));
+  if (familyAsset)
+    candidates.push({ assetId: familyAsset, resolution: "family" });
+  const imageItems = Array.isArray(catalog.images)
+    ? catalog.images.filter(isRecord)
+    : [];
+  const images = new Map(
+    imageItems.map((item) => [String(item.slug ?? ""), item]),
+  );
   const defaults = isRecord(catalog.defaults) ? catalog.defaults : {};
   const names = isRecord(catalog.family_names) ? catalog.family_names : {};
   for (const candidate of candidates) {
     const item = images.get(candidate.assetId);
     const publication = isRecord(item?.publication) ? item.publication : {};
-    if (!item || !["approved", "published"].includes(String(publication.status ?? "draft"))) continue;
-    const variants = Array.isArray(item.variants) ? item.variants.filter(isRecord) : [];
-    if (variants.some((variant) => String(variant.url ?? "").includes("<hash>"))) continue;
-    const variant = variants.find((entry) => entry.name === "detail") ?? variants[0];
-    const rawUrl = cleanText(variant?.url) ?? cleanText(publication.url) ?? cleanText(item.output);
+    if (
+      !item ||
+      !["approved", "published"].includes(String(publication.status ?? "draft"))
+    )
+      continue;
+    const variants = Array.isArray(item.variants)
+      ? item.variants.filter(isRecord)
+      : [];
+    if (
+      variants.some((variant) => String(variant.url ?? "").includes("<hash>"))
+    )
+      continue;
+    const variant =
+      variants.find((entry) => entry.name === "detail") ?? variants[0];
+    const rawUrl =
+      cleanText(variant?.url) ??
+      cleanText(publication.url) ??
+      cleanText(item.output);
     if (!rawUrl) continue;
     const url = safeStaticImageUrl(rawUrl);
     if (!url) continue;
-    const imageFamily = cleanText(item.family_slug) ?? familySlug ?? "instrumental";
-    const depicted = cleanText(item.instrument_slug) ?? cleanText(item.slug) ?? slug;
+    const imageFamily =
+      cleanText(item.family_slug) ?? familySlug ?? "instrumental";
+    const depicted =
+      cleanText(item.instrument_slug) ?? cleanText(item.slug) ?? slug;
     const label = cleanText(item.depicted_name) ?? depicted;
     const familyName = cleanText(names[imageFamily]) ?? imageFamily;
     const treatment = {
@@ -485,7 +651,14 @@ function resolveImage(catalog: ImageCatalog, slug: string, familySlug: string | 
       alt: cleanText(item.alt),
       depicted_name: label,
       family_name: familyName,
-      variants: [{ name: "detail", url, width: finiteNumber(variant?.width), height: finiteNumber(variant?.height) }],
+      variants: [
+        {
+          name: "detail",
+          url,
+          width: finiteNumber(variant?.width),
+          height: finiteNumber(variant?.height),
+        },
+      ],
       tone,
       credit: {
         photographer: cleanText(rawCredit.photographer),
@@ -500,7 +673,9 @@ function resolveImage(catalog: ImageCatalog, slug: string, familySlug: string | 
   return null;
 }
 
-function layersByRecording(state: EvidenceState): Map<string, InstrumentLayer[]> {
+function layersByRecording(
+  state: EvidenceState,
+): Map<string, InstrumentLayer[]> {
   const result = new Map<string, Map<string, InstrumentLayer>>();
   for (const row of state.recordingClaims) {
     const recording = cleanText(row.recording_mbid)?.toLowerCase();
@@ -508,57 +683,89 @@ function layersByRecording(state: EvidenceState): Map<string, InstrumentLayer[]>
     const family = cleanText(row.family_slug);
     const claimLevel = row.claim_level;
     const instrumentSlug = cleanText(row.instrument_slug);
-    if (!recording || !subject || !family || (claimLevel !== "instrument" && claimLevel !== "family")) continue;
+    if (
+      !recording ||
+      !subject ||
+      !family ||
+      (claimLevel !== "instrument" && claimLevel !== "family")
+    )
+      continue;
     if (claimLevel === "instrument" && !instrumentSlug) continue;
     const layer: InstrumentLayer = {
       slug: subject,
-      name: cleanText(row.instrument_name) ?? cleanText(row.family_name) ?? subject,
+      name:
+        cleanText(row.instrument_name) ?? cleanText(row.family_name) ?? subject,
       family_slug: family,
       family_name: cleanText(row.family_name) ?? family,
-      nature: NATURES.includes(row.sound_nature as SoundNature) ? row.sound_nature as SoundNature : null,
+      nature: NATURES.includes(row.sound_nature as SoundNature)
+        ? (row.sound_nature as SoundNature)
+        : null,
       role: "",
       confidence: "documented",
       prominence: 1,
       claim_level: claimLevel,
     };
     let bySubject = result.get(recording);
-    if (!bySubject) result.set(recording, bySubject = new Map());
+    if (!bySubject) result.set(recording, (bySubject = new Map()));
     bySubject.set(subject, layer);
   }
   return new Map([...result].map(([key, value]) => [key, [...value.values()]]));
 }
 
-function enrichTracks(tracks: ListeningTrack[], state: EvidenceState): ListeningTrack[] {
+function enrichTracks(
+  tracks: ListeningTrack[],
+  state: EvidenceState,
+): ListeningTrack[] {
   const claimMap = layersByRecording(state);
   return tracks.map((track) => {
     const source = track.mbid?.toLowerCase() ?? null;
-    const canonical = source ? state.aliases.get(source) ?? source : null;
-    const layers = canonical ? claimMap.get(canonical) ?? [] : [];
-    const status = canonical ? state.recordingStatuses.get(canonical) : undefined;
-    const recordingStatus: RecordingStatus = layers.length ? "resolved"
-      : !source ? "unresolved_identity"
-      : status === "complete" || status === "complete_empty" ? "resolved_without_evidence"
-      : status === "failed" ? "terminal_failure"
-      : "pending_enrichment";
+    const canonical = source ? (state.aliases.get(source) ?? source) : null;
+    const layers = canonical ? (claimMap.get(canonical) ?? []) : [];
+    const status = canonical
+      ? state.recordingStatuses.get(canonical)
+      : undefined;
+    const recordingStatus: RecordingStatus = layers.length
+      ? "resolved"
+      : !source
+        ? "unresolved_identity"
+        : status === "complete" || status === "complete_empty"
+          ? "resolved_without_evidence"
+          : status === "failed"
+            ? "terminal_failure"
+            : "pending_enrichment";
     return { ...track, layers, recording_status: recordingStatus };
   });
 }
 
 function calculateVocalPresence(tracks: ListeningTrack[], totalPlays: number) {
-  const vocalTracks = tracks.filter((track) => track.layers.some((layer) =>
-    layer.family_slug === "voice" && layer.claim_level === "family" && layer.confidence === "documented"));
-  const vocalPlays = vocalTracks.reduce((sum, track) => sum + track.play_count, 0);
+  const vocalTracks = tracks.filter((track) =>
+    track.layers.some(
+      (layer) =>
+        layer.family_slug === "voice" &&
+        layer.claim_level === "family" &&
+        layer.confidence === "documented",
+    ),
+  );
+  const vocalPlays = vocalTracks.reduce(
+    (sum, track) => sum + track.play_count,
+    0,
+  );
   const vocalArtists = new Set(vocalTracks.map(artistKey));
   return {
     documented_tracks: vocalTracks.length,
     documented_artists: vocalArtists.size,
     documented_plays: vocalPlays,
-    track_ratio: tracks.length ? round(vocalTracks.length / tracks.length, 4) : 0,
+    track_ratio: tracks.length
+      ? round(vocalTracks.length / tracks.length, 4)
+      : 0,
     play_ratio: totalPlays ? round(vocalPlays / totalPlays, 4) : 0,
   };
 }
 
-function calculatePalette(tracks: ListeningTrack[], catalog: ImageCatalog): {
+function calculatePalette(
+  tracks: ListeningTrack[],
+  catalog: ImageCatalog,
+): {
   families: FamilyPresence[];
   soundBalance: SoundBalance | null;
   natureScores: Map<SoundNature, number>;
@@ -567,7 +774,9 @@ function calculatePalette(tracks: ListeningTrack[], catalog: ImageCatalog): {
   const familyConfidenceScores = new Map<string, number>();
   const familyNames = new Map<string, string>();
   const familyTracks = new Map<string, Set<string>>();
-  const natureScores = new Map<SoundNature, number>(NATURES.map((nature) => [nature, 0]));
+  const natureScores = new Map<SoundNature, number>(
+    NATURES.map((nature) => [nature, 0]),
+  );
   let knownNatureScore = 0;
   for (const track of tracks) {
     const layersByFamily = new Map<string, InstrumentLayer[]>();
@@ -575,53 +784,94 @@ function calculatePalette(tracks: ListeningTrack[], catalog: ImageCatalog): {
       const layers = layersByFamily.get(layer.family_slug) ?? [];
       layers.push(layer);
       layersByFamily.set(layer.family_slug, layers);
-      familyNames.set(layer.family_slug, [familyNames.get(layer.family_slug), layer.family_name]
-        .filter((name): name is string => Boolean(name)).sort(stringOrder)[0]);
+      familyNames.set(
+        layer.family_slug,
+        [familyNames.get(layer.family_slug), layer.family_name]
+          .filter((name): name is string => Boolean(name))
+          .sort(stringOrder)[0],
+      );
     }
     const strongest = new Map<string, InstrumentLayer>();
     for (const [family, layers] of layersByFamily) {
       layers.sort((a, b) => {
-        const scoreDiff = b.prominence * CONFIDENCE_WEIGHT[b.confidence] - a.prominence * CONFIDENCE_WEIGHT[a.confidence];
+        const scoreDiff =
+          b.prominence * CONFIDENCE_WEIGHT[b.confidence] -
+          a.prominence * CONFIDENCE_WEIGHT[a.confidence];
         if (scoreDiff) return scoreDiff;
-        if (a.claim_level !== b.claim_level) return a.claim_level === "instrument" ? -1 : 1;
+        if (a.claim_level !== b.claim_level)
+          return a.claim_level === "instrument" ? -1 : 1;
         return stringOrder(a.slug, b.slug);
       });
       strongest.set(family, layers[0]);
     }
-    const familyWeights = [...strongest].map(([family, layer]) => [family, layer.prominence * CONFIDENCE_WEIGHT[layer.confidence]] as const);
-    const totalWeight = familyWeights.reduce((sum, [, weight]) => sum + weight, 0);
+    const familyWeights = [...strongest].map(
+      ([family, layer]) =>
+        [
+          family,
+          layer.prominence * CONFIDENCE_WEIGHT[layer.confidence],
+        ] as const,
+    );
+    const totalWeight = familyWeights.reduce(
+      (sum, [, weight]) => sum + weight,
+      0,
+    );
     if (totalWeight <= 0) continue;
     const key = trackKey(track);
     for (const [family, weight] of familyWeights) {
       const layer = strongest.get(family)!;
-      const score = track.play_count * weight / totalWeight;
+      const score = (track.play_count * weight) / totalWeight;
       familyScores.set(family, (familyScores.get(family) ?? 0) + score);
-      familyConfidenceScores.set(family, (familyConfidenceScores.get(family) ?? 0) + score * CONFIDENCE_WEIGHT[layer.confidence]);
+      familyConfidenceScores.set(
+        family,
+        (familyConfidenceScores.get(family) ?? 0) +
+          score * CONFIDENCE_WEIGHT[layer.confidence],
+      );
       const set = familyTracks.get(family) ?? new Set<string>();
       set.add(key);
       familyTracks.set(family, set);
-      const natureLayers = (layersByFamily.get(family) ?? []).filter((candidate) => candidate.nature !== null);
+      const natureLayers = (layersByFamily.get(family) ?? []).filter(
+        (candidate) => candidate.nature !== null,
+      );
       const natureWeights = new Map<SoundNature, number>();
       for (const candidate of natureLayers) {
         const nature = candidate.nature!;
-        natureWeights.set(nature, (natureWeights.get(nature) ?? 0) + candidate.prominence * CONFIDENCE_WEIGHT[candidate.confidence]);
+        natureWeights.set(
+          nature,
+          (natureWeights.get(nature) ?? 0) +
+            candidate.prominence * CONFIDENCE_WEIGHT[candidate.confidence],
+        );
       }
-      const natureWeightTotal = [...natureWeights.values()].reduce((sum, value) => sum + value, 0);
+      const natureWeightTotal = [...natureWeights.values()].reduce(
+        (sum, value) => sum + value,
+        0,
+      );
       if (natureWeightTotal <= 0) continue;
       knownNatureScore += score;
       for (const [nature, natureWeight] of natureWeights) {
-        natureScores.set(nature, (natureScores.get(nature) ?? 0) + score * natureWeight / natureWeightTotal);
+        natureScores.set(
+          nature,
+          (natureScores.get(nature) ?? 0) +
+            (score * natureWeight) / natureWeightTotal,
+        );
       }
     }
   }
-  const totalScore = [...familyScores.values()].reduce((sum, score) => sum + score, 0);
-  const sortedSlugs = [...familyScores.keys()].sort((a, b) =>
-    (familyScores.get(b)! - familyScores.get(a)!) || stringOrder(a, b));
+  const totalScore = [...familyScores.values()].reduce(
+    (sum, score) => sum + score,
+    0,
+  );
+  const sortedSlugs = [...familyScores.keys()].sort(
+    (a, b) => familyScores.get(b)! - familyScores.get(a)! || stringOrder(a, b),
+  );
   const families = sortedSlugs.map((slug): FamilyPresence => {
     const score = familyScores.get(slug)!;
     const confidenceRatio = familyConfidenceScores.get(slug)! / score;
-    const confidence: Confidence = confidenceRatio >= 0.9 ? "documented"
-      : confidenceRatio >= 0.65 ? "strongly_associated" : "estimated";
+    const confidence: Confidence =
+      confidenceRatio >= 0.9
+        ? "documented"
+        : confidenceRatio >= 0.65
+          ? "strongly_associated"
+          : "estimated";
     return {
       slug,
       name: familyNames.get(slug) ?? slug,
@@ -634,14 +884,25 @@ function calculatePalette(tracks: ListeningTrack[], catalog: ImageCatalog): {
   });
   let soundBalance: SoundBalance | null = null;
   if (totalScore > 0 && knownNatureScore / totalScore >= 0.8) {
-    const balance = Object.fromEntries(NATURES.map((nature) => [nature, round((natureScores.get(nature) ?? 0) / totalScore, 4)])) as Record<SoundNature, number>;
+    const balance = Object.fromEntries(
+      NATURES.map((nature) => [
+        nature,
+        round((natureScores.get(nature) ?? 0) / totalScore, 4),
+      ]),
+    ) as Record<SoundNature, number>;
     soundBalance = {
       acoustic: balance.acoustic,
       electric: balance.electric,
       electronic: balance.electronic,
       sampled: balance.sampled,
       hybrid: balance.hybrid,
-      unknown: round(Math.max(0, 1 - NATURES.reduce((sum, nature) => sum + balance[nature], 0)), 4),
+      unknown: round(
+        Math.max(
+          0,
+          1 - NATURES.reduce((sum, nature) => sum + balance[nature], 0),
+        ),
+        4,
+      ),
     };
   }
   return { families, soundBalance, natureScores };
@@ -654,11 +915,19 @@ function selectDiscovery(tracks: ListeningTrack[]): DiscoveryLayer | null {
       if (layer.claim_level !== "instrument") continue;
       let candidate = candidates.get(layer.slug);
       if (!candidate) {
-        candidate = { ...layer, tracks: new Set(), artists: new Set(), plays: 0 };
+        candidate = {
+          ...layer,
+          tracks: new Set(),
+          artists: new Set(),
+          plays: 0,
+        };
         candidates.set(layer.slug, candidate);
       } else if (
-        layer.prominence * CONFIDENCE_WEIGHT[layer.confidence] > candidate.prominence * CONFIDENCE_WEIGHT[candidate.confidence] ||
-        (layer.prominence * CONFIDENCE_WEIGHT[layer.confidence] === candidate.prominence * CONFIDENCE_WEIGHT[candidate.confidence] && layer.role > candidate.role)
+        layer.prominence * CONFIDENCE_WEIGHT[layer.confidence] >
+          candidate.prominence * CONFIDENCE_WEIGHT[candidate.confidence] ||
+        (layer.prominence * CONFIDENCE_WEIGHT[layer.confidence] ===
+          candidate.prominence * CONFIDENCE_WEIGHT[candidate.confidence] &&
+          layer.role > candidate.role)
       ) {
         Object.assign(candidate, layer);
       }
@@ -667,13 +936,24 @@ function selectDiscovery(tracks: ListeningTrack[]): DiscoveryLayer | null {
       candidate.plays += track.play_count;
     }
   }
-  const totalCoveredPlays = tracks.reduce((sum, track) => sum + track.play_count, 0);
-  const eligible = [...candidates.values()].filter((candidate) =>
-    candidate.tracks.size >= 3 && candidate.artists.size >= 2 &&
-    (totalCoveredPlays ? candidate.plays / totalCoveredPlays : 0) <= 0.35);
-  eligible.sort((a, b) =>
-    ((totalCoveredPlays ? a.plays / totalCoveredPlays : 0) - (totalCoveredPlays ? b.plays / totalCoveredPlays : 0)) ||
-    (b.tracks.size - a.tracks.size) || (b.artists.size - a.artists.size) || stringOrder(a.slug, b.slug));
+  const totalCoveredPlays = tracks.reduce(
+    (sum, track) => sum + track.play_count,
+    0,
+  );
+  const eligible = [...candidates.values()].filter(
+    (candidate) =>
+      candidate.tracks.size >= 3 &&
+      candidate.artists.size >= 2 &&
+      (totalCoveredPlays ? candidate.plays / totalCoveredPlays : 0) <= 0.35,
+  );
+  eligible.sort(
+    (a, b) =>
+      (totalCoveredPlays ? a.plays / totalCoveredPlays : 0) -
+        (totalCoveredPlays ? b.plays / totalCoveredPlays : 0) ||
+      b.tracks.size - a.tracks.size ||
+      b.artists.size - a.artists.size ||
+      stringOrder(a.slug, b.slug),
+  );
   return eligible[0] ?? null;
 }
 
@@ -683,14 +963,25 @@ function buildTemperament(
   soundBalance: SoundBalance,
   tracks: ListeningTrack[],
 ): Temperament {
-  const familyShares = new Map(families.map((family) => [family.slug, family.share]));
+  const familyShares = new Map(
+    families.map((family) => [family.slug, family.share]),
+  );
   const familyTrackSets = new Map<string, Set<string>>();
   for (const family of families) {
-    familyTrackSets.set(family.slug, new Set(tracks.filter((track) =>
-      track.layers.some((layer) => layer.family_slug === family.slug)).map(trackKey)));
+    familyTrackSets.set(
+      family.slug,
+      new Set(
+        tracks
+          .filter((track) =>
+            track.layers.some((layer) => layer.family_slug === family.slug),
+          )
+          .map(trackKey),
+      ),
+    );
   }
   const familySlugs = [...familyShares.keys()].sort(stringOrder);
-  const totalPlays = tracks.reduce((sum, track) => sum + track.play_count, 0) || 1;
+  const totalPlays =
+    tracks.reduce((sum, track) => sum + track.play_count, 0) || 1;
   const pairShares = new Map<string, number>();
   for (let i = 0; i < familySlugs.length; i++) {
     for (let j = i + 1; j < familySlugs.length; j++) {
@@ -698,13 +989,19 @@ function buildTemperament(
       const second = familySlugs[j];
       const shared = familyTrackSets.get(first)!;
       const other = familyTrackSets.get(second)!;
-      const plays = tracks.filter((track) => shared.has(trackKey(track)) && other.has(trackKey(track)))
+      const plays = tracks
+        .filter(
+          (track) => shared.has(trackKey(track)) && other.has(trackKey(track)),
+        )
         .reduce((sum, track) => sum + track.play_count, 0);
       pairShares.set(`${first}\u0000${second}`, plays / totalPlays);
     }
   }
-  const pairShare = (first: string, second: string) => pairShares.get([first, second].sort(stringOrder).join("\u0000")) ?? 0;
-  const primaryNature = [...natureScores].sort((a, b) => (b[1] - a[1]) || stringOrder(b[0], a[0]))[0][0];
+  const pairShare = (first: string, second: string) =>
+    pairShares.get([first, second].sort(stringOrder).join("\u0000")) ?? 0;
+  const primaryNature = [...natureScores].sort(
+    (a, b) => b[1] - a[1] || stringOrder(b[0], a[0]),
+  )[0][0];
   const firstFamily = families[0];
   let rule: Temperament["rule"] | null = null;
   const percussion = familyTrackSets.get("percussion") ?? new Set<string>();
@@ -714,10 +1011,14 @@ function buildTemperament(
   if (
     (familyShares.get("percussion") ?? 0) >= 0.1 &&
     (familyShares.get("synthesizers") ?? 0) >= 0.1 &&
-    sharedRecordings >= 3 && pairShare("percussion", "synthesizers") >= 0.15
+    sharedRecordings >= 3 &&
+    pairShare("percussion", "synthesizers") >= 0.15
   ) {
     rule = "recurring-percussion-synthesizers";
-  } else if ((familyShares.get("plucked-strings") ?? 0) >= 0.25 && soundBalance.electric >= 0.25) {
+  } else if (
+    (familyShares.get("plucked-strings") ?? 0) >= 0.25 &&
+    soundBalance.electric >= 0.25
+  ) {
     rule = "electric-plucked-strings";
   } else if (soundBalance.sampled >= 0.15) {
     rule = "recurring-sampled";
@@ -737,9 +1038,15 @@ function sectionAvailability(
   soundBalance: SoundBalance | null,
   discovery: DiscoveryLayer | null,
   temperament: Temperament | null,
-): Record<"families" | "sound_balance" | "discovery" | "temperament", SectionAvailability> {
-  const failedInterpretation = interpretationCoverageReady ? "insufficient_diversity"
-    : !interpretationReady ? "insufficient_coverage" : "no_candidate";
+): Record<
+  "families" | "sound_balance" | "discovery" | "temperament",
+  SectionAvailability
+> {
+  const failedInterpretation = interpretationCoverageReady
+    ? "insufficient_diversity"
+    : !interpretationReady
+      ? "insufficient_coverage"
+      : "no_candidate";
   return {
     families: "available",
     sound_balance: soundBalance ? "available" : "insufficient_nature_evidence",
@@ -756,26 +1063,50 @@ function analyzePalette(
   historySource: "lastfm" | "mock" = "lastfm",
 ): ProfileAnalysisV3["track_palette"] {
   const recordingStatuses = tracks.map((track) => track.recording_status);
-  const statusCounts = Object.fromEntries(RECORDING_STATUSES.map((status) => [status, recordingStatuses.filter((value) => value === status).length])) as Record<RecordingStatus, number>;
+  const statusCounts = Object.fromEntries(
+    RECORDING_STATUSES.map((status) => [
+      status,
+      recordingStatuses.filter((value) => value === status).length,
+    ]),
+  ) as Record<RecordingStatus, number>;
   const totalTracks = tracks.length;
   const totalPlays = tracks.reduce((sum, track) => sum + track.play_count, 0);
   const covered = tracks.filter((track) => track.layers.length > 0);
   const coveredTracks = covered.length;
-  const coveredPlays = covered.reduce((sum, track) => sum + track.play_count, 0);
-  const coverageTracks = totalTracks ? round(coveredTracks / totalTracks, 4) : 0;
+  const coveredPlays = covered.reduce(
+    (sum, track) => sum + track.play_count,
+    0,
+  );
+  const coverageTracks = totalTracks
+    ? round(coveredTracks / totalTracks, 4)
+    : 0;
   const coveragePlays = totalPlays ? round(coveredPlays / totalPlays, 4) : 0;
   const coveredArtists = new Set(covered.map(artistKey));
   const allArtists = new Set(tracks.map(artistKey));
-  const minimumTracks = Math.min(totalTracks, Math.max(5, Math.ceil(totalTracks * 0.05)));
-  const coverageFloor = coverageTracks >= 0.05 && coveragePlays >= 0.05 && coveredTracks >= minimumTracks;
-  const paletteReady = coverageFloor && coveredArtists.size >= Math.min(allArtists.size, 2);
-  const interpretationReady = coverageFloor && coveredArtists.size >= Math.min(allArtists.size, 2);
-  const status: AnalysisStatus = paletteReady ? "ready" : coveredTracks ? "partial" : "insufficient";
+  const minimumTracks = Math.min(
+    totalTracks,
+    Math.max(5, Math.ceil(totalTracks * 0.05)),
+  );
+  const coverageFloor =
+    coverageTracks >= 0.05 &&
+    coveragePlays >= 0.05 &&
+    coveredTracks >= minimumTracks;
+  const paletteReady =
+    coverageFloor && coveredArtists.size >= Math.min(allArtists.size, 2);
+  const interpretationReady =
+    coverageFloor && coveredArtists.size >= Math.min(allArtists.size, 2);
+  const status: AnalysisStatus = paletteReady
+    ? "ready"
+    : coveredTracks
+      ? "partial"
+      : "insufficient";
   const vocalPresence = calculateVocalPresence(tracks, totalPlays);
-  const sortedTracks = [...tracks].sort((a, b) =>
-    stringOrder(artistKey(a), artistKey(b)) ||
-    stringOrder(normalizedName(a.title), normalizedName(b.title)) ||
-    stringOrder(a.mbid ?? "", b.mbid ?? ""));
+  const sortedTracks = [...tracks].sort(
+    (a, b) =>
+      stringOrder(artistKey(a), artistKey(b)) ||
+      stringOrder(normalizedName(a.title), normalizedName(b.title)) ||
+      stringOrder(a.mbid ?? "", b.mbid ?? ""),
+  );
   const recordings: RecordingAnalysis[] = sortedTracks.map((track) => ({
     title: track.title,
     artist: track.artist,
@@ -805,10 +1136,20 @@ function analyzePalette(
     image_catalog_version: cleanText(catalog.catalog_version) ?? "images-0.1.0",
   };
   if (!paletteReady && coveredTracks === 0) {
-    const reason: SectionAvailability = coverageFloor ? "insufficient_diversity" : "insufficient_coverage";
+    const reason: SectionAvailability = coverageFloor
+      ? "insufficient_diversity"
+      : "insufficient_coverage";
     return {
       profile,
-      analysis: { ...analysisBase, section_availability: { families: reason, sound_balance: reason, discovery: reason, temperament: reason } },
+      analysis: {
+        ...analysisBase,
+        section_availability: {
+          families: reason,
+          sound_balance: reason,
+          discovery: reason,
+          temperament: reason,
+        },
+      },
       recordings,
       families: [],
       sound_balance: null,
@@ -818,23 +1159,47 @@ function analyzePalette(
   }
   const calculated = calculatePalette(covered, catalog);
   const discoveryLayer = interpretationReady ? selectDiscovery(covered) : null;
-  const supportedFamilies = calculated.families.filter((family) => family.evidence_count >= 3);
-  const temperamentSupported = supportedFamilies.length >= 2 && supportedFamilies[1].share >= 0.1;
-  const temperament = interpretationReady && calculated.soundBalance && temperamentSupported && calculated.natureScores.size
-    ? buildTemperament(calculated.families, calculated.natureScores, calculated.soundBalance, covered)
-    : null;
-  const availability = sectionAvailability(interpretationReady, coverageFloor, calculated.soundBalance, discoveryLayer, temperament);
+  const supportedFamilies = calculated.families.filter(
+    (family) => family.evidence_count >= 3,
+  );
+  const temperamentSupported =
+    supportedFamilies.length >= 2 && supportedFamilies[1].share >= 0.1;
+  const temperament =
+    interpretationReady &&
+    calculated.soundBalance &&
+    temperamentSupported &&
+    calculated.natureScores.size
+      ? buildTemperament(
+          calculated.families,
+          calculated.natureScores,
+          calculated.soundBalance,
+          covered,
+        )
+      : null;
+  const availability = sectionAvailability(
+    interpretationReady,
+    coverageFloor,
+    calculated.soundBalance,
+    discoveryLayer,
+    temperament,
+  );
   return {
     profile,
     analysis: { ...analysisBase, section_availability: availability },
     recordings,
     families: calculated.families,
     sound_balance: calculated.soundBalance,
-    discovery: discoveryLayer ? {
-      instrument_slug: discoveryLayer.slug,
-      instrument_name: discoveryLayer.name,
-      image: resolveImage(catalog, discoveryLayer.slug, discoveryLayer.family_slug),
-    } : null,
+    discovery: discoveryLayer
+      ? {
+          instrument_slug: discoveryLayer.slug,
+          instrument_name: discoveryLayer.name,
+          image: resolveImage(
+            catalog,
+            discoveryLayer.slug,
+            discoveryLayer.family_slug,
+          ),
+        }
+      : null,
     temperament,
   };
 }
@@ -846,7 +1211,9 @@ function uniqueVocabularyRows(rowsToUnique: VocabularyRow[]): VocabularyRow[] {
     const current = unique.get(key);
     if (!current || row.prevalence > current.prevalence) unique.set(key, row);
   }
-  return [...unique.values()].sort((a, b) => stringOrder(a.instrument_slug, b.instrument_slug));
+  return [...unique.values()].sort((a, b) =>
+    stringOrder(a.instrument_slug, b.instrument_slug),
+  );
 }
 
 function analyzeVocabulary(
@@ -858,10 +1225,22 @@ function analyzeVocabulary(
 ): ProfileAnalysisV3["artist_vocabulary"] {
   const totalTracks = tracks.length;
   const totalPlays = tracks.reduce((sum, track) => sum + track.play_count, 0);
-  const artistKeys = new Set(tracks.map((track) => track.artist_mbid?.trim().toLowerCase() || `name:${track.artist.toLowerCase().trim()}`));
-  const unresolvedArtistKeys = new Set(tracks.filter((track) => !track.artist_mbid).map((track) => `name:${track.artist.toLowerCase().trim()}`));
+  const artistKeys = new Set(
+    tracks.map(
+      (track) =>
+        track.artist_mbid?.trim().toLowerCase() ||
+        `name:${track.artist.toLowerCase().trim()}`,
+    ),
+  );
+  const unresolvedArtistKeys = new Set(
+    tracks
+      .filter((track) => !track.artist_mbid)
+      .map((track) => `name:${track.artist.toLowerCase().trim()}`),
+  );
   const unresolvedTracks = tracks.filter((track) => !track.artist_mbid).length;
-  const qualifiedRows = sourceRows.filter((row) => row.distinct_recordings >= 3);
+  const qualifiedRows = sourceRows.filter(
+    (row) => row.distinct_recordings >= 3,
+  );
   const byArtistFamily = new Map<string, VocabularyRow[]>();
   for (const row of qualifiedRows) {
     const key = `${row.artist_mbid}\u0000${row.family_slug}`;
@@ -869,10 +1248,19 @@ function analyzeVocabulary(
     values.push(row);
     byArtistFamily.set(key, values);
   }
-  const qualifiedArtists = new Set([...byArtistFamily.keys()].map((key) => key.split("\u0000", 1)[0]));
-  const qualifiedTracks = tracks.filter((track) => track.artist_mbid && qualifiedArtists.has(track.artist_mbid.trim().toLowerCase()));
+  const qualifiedArtists = new Set(
+    [...byArtistFamily.keys()].map((key) => key.split("\u0000", 1)[0]),
+  );
+  const qualifiedTracks = tracks.filter(
+    (track) =>
+      track.artist_mbid &&
+      qualifiedArtists.has(track.artist_mbid.trim().toLowerCase()),
+  );
   const qualifiedTrackCount = qualifiedTracks.length;
-  const qualifiedPlayCount = qualifiedTracks.reduce((sum, track) => sum + track.play_count, 0);
+  const qualifiedPlayCount = qualifiedTracks.reduce(
+    (sum, track) => sum + track.play_count,
+    0,
+  );
   const trackReach = totalTracks ? qualifiedTrackCount / totalTracks : 0;
   const playReach = totalPlays ? qualifiedPlayCount / totalPlays : 0;
   const reach = {
@@ -888,10 +1276,11 @@ function analyzeVocabulary(
     unresolved_tracks: unresolvedTracks,
   };
   const artistPlays = new Map<string, number>();
-  for (const track of tracks) if (track.artist_mbid) {
-    const key = track.artist_mbid.toLowerCase();
-    artistPlays.set(key, (artistPlays.get(key) ?? 0) + track.play_count);
-  }
+  for (const track of tracks)
+    if (track.artist_mbid) {
+      const key = track.artist_mbid.toLowerCase();
+      artistPlays.set(key, (artistPlays.get(key) ?? 0) + track.play_count);
+    }
   const familyScores = new Map<string, number>();
   const familyRows = new Map<string, VocabularyRow[]>();
   const artistScores = new Map<string, number>();
@@ -899,9 +1288,14 @@ function analyzeVocabulary(
   for (const [key, familyInstruments] of byArtistFamily) {
     const [artist] = key.split("\u0000");
     const family = key.slice(artist.length + 1);
-    const best = [...familyInstruments].sort((a, b) => b.prevalence - a.prevalence)[0];
-    const rawWeight = totalPlays ? (artistPlays.get(artist) ?? 0) / totalPlays : 0;
-    const contribution = Math.min(rawWeight, 0.4) * best.prevalence * best.evidence_quality;
+    const best = [...familyInstruments].sort(
+      (a, b) => b.prevalence - a.prevalence,
+    )[0];
+    const rawWeight = totalPlays
+      ? (artistPlays.get(artist) ?? 0) / totalPlays
+      : 0;
+    const contribution =
+      Math.min(rawWeight, 0.4) * best.prevalence * best.evidence_quality;
     familyScores.set(family, (familyScores.get(family) ?? 0) + contribution);
     artistScores.set(artist, (artistScores.get(artist) ?? 0) + contribution);
     artistFamilyScores.set(key, contribution);
@@ -909,10 +1303,18 @@ function analyzeVocabulary(
     values.push(...familyInstruments);
     familyRows.set(family, values);
   }
-  const totalScore = [...familyScores.values()].reduce((sum, score) => sum + score, 0);
-  const concentration = totalScore ? Math.max(...artistScores.values(), 0) / totalScore : 0;
+  const totalScore = [...familyScores.values()].reduce(
+    (sum, score) => sum + score,
+    0,
+  );
+  const concentration = totalScore
+    ? Math.max(...artistScores.values(), 0) / totalScore
+    : 0;
   const vocabularyFamilies: VocabularyFamily[] = [...familyScores.keys()]
-    .sort((a, b) => (familyScores.get(b)! - familyScores.get(a)!) || stringOrder(a, b))
+    .sort(
+      (a, b) =>
+        familyScores.get(b)! - familyScores.get(a)! || stringOrder(a, b),
+    )
     .map((slug) => {
       const rowsForFamily = familyRows.get(slug) ?? [];
       const instruments = uniqueVocabularyRows(rowsForFamily);
@@ -921,8 +1323,12 @@ function analyzeVocabulary(
         name: instruments[0]?.family_name ?? slug,
         score: round(familyScores.get(slug)!, 6),
         share: totalScore ? round(familyScores.get(slug)! / totalScore, 6) : 0,
-        prevalence: round(Math.max(...rowsForFamily.map((row) => row.prevalence), 0), 4),
-        supporting_artists: new Set(rowsForFamily.map((row) => row.artist_mbid)).size,
+        prevalence: round(
+          Math.max(...rowsForFamily.map((row) => row.prevalence), 0),
+          4,
+        ),
+        supporting_artists: new Set(rowsForFamily.map((row) => row.artist_mbid))
+          .size,
         instruments: instruments.map((row) => ({
           slug: row.instrument_slug,
           name: row.instrument_name,
@@ -941,47 +1347,81 @@ function analyzeVocabulary(
       };
     });
   const requiredArtists = Math.min(3, artistKeys.size);
-  const gateReason = !qualifiedRows.length ? "no_mapped_evidence"
-    : trackReach < 0.1 ? "insufficient_track_reach"
-    : playReach < 0.1 ? "insufficient_play_reach"
-    : qualifiedArtists.size < requiredArtists ? "insufficient_artist_diversity"
-    : concentration > 0.7 ? "excessive_artist_concentration"
-    : null;
+  const gateReason = !qualifiedRows.length
+    ? "no_mapped_evidence"
+    : trackReach < 0.1
+      ? "insufficient_track_reach"
+      : playReach < 0.1
+        ? "insufficient_play_reach"
+        : qualifiedArtists.size < requiredArtists
+          ? "insufficient_artist_diversity"
+          : concentration > 0.7
+            ? "excessive_artist_concentration"
+            : null;
   let status: "available" | "pending" | "insufficient";
   let reason: string;
   if (gateReason === null) {
     status = "available";
-    reason = pendingArtists.size ? "available_with_pending_hydration" : "available";
+    reason = pendingArtists.size
+      ? "available_with_pending_hydration"
+      : "available";
   } else {
-    const potentialArtists = gateReason === "no_mapped_evidence"
-      ? new Set(pendingArtists)
-      : new Set([...qualifiedArtists, ...pendingArtists]);
-    const potentialTracks = tracks.filter((track) => track.artist_mbid && potentialArtists.has(track.artist_mbid.trim().toLowerCase()));
-    const potentialTrackReach = totalTracks ? potentialTracks.length / totalTracks : 0;
-    const potentialPlayReach = totalPlays ? potentialTracks.reduce((sum, track) => sum + track.play_count, 0) / totalPlays : 0;
-    const pendingCouldSatisfy = pendingArtists.size > 0 && potentialTrackReach >= 0.1 && potentialPlayReach >= 0.1 && potentialArtists.size >= requiredArtists;
+    const potentialArtists =
+      gateReason === "no_mapped_evidence"
+        ? new Set(pendingArtists)
+        : new Set([...qualifiedArtists, ...pendingArtists]);
+    const potentialTracks = tracks.filter(
+      (track) =>
+        track.artist_mbid &&
+        potentialArtists.has(track.artist_mbid.trim().toLowerCase()),
+    );
+    const potentialTrackReach = totalTracks
+      ? potentialTracks.length / totalTracks
+      : 0;
+    const potentialPlayReach = totalPlays
+      ? potentialTracks.reduce((sum, track) => sum + track.play_count, 0) /
+        totalPlays
+      : 0;
+    const pendingCouldSatisfy =
+      pendingArtists.size > 0 &&
+      potentialTrackReach >= 0.1 &&
+      potentialPlayReach >= 0.1 &&
+      potentialArtists.size >= requiredArtists;
     status = pendingCouldSatisfy ? "pending" : "insufficient";
     reason = pendingCouldSatisfy ? "snapshot_hydration_pending" : gateReason;
   }
   const featuredArtists: VocabularyFeaturedArtist[] = [];
   if (status === "available") {
     const namesByMbid = new Map<string, string>();
-    for (const track of [...tracks].reverse()) if (track.artist_mbid) namesByMbid.set(track.artist_mbid.trim().toLowerCase(), track.artist);
-    const ranked = [...qualifiedArtists].sort((a, b) =>
-      ((artistScores.get(b) ?? 0) - (artistScores.get(a) ?? 0)) ||
-      ((artistPlays.get(b) ?? 0) - (artistPlays.get(a) ?? 0)) || stringOrder(a, b)).slice(0, 3);
+    for (const track of [...tracks].reverse())
+      if (track.artist_mbid)
+        namesByMbid.set(track.artist_mbid.trim().toLowerCase(), track.artist);
+    const ranked = [...qualifiedArtists]
+      .sort(
+        (a, b) =>
+          (artistScores.get(b) ?? 0) - (artistScores.get(a) ?? 0) ||
+          (artistPlays.get(b) ?? 0) - (artistPlays.get(a) ?? 0) ||
+          stringOrder(a, b),
+      )
+      .slice(0, 3);
     for (const artist of ranked) {
       const artistFamilies = [...byArtistFamily.entries()]
         .filter(([key]) => key.startsWith(`${artist}\u0000`))
         .sort(([keyA], [keyB]) => {
           const slugA = keyA.slice(artist.length + 1);
           const slugB = keyB.slice(artist.length + 1);
-          return ((artistFamilyScores.get(keyB) ?? 0) - (artistFamilyScores.get(keyA) ?? 0)) || stringOrder(slugA, slugB);
+          return (
+            (artistFamilyScores.get(keyB) ?? 0) -
+              (artistFamilyScores.get(keyA) ?? 0) || stringOrder(slugA, slugB)
+          );
         })
         .map(([key, familyInstruments]) => {
           const slug = key.slice(artist.length + 1);
-          const instruments = uniqueVocabularyRows(familyInstruments).sort((a, b) =>
-            (b.prevalence - a.prevalence) || stringOrder(a.instrument_name, b.instrument_name));
+          const instruments = uniqueVocabularyRows(familyInstruments).sort(
+            (a, b) =>
+              b.prevalence - a.prevalence ||
+              stringOrder(a.instrument_name, b.instrument_name),
+          );
           return {
             slug,
             name: familyInstruments[0]?.family_name ?? slug,
@@ -989,13 +1429,22 @@ function analyzeVocabulary(
             tone: familyTone(catalog, slug),
           };
         });
-      featuredArtists.push({ mbid: artist, name: namesByMbid.get(artist) ?? artist, families: artistFamilies });
+      featuredArtists.push({
+        mbid: artist,
+        name: namesByMbid.get(artist) ?? artist,
+        families: artistFamilies,
+      });
     }
   }
   return {
     status,
     methodology_version: VOCABULARY_METHODOLOGY,
-    availability: { status, reason, pending_artists: pendingArtists.size, pending_tracks: 0 },
+    availability: {
+      status,
+      reason,
+      pending_artists: pendingArtists.size,
+      pending_tracks: 0,
+    },
     reach,
     concentration: round(concentration, 4),
     families: vocabularyFamilies,
@@ -1006,7 +1455,10 @@ function analyzeVocabulary(
 function pendingRecordingTargets(
   tracks: ListeningTrack[],
   evidence: EvidenceState,
-): { targets: { kind: "track" | "recording"; mbid: string }[]; aliases: number } {
+): {
+  targets: { kind: "track" | "recording"; mbid: string }[];
+  aliases: number;
+} {
   const targets: { kind: "track" | "recording"; mbid: string }[] = [];
   for (const track of tracks) {
     const source = validMbid(track.mbid);
@@ -1014,9 +1466,13 @@ function pendingRecordingTargets(
     const canonical = evidence.aliases.get(source) ?? source;
     const status = evidence.recordingStatuses.get(canonical);
     if (status === "failed") continue;
-    const kind = evidence.recordingStatuses.has(canonical) || canonical !== source ? "recording" : "track";
+    const kind =
+      evidence.recordingStatuses.has(canonical) || canonical !== source
+        ? "recording"
+        : "track";
     const mbid = kind === "recording" ? canonical : source;
-    if (!targets.some((target) => target.kind === kind && target.mbid === mbid)) targets.push({ kind, mbid });
+    if (!targets.some((target) => target.kind === kind && target.mbid === mbid))
+      targets.push({ kind, mbid });
   }
   const bounded = targets.slice(0, 50);
   return {
@@ -1025,13 +1481,27 @@ function pendingRecordingTargets(
   };
 }
 
-function pendingArtistTargets(tracks: ListeningTrack[], evidence: EvidenceState): string[] {
-  const artistIds = [...new Set(tracks.map((track) => validMbid(track.artist_mbid))
-    .filter((id): id is string => id !== null))];
-  return artistIds.filter((id) => {
-    const status = evidence.artistStatuses.get(id);
-    return status !== "complete" && status !== "complete_empty" && status !== "failed";
-  }).slice(0, 200);
+function pendingArtistTargets(
+  tracks: ListeningTrack[],
+  evidence: EvidenceState,
+): string[] {
+  const artistIds = [
+    ...new Set(
+      tracks
+        .map((track) => validMbid(track.artist_mbid))
+        .filter((id): id is string => id !== null),
+    ),
+  ];
+  return artistIds
+    .filter((id) => {
+      const status = evidence.artistStatuses.get(id);
+      return (
+        status !== "complete" &&
+        status !== "complete_empty" &&
+        status !== "failed"
+      );
+    })
+    .slice(0, 200);
 }
 
 function dedupeRows<T>(source: T[], key: (item: T) => string): T[] {
@@ -1047,11 +1517,24 @@ function assemble(
   metadata: Metadata,
   evidence: EvidenceState,
   catalog: ImageCatalog,
-  options: { isExample?: boolean; exampleId?: string | null; historySource?: "lastfm" | "mock"; fixtureTracks?: boolean } = {},
+  options: {
+    isExample?: boolean;
+    exampleId?: string | null;
+    historySource?: "lastfm" | "mock";
+    fixtureTracks?: boolean;
+  } = {},
 ): ProfileAnalysisV3 {
-  if (!rawTracks.length) throw new PaletteApiError("empty_history", 422, "empty_history");
-  if (!evidence.snapshot) throw new PaletteApiError("snapshot_unavailable", 503, "snapshot_unavailable");
-  const tracks = options.fixtureTracks ? rawTracks : enrichTracks(rawTracks, evidence);
+  if (!rawTracks.length)
+    throw new PaletteApiError("empty_history", 422, "empty_history");
+  if (!evidence.snapshot)
+    throw new PaletteApiError(
+      "snapshot_unavailable",
+      503,
+      "snapshot_unavailable",
+    );
+  const tracks = options.fixtureTracks
+    ? rawTracks
+    : enrichTracks(rawTracks, evidence);
   const totalPlays = tracks.reduce((sum, track) => sum + track.play_count, 0);
   const profile: ProfileSummary = {
     username: metadata.username || username,
@@ -1063,30 +1546,62 @@ function assemble(
     realname: metadata.realname,
     registered: metadata.registered,
   };
-  const trackPalette = analyzePalette(tracks, profile, evidence.snapshot, catalog, options.historySource);
-  const vocabularyRows = dedupeRows(evidence.vocabularyRows, (row) => `${row.artist_mbid}\u0000${row.instrument_slug}`);
-  const artistIds = [...new Set(tracks.map((track) => validMbid(track.artist_mbid)).filter((id): id is string => id !== null))];
-  const pendingArtists = new Set(options.fixtureTracks ? [] : artistIds.filter((id) => {
-    const status = evidence.artistStatuses.get(id);
-    return status !== "complete" && status !== "complete_empty" && status !== "failed";
-  }));
-  const artistVocabulary = analyzeVocabulary(tracks, evidence.snapshot, vocabularyRows, pendingArtists, catalog);
-  const paletteAvailable = ["ready", "partial"].includes(trackPalette.analysis.status) &&
+  const trackPalette = analyzePalette(
+    tracks,
+    profile,
+    evidence.snapshot,
+    catalog,
+    options.historySource,
+  );
+  const vocabularyRows = dedupeRows(
+    evidence.vocabularyRows,
+    (row) => `${row.artist_mbid}\u0000${row.instrument_slug}`,
+  );
+  const artistIds = [
+    ...new Set(
+      tracks
+        .map((track) => validMbid(track.artist_mbid))
+        .filter((id): id is string => id !== null),
+    ),
+  ];
+  const pendingArtists = new Set(
+    options.fixtureTracks
+      ? []
+      : artistIds.filter((id) => {
+          const status = evidence.artistStatuses.get(id);
+          return (
+            status !== "complete" &&
+            status !== "complete_empty" &&
+            status !== "failed"
+          );
+        }),
+  );
+  const artistVocabulary = analyzeVocabulary(
+    tracks,
+    evidence.snapshot,
+    vocabularyRows,
+    pendingArtists,
+    catalog,
+  );
+  const paletteAvailable =
+    ["ready", "partial"].includes(trackPalette.analysis.status) &&
     trackPalette.analysis.section_availability.families === "available";
   const vocabularyAvailable = artistVocabulary.status === "available";
   const availableViews: ProfileAnalysisV3["available_views"] = [];
   if (paletteAvailable) availableViews.push("track_palette");
   if (vocabularyAvailable) availableViews.push("artist_vocabulary");
-  const defaultView = trackPalette.analysis.status !== "insufficient" && paletteAvailable
-    ? "track_palette"
-    : trackPalette.analysis.status === "insufficient" && vocabularyAvailable
-      ? "artist_vocabulary" : null;
+  const defaultView =
+    trackPalette.analysis.status !== "insufficient" && paletteAvailable
+      ? "track_palette"
+      : trackPalette.analysis.status === "insufficient" && vocabularyAvailable
+        ? "artist_vocabulary"
+        : null;
   const recordingTargets = pendingRecordingTargets(tracks, evidence);
   const pendingArtistCount = pendingArtists.size;
   const report: ProfileAnalysisV3 = {
     report_schema_version: REPORT_SCHEMA_VERSION,
     is_example: options.isExample ?? false,
-    example_id: options.isExample ? options.exampleId ?? null : null,
+    example_id: options.isExample ? (options.exampleId ?? null) : null,
     profile,
     snapshot: evidence.snapshot,
     track_palette: trackPalette,
@@ -1094,14 +1609,21 @@ function assemble(
     available_views: availableViews,
     default_view: defaultView,
     hydration: {
-      status: recordingTargets.targets.length || pendingArtistCount ? "pending" : "complete",
+      status:
+        recordingTargets.targets.length || pendingArtistCount
+          ? "pending"
+          : "complete",
       pending_recordings: recordingTargets.targets.length,
       pending_artists: pendingArtistCount,
       pending_aliases: recordingTargets.aliases,
     },
   };
   if (!isProfileAnalysisV3(report)) {
-    throw new PaletteApiError("Browser assembly produced an incompatible structured report.", 500, "invalid_browser_report");
+    throw new PaletteApiError(
+      "Browser assembly produced an incompatible structured report.",
+      500,
+      "invalid_browser_report",
+    );
   }
   return sanitizeProfileAnalysis(report);
 }
@@ -1118,7 +1640,8 @@ interface CuratedExampleFixture {
 
 function seededRandom(seed: string): () => number {
   let state = 2_166_136_261;
-  for (const character of seed) state = Math.imul(state ^ character.charCodeAt(0), 16_777_619);
+  for (const character of seed)
+    state = Math.imul(state ^ character.charCodeAt(0), 16_777_619);
   if (state === 0) state = 0x6d2b79f5;
   return () => {
     state += 0x6d2b79f5;
@@ -1138,15 +1661,30 @@ function shuffle<T>(items: T[], random: () => number): T[] {
   return result;
 }
 
-function chooseExampleRecordings(fixture: CuratedExampleFixture, random: () => number): Row[] {
-  const direct = shuffle(fixture.recordings.filter((recording) =>
-    Array.isArray(recording.layers) && recording.layers.length > 0), random);
-  const other = shuffle(fixture.recordings.filter((recording) =>
-    !Array.isArray(recording.layers) || recording.layers.length === 0), random);
-  const priorityArtists = new Set(fixture.artist_vocabulary
-    .filter((row) => finiteNumber(row.distinct_recordings) >= 3)
-    .map((row) => cleanText(row.artist_mbid)?.toLowerCase())
-    .filter((mbid): mbid is string => Boolean(mbid)));
+function chooseExampleRecordings(
+  fixture: CuratedExampleFixture,
+  random: () => number,
+): Row[] {
+  const direct = shuffle(
+    fixture.recordings.filter(
+      (recording) =>
+        Array.isArray(recording.layers) && recording.layers.length > 0,
+    ),
+    random,
+  );
+  const other = shuffle(
+    fixture.recordings.filter(
+      (recording) =>
+        !Array.isArray(recording.layers) || recording.layers.length === 0,
+    ),
+    random,
+  );
+  const priorityArtists = new Set(
+    fixture.artist_vocabulary
+      .filter((row) => finiteNumber(row.distinct_recordings) >= 3)
+      .map((row) => cleanText(row.artist_mbid)?.toLowerCase())
+      .filter((mbid): mbid is string => Boolean(mbid)),
+  );
   const selected: Row[] = [];
   const artistCounts = new Map<string, number>();
   const selectedMbids = new Set<string>();
@@ -1155,13 +1693,19 @@ function chooseExampleRecordings(fixture: CuratedExampleFixture, random: () => n
     if (!mbid || selectedMbids.has(mbid)) return;
     selected.push(recording);
     selectedMbids.add(mbid);
-    const artist = cleanText(recording.artist_mbid)?.toLowerCase()
-      ?? `name:${normalizedName(cleanText(recording.artist) ?? "")}`;
+    const artist =
+      cleanText(recording.artist_mbid)?.toLowerCase() ??
+      `name:${normalizedName(cleanText(recording.artist) ?? "")}`;
     artistCounts.set(artist, (artistCounts.get(artist) ?? 0) + 1);
   };
   for (const recording of [...direct, ...other]) {
     const artist = cleanText(recording.artist_mbid)?.toLowerCase();
-    if (artist && priorityArtists.has(artist) && (artistCounts.get(artist) ?? 0) === 0) add(recording);
+    if (
+      artist &&
+      priorityArtists.has(artist) &&
+      (artistCounts.get(artist) ?? 0) === 0
+    )
+      add(recording);
   }
   const artistLimit = Math.max(1, fixture.max_recordings_per_artist);
   const addCandidates = (candidates: Row[], quota: number): void => {
@@ -1171,8 +1715,9 @@ function chooseExampleRecordings(fixture: CuratedExampleFixture, random: () => n
         if (selected.length - initialCount >= quota) return;
         const mbid = cleanText(recording.mbid);
         if (!mbid || selectedMbids.has(mbid)) continue;
-        const artist = cleanText(recording.artist_mbid)?.toLowerCase()
-          ?? `name:${normalizedName(cleanText(recording.artist) ?? "")}`;
+        const artist =
+          cleanText(recording.artist_mbid)?.toLowerCase() ??
+          `name:${normalizedName(cleanText(recording.artist) ?? "")}`;
         const artistCount = artistCounts.get(artist) ?? 0;
         if (requireNewArtist && artistCount > 0) continue;
         if (artistCount >= artistLimit) continue;
@@ -1196,15 +1741,19 @@ function fixtureLayer(value: unknown): InstrumentLayer | null {
   const familyName = cleanText(value.family_name);
   if (!slug || !name || !familySlug || !familyName) return null;
   const rawConfidence = cleanText(value.confidence);
-  const confidence: Confidence = rawConfidence === "strongly_associated" || rawConfidence === "estimated"
-    ? rawConfidence : "documented";
+  const confidence: Confidence =
+    rawConfidence === "strongly_associated" || rawConfidence === "estimated"
+      ? rawConfidence
+      : "documented";
   const rawNature = cleanText(value.nature);
   return {
     slug,
     name,
     family_slug: familySlug,
     family_name: familyName,
-    nature: NATURES.includes(rawNature as SoundNature) ? rawNature as SoundNature : null,
+    nature: NATURES.includes(rawNature as SoundNature)
+      ? (rawNature as SoundNature)
+      : null,
     role: cleanText(value.role) ?? "",
     confidence,
     prominence: finiteNumber(value.prominence, 1),
@@ -1212,17 +1761,32 @@ function fixtureLayer(value: unknown): InstrumentLayer | null {
   };
 }
 
-async function loadExampleFixture(signal: AbortSignal): Promise<CuratedExampleFixture> {
+async function loadExampleFixture(
+  signal: AbortSignal,
+): Promise<CuratedExampleFixture> {
   try {
     const base = staticAssetBaseUrl();
-    const value = await fetchJson(new URL("profile-analysis-example.json", base).toString(), signal);
-    if (!isRecord(value) || !isRecord(value.vocabulary_snapshot) ||
-        !Array.isArray(value.artist_vocabulary) || !Array.isArray(value.recordings) ||
-        !isRecord(value.period_multipliers)) throw new Error("Invalid fixture");
+    const value = await fetchJson(
+      new URL("profile-analysis-example.json", base).toString(),
+      signal,
+    );
+    if (
+      !isRecord(value) ||
+      !isRecord(value.vocabulary_snapshot) ||
+      !Array.isArray(value.artist_vocabulary) ||
+      !Array.isArray(value.recordings) ||
+      !isRecord(value.period_multipliers)
+    )
+      throw new Error("Invalid fixture");
     return value as unknown as CuratedExampleFixture;
   } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") throw error;
-    throw new PaletteApiError("example_data_unavailable", 503, "example_data_unavailable");
+    if (error instanceof DOMException && error.name === "AbortError")
+      throw error;
+    throw new PaletteApiError(
+      "example_data_unavailable",
+      503,
+      "example_data_unavailable",
+    );
   }
 }
 
@@ -1234,7 +1798,8 @@ function makeExampleEvidence(fixture: CuratedExampleFixture): EvidenceState {
     schema_version: cleanText(snapshot.schema_version) ?? "",
     manifest_hash: cleanText(snapshot.manifest_hash) ?? "",
     object_prefix: cleanText(snapshot.object_prefix) ?? "",
-    methodology_version: cleanText(snapshot.methodology_version) ?? VOCABULARY_METHODOLOGY,
+    methodology_version:
+      cleanText(snapshot.methodology_version) ?? VOCABULARY_METHODOLOGY,
   };
   for (const row of fixture.artist_vocabulary) {
     const artist = cleanText(row.artist_mbid)?.toLowerCase();
@@ -1242,7 +1807,8 @@ function makeExampleEvidence(fixture: CuratedExampleFixture): EvidenceState {
     const family = cleanText(row.family_slug);
     const instrumentName = cleanText(row.instrument_name);
     const familyName = cleanText(row.family_name);
-    if (!artist || !instrument || !family || !instrumentName || !familyName) continue;
+    if (!artist || !instrument || !family || !instrumentName || !familyName)
+      continue;
     state.vocabularyRows.push({
       artist_mbid: artist,
       instrument_slug: instrument,
@@ -1265,40 +1831,75 @@ export async function getBrowserExampleAnalysis(
   sampleId = crypto.randomUUID().replaceAll("-", ""),
 ): Promise<ProfileAnalysisV3> {
   if (!sampleId || sampleId.length > 64) {
-    throw new PaletteApiError("Invalid example identifier.", 422, "invalid_example_id");
+    throw new PaletteApiError(
+      "Invalid example identifier.",
+      422,
+      "invalid_example_id",
+    );
   }
-  const [fixture, catalog] = await Promise.all([loadExampleFixture(signal), loadImageCatalog(signal)]);
+  const [fixture, catalog] = await Promise.all([
+    loadExampleFixture(signal),
+    loadImageCatalog(signal),
+  ]);
   const multiplier = finiteNumber(fixture.period_multipliers[period]);
-  if (multiplier < 1) throw new PaletteApiError("example_data_unavailable", 503, "example_data_unavailable");
+  if (multiplier < 1)
+    throw new PaletteApiError(
+      "example_data_unavailable",
+      503,
+      "example_data_unavailable",
+    );
   const random = seededRandom(`${sampleId}:${period}`);
   const selected = chooseExampleRecordings(fixture, random);
-  const qualifiedArtists = new Set(fixture.artist_vocabulary
-    .filter((row) => finiteNumber(row.distinct_recordings) >= 3)
-    .map((row) => cleanText(row.artist_mbid)?.toLowerCase())
-    .filter((mbid): mbid is string => Boolean(mbid)));
-  const tracks: ListeningTrack[] = selected.map((recording): ListeningTrack => {
-    const artistMbid = validMbid(recording.artist_mbid);
-    const layers = Array.isArray(recording.layers)
-      ? recording.layers.map(fixtureLayer).filter((layer): layer is InstrumentLayer => layer !== null)
-      : [];
-    const basePlays = artistMbid && qualifiedArtists.has(artistMbid)
-      ? 12 : Math.floor(random() * 11) + 2;
-    return {
-      title: cleanText(recording.title) ?? "Unknown track",
-      artist: cleanText(recording.artist) ?? "Unknown artist",
-      play_count: basePlays * multiplier,
-      mbid: validMbid(recording.mbid),
-      artist_mbid: artistMbid,
-      release_mbid: null,
-      lastfm_url: null,
-      layers,
-      recording_status: layers.length ? "resolved" : "resolved_without_evidence",
-    };
-  }).sort((a, b) => b.play_count - a.play_count || stringOrder(a.mbid ?? "", b.mbid ?? ""));
-  if (tracks.length < 5) throw new PaletteApiError("example_data_unavailable", 503, "example_data_unavailable");
-  const artistIds = new Set(tracks.map((track) => track.artist_mbid).filter((id): id is string => id !== null));
+  const qualifiedArtists = new Set(
+    fixture.artist_vocabulary
+      .filter((row) => finiteNumber(row.distinct_recordings) >= 3)
+      .map((row) => cleanText(row.artist_mbid)?.toLowerCase())
+      .filter((mbid): mbid is string => Boolean(mbid)),
+  );
+  const tracks: ListeningTrack[] = selected
+    .map((recording): ListeningTrack => {
+      const artistMbid = validMbid(recording.artist_mbid);
+      const layers = Array.isArray(recording.layers)
+        ? recording.layers
+            .map(fixtureLayer)
+            .filter((layer): layer is InstrumentLayer => layer !== null)
+        : [];
+      const basePlays =
+        artistMbid && qualifiedArtists.has(artistMbid)
+          ? 12
+          : Math.floor(random() * 11) + 2;
+      return {
+        title: cleanText(recording.title) ?? "Unknown track",
+        artist: cleanText(recording.artist) ?? "Unknown artist",
+        play_count: basePlays * multiplier,
+        mbid: validMbid(recording.mbid),
+        artist_mbid: artistMbid,
+        release_mbid: null,
+        lastfm_url: null,
+        layers,
+        recording_status: layers.length
+          ? "resolved"
+          : "resolved_without_evidence",
+      };
+    })
+    .sort(
+      (a, b) =>
+        b.play_count - a.play_count || stringOrder(a.mbid ?? "", b.mbid ?? ""),
+    );
+  if (tracks.length < 5)
+    throw new PaletteApiError(
+      "example_data_unavailable",
+      503,
+      "example_data_unavailable",
+    );
+  const artistIds = new Set(
+    tracks
+      .map((track) => track.artist_mbid)
+      .filter((id): id is string => id !== null),
+  );
   const evidence = makeExampleEvidence(fixture);
-  for (const artist of artistIds) evidence.artistStatuses.set(artist, "complete");
+  for (const artist of artistIds)
+    evidence.artistStatuses.set(artist, "complete");
   const metadata: Metadata = {
     username: "eu adoro beatles!",
     profile_url: null,
@@ -1306,12 +1907,20 @@ export async function getBrowserExampleAnalysis(
     realname: "Besouro Hércules",
     registered: null,
   };
-  const report = assemble(metadata.username, period, tracks, metadata, evidence, catalog, {
-    isExample: true,
-    exampleId: sampleId,
-    historySource: "mock",
-    fixtureTracks: true,
-  });
+  const report = assemble(
+    metadata.username,
+    period,
+    tracks,
+    metadata,
+    evidence,
+    catalog,
+    {
+      isExample: true,
+      exampleId: sampleId,
+      historySource: "mock",
+      fixtureTracks: true,
+    },
+  );
   return report;
 }
 
@@ -1326,7 +1935,11 @@ async function queueHydration(
   await fetchJson(`${baseUrl}/v3/hydration`, signal, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify({ snapshot_version: snapshotVersion, recording_targets: recordingTargets, artist_mbids: artistMbids }),
+    body: JSON.stringify({
+      snapshot_version: snapshotVersion,
+      recording_targets: recordingTargets,
+      artist_mbids: artistMbids,
+    }),
   });
 }
 
@@ -1338,53 +1951,111 @@ export async function getBrowserAnalysis(
   resume = false,
 ): Promise<ProfileAnalysisV3> {
   const baseUrl = apiBaseUrl();
-  const history = await loadHistory(baseUrl, username, period, signal,
-    async (page) => parsePage(await fetchJson(
-      `${baseUrl}/v3/profiles/${encodeURIComponent(username)}/tracks?period=${encodeURIComponent(period)}&page=${page}&limit=${PAGE_SIZE}`,
-      signal,
-    ), username),
-    async (canonicalUsername) => parseMetadata(await fetchJson(
-      `${baseUrl}/v3/profiles/${encodeURIComponent(canonicalUsername)}/metadata`, signal,
-    ), canonicalUsername),
+  const history = await loadHistory(
+    baseUrl,
+    username,
+    period,
+    signal,
+    async (page) =>
+      parsePage(
+        await fetchJson(
+          `${baseUrl}/v3/profiles/${encodeURIComponent(username)}/tracks?period=${encodeURIComponent(period)}&page=${page}&limit=${PAGE_SIZE}`,
+          signal,
+        ),
+        username,
+      ),
+    async (canonicalUsername) =>
+      parseMetadata(
+        await fetchJson(
+          `${baseUrl}/v3/profiles/${encodeURIComponent(canonicalUsername)}/metadata`,
+          signal,
+        ),
+        canonicalUsername,
+      ),
     (current, total) => onProgress("tracks", current, total),
     resume,
   );
-  const trackPages: ListeningTrack[][] = history.pages.map((page) => page.tracks.map((track) => ({
-    ...track, layers: [], recording_status: "pending_enrichment",
-  })));
+  const trackPages: ListeningTrack[][] = history.pages.map((page) =>
+    page.tracks.map((track) => ({
+      ...track,
+      layers: [],
+      recording_status: "pending_enrichment",
+    })),
+  );
   const rawTracks = trackPages.flat();
   onProgress("profile", 1, 1);
-  const metadata = history.metadata ?? { username: history.username, profile_url: null, avatar_url: null, realname: null, registered: null };
+  const metadata = history.metadata ?? {
+    username: history.username,
+    profile_url: null,
+    avatar_url: null,
+    realname: null,
+    registered: null,
+  };
   const canonicalUsername = metadata.username || history.username;
   try {
     const evidence = emptyEvidence();
     for (let index = 0; index < trackPages.length; index++) {
       const pageTracks = trackPages[index];
-      const trackMbids = [...new Set(pageTracks.map((track) => validMbid(track.mbid)).filter((mbid): mbid is string => mbid !== null))];
-      const artistMbids = [...new Set(pageTracks.map((track) => validMbid(track.artist_mbid)).filter((mbid): mbid is string => mbid !== null))];
+      const trackMbids = [
+        ...new Set(
+          pageTracks
+            .map((track) => validMbid(track.mbid))
+            .filter((mbid): mbid is string => mbid !== null),
+        ),
+      ];
+      const artistMbids = [
+        ...new Set(
+          pageTracks
+            .map((track) => validMbid(track.artist_mbid))
+            .filter((mbid): mbid is string => mbid !== null),
+        ),
+      ];
       onProgress("evidence", index + 1, trackPages.length);
-      if (!trackMbids.length && !artistMbids.length && evidence.snapshot) continue;
+      if (!trackMbids.length && !artistMbids.length && evidence.snapshot)
+        continue;
       const payload = await fetchJson(`${baseUrl}/v3/evidence`, signal, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
         body: JSON.stringify({
           track_mbids: trackMbids,
           artist_mbids: artistMbids,
-          ...(evidence.snapshot ? { snapshot_version: evidence.snapshot.snapshot_version } : {}),
+          ...(evidence.snapshot
+            ? { snapshot_version: evidence.snapshot.snapshot_version }
+            : {}),
         }),
       });
       mergeEvidence(evidence, payload);
     }
     onProgress("assembly", 1, 1);
     const catalog = await loadImageCatalog(signal);
-    const report = assemble(canonicalUsername, period, rawTracks, metadata, evidence, catalog);
+    const report = assemble(
+      canonicalUsername,
+      period,
+      rawTracks,
+      metadata,
+      evidence,
+      catalog,
+    );
     const enrichedTracks = enrichTracks(rawTracks, evidence);
-    const recordingTargets = pendingRecordingTargets(enrichedTracks, evidence).targets;
+    const recordingTargets = pendingRecordingTargets(
+      enrichedTracks,
+      evidence,
+    ).targets;
     const artistTargets = pendingArtistTargets(enrichedTracks, evidence);
     try {
-      await queueHydration(baseUrl, evidence.snapshot!.snapshot_version, recordingTargets, artistTargets, signal);
+      await queueHydration(
+        baseUrl,
+        evidence.snapshot!.snapshot_version,
+        recordingTargets,
+        artistTargets,
+        signal,
+      );
     } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") throw error;
+      if (error instanceof DOMException && error.name === "AbortError")
+        throw error;
       // The report is still valid when the background queue is temporarily unavailable.
     }
     signal.throwIfAborted();

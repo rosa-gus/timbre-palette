@@ -424,8 +424,7 @@
         : $t("results.artistVocabularyDescription")}
     </p>
 
-      <!-- TODO -->
-      <!-- {#if localizationIncomplete}
+      {#if localizationIncomplete}
         <div class="localization-notice">
           <span class="localization-info" aria-hidden="true">[i]</span>
           <p role="status">{localizationPending ? $t("localization.retrying") : $t("localization.partial")}</p>
@@ -437,7 +436,7 @@
             <span class="retry-arrow" aria-hidden="true">&#x21BB;&#xFE0E;</span>
           </button>
         </div>
-      {/if} -->
+      {/if}
 
     <Tabs.Content value="track_palette" class="view-panel">
       {#if directAvailable}

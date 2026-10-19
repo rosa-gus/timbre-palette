@@ -23,33 +23,42 @@ import {
 
 export { loadRuntimeConfig };
 
-export function apiBaseUrl(): string { return configuredApiBaseUrl(); }
-function analysisApiBaseUrl(): string { return configuredAnalysisApiBaseUrl(); }
+export function apiBaseUrl(): string {
+  return configuredApiBaseUrl();
+}
+function analysisApiBaseUrl(): string {
+  return configuredAnalysisApiBaseUrl();
+}
 
 export async function getCatalogSize(signal: AbortSignal): Promise<number> {
   const response = await fetch(`${apiBaseUrl()}/v2/catalog/stats`, { signal });
   if (!response.ok) throw new Error("Catalog statistics unavailable");
   const value: unknown = await readBoundedJson(response);
-  if (!isRecord(value) || !Number.isSafeInteger(value.recordings_with_evidence) ||
-      typeof value.recordings_with_evidence !== "number" || value.recordings_with_evidence < 0) {
+  if (
+    !isRecord(value) ||
+    !Number.isSafeInteger(value.recordings_with_evidence) ||
+    typeof value.recordings_with_evidence !== "number" ||
+    value.recordings_with_evidence < 0
+  ) {
     throw new Error("Invalid catalog statistics");
   }
   return value.recordings_with_evidence;
 }
 
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
-
 
 function parseApiError(value: unknown, status: number): PaletteApiError {
   if (isRecord(value) && typeof value.message === "string") {
     return new PaletteApiError(
       value.message,
       status,
-      typeof value.code === "string" ? value.code
-        : typeof value.error === "string" ? value.error : "api_error",
+      typeof value.code === "string"
+        ? value.code
+        : typeof value.error === "string"
+          ? value.error
+          : "api_error",
     );
   }
   return new PaletteApiError(
@@ -58,7 +67,6 @@ function parseApiError(value: unknown, status: number): PaletteApiError {
     "api_error",
   );
 }
-
 
 function isInstrumentResource(value: unknown): value is InstrumentResource {
   return (
@@ -72,25 +80,42 @@ function isInstrumentResource(value: unknown): value is InstrumentResource {
     Array.isArray(value.related_slugs) &&
     value.related_slugs.every((slug) => typeof slug === "string") &&
     Array.isArray(value.sections) &&
-    value.sections.every((section) => isRecord(section) &&
-      typeof section.text === "string" && typeof section.status === "string" &&
-      isRecord(section.review) &&
-      typeof section.review.claim_support_verified === "boolean" &&
-      typeof section.review.source_metadata_verified === "boolean" &&
-      Array.isArray(section.citations) &&
-      section.citations.every((citation) => isRecord(citation) &&
-        typeof citation.source_id === "string")) &&
+    value.sections.every(
+      (section) =>
+        isRecord(section) &&
+        typeof section.text === "string" &&
+        typeof section.status === "string" &&
+        isRecord(section.review) &&
+        typeof section.review.claim_support_verified === "boolean" &&
+        typeof section.review.source_metadata_verified === "boolean" &&
+        Array.isArray(section.citations) &&
+        section.citations.every(
+          (citation) =>
+            isRecord(citation) && typeof citation.source_id === "string",
+        ),
+    ) &&
     Array.isArray(value.sources) &&
-    value.sources.every((source) => isRecord(source) &&
-      typeof source.id === "string" && typeof source.title === "string" &&
-      typeof source.source_type === "string" &&
-      typeof source.language === "string" &&
-      /^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/.test(source.language) &&
-      Array.isArray(source.contributors) &&
-      source.contributors.every((contributor) => typeof contributor === "string")) &&
-    (value.further_reading === undefined || (Array.isArray(value.further_reading) &&
-      value.further_reading.every((article) => isRecord(article) &&
-        typeof article.title === "string" && typeof article.url === "string")))
+    value.sources.every(
+      (source) =>
+        isRecord(source) &&
+        typeof source.id === "string" &&
+        typeof source.title === "string" &&
+        typeof source.source_type === "string" &&
+        typeof source.language === "string" &&
+        /^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/.test(source.language) &&
+        Array.isArray(source.contributors) &&
+        source.contributors.every(
+          (contributor) => typeof contributor === "string",
+        ),
+    ) &&
+    (value.further_reading === undefined ||
+      (Array.isArray(value.further_reading) &&
+        value.further_reading.every(
+          (article) =>
+            isRecord(article) &&
+            typeof article.title === "string" &&
+            typeof article.url === "string",
+        )))
   );
 }
 
@@ -108,18 +133,15 @@ async function getJson<T>(
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError")
       throw error;
-    throw new PaletteApiError(
-      t("errors.network"),
-      0,
-      "network_error",
-    );
+    throw new PaletteApiError(t("errors.network"), 0, "network_error");
   }
 
   let payload: unknown;
   try {
     payload = await readBoundedJson(response);
   } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") throw error;
+    if (error instanceof DOMException && error.name === "AbortError")
+      throw error;
     throw new PaletteApiError(
       t("errors.invalidJson"),
       response.status,

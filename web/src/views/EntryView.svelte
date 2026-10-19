@@ -298,26 +298,27 @@
           <div
             id="entry-preview"
             class="entry-preview"
+            class:instrument-preview-shell={previewKind === "instrument"}
             in:dialogFade|global
             out:dialogFade|global
             aria-busy={(previewKind === "palette" && previewLoading) ||
               (previewKind === "share" && sharePreviewLoading)}
           >
-            <div class="preview-heading">
-              <p class="eyebrow" tabindex="-1" bind:this={previewHeading}>
-                {previewKind === "palette"
-                  ? $t("entry.previewHeading")
-                  : previewKind === "instrument"
-                    ? $t("entry.instrumentPreviewHeading")
+            {#if previewKind !== "instrument"}
+              <div class="preview-heading">
+                <p class="eyebrow" tabindex="-1" bind:this={previewHeading}>
+                  {previewKind === "palette"
+                    ? $t("entry.previewHeading")
                     : $t("sharing.exampleHeading")}
-              </p>
-              <button
-                type="button"
-                class="preview-close"
-                aria-label={$t("entry.previewClose")}
-                on:click={returnToForm}>[×]</button
-              >
-            </div>
+                </p>
+                <button
+                  type="button"
+                  class="preview-close"
+                  aria-label={$t("entry.previewClose")}
+                  on:click={returnToForm}>[×]</button
+                >
+              </div>
+            {/if}
             {#if previewKind === "share"}
               {#if sharePreviewLoading}
                 <p class="share-preview-status" role="status">
@@ -340,42 +341,101 @@
                 />
               {/if}
             {:else if previewKind === "instrument"}
-              <div class="instrument-preview" lang={$localeStore}>
-                <h2>{previewInstrument.name}</h2>
-                <p class="instrument-preview-family">
-                  {previewInstrument.family}
-                </p>
-                <section
-                  class="instrument-block"
-                  aria-labelledby="preview-sound-production"
+              <div class="instrument-preview-stack">
+                <figure
+                  class="instrument-preview-card instrument-preview-panel"
+                  style={`--family-tone:${previewInstrument.image?.tone.highlight ?? "#9EBBD1"}`}
                 >
-                  <h3 id="preview-sound-production" class="eyebrow">
-                    <Message message="instrument.soundProductionHeading" />
-                  </h3>
-                  <p>{previewInstrument.soundProduction}</p>
-                </section>
-                <section
-                  class="instrument-block"
-                  aria-labelledby="preview-curiosity"
+                  <figcaption>
+                    <div class="instrument-preview-card-heading">
+                      <p
+                        class="eyebrow"
+                        tabindex="-1"
+                        bind:this={previewHeading}
+                      >
+                        {$t("entry.instrumentPreviewHeading")} ({previewInstrument.name})
+                      </p>
+                      <button
+                        type="button"
+                        class="preview-close"
+                        aria-label={$t("entry.previewClose")}
+                        on:click={returnToForm}>[×]</button
+                      >
+                    </div>
+                  </figcaption>
+                  {#if previewInstrument.image}
+                    <div class="instrument-preview-card-image">
+                      <img
+                        src={`${import.meta.env.BASE_URL}${previewInstrument.image.url}`}
+                        alt={previewInstrument.image.alt}
+                        width={previewInstrument.image.width}
+                        height={previewInstrument.image.height}
+                      />
+                    </div>
+                    <p class="instrument-preview-card-caption">
+                      {$t("images.photoCaption", {
+                        caption: previewInstrument.image.caption,
+                      })}
+                      {#if previewInstrument.image.credit.photographer_url}
+                        <a
+                          href={previewInstrument.image.credit.photographer_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          >{previewInstrument.image.credit.photographer}<Arrow
+                            direction="up-right"
+                          /></a
+                        >
+                      {/if}
+                    </p>
+                  {:else}
+                    <div class="instrument-preview-image-empty">
+                      {previewInstrument.name}
+                    </div>
+                  {/if}
+                </figure>
+                <div
+                  class="instrument-preview-connector"
+                  aria-hidden="true"
+                ></div>
+                <div
+                  class="instrument-preview instrument-preview-panel"
+                  lang={$localeStore}
                 >
-                  <h3 id="preview-curiosity" class="eyebrow">
-                    <Message message="instrument.curiosityHeading" />
-                  </h3>
-                  <p>{previewInstrument.curiosity}</p>
-                </section>
-                <div class="instrument-preview-sources">
-                  <p class="eyebrow">
-                    <Message message="instrument.sourcesHeading" />
+                  <p class="instrument-preview-family">
+                    {previewInstrument.family}
                   </p>
-                  {#each previewInstrument.sources as source}
-                    <a
-                      href={source.url}
-                      title={source.title}
-                      target="_blank"
-                      rel="noreferrer"
-                      >{source.publisher}<Arrow direction="up-right" /></a
-                    >
-                  {/each}
+                  <section
+                    class="instrument-block"
+                    aria-labelledby="preview-sound-production"
+                  >
+                    <h3 id="preview-sound-production" class="eyebrow">
+                      <Message message="instrument.soundProductionHeading" />
+                    </h3>
+                    <p>{previewInstrument.soundProduction}</p>
+                  </section>
+                  <section
+                    class="instrument-block"
+                    aria-labelledby="preview-curiosity"
+                  >
+                    <h3 id="preview-curiosity" class="eyebrow">
+                      <Message message="instrument.curiosityHeading" />
+                    </h3>
+                    <p>{previewInstrument.curiosity}</p>
+                  </section>
+                  <div class="instrument-preview-sources">
+                    <p class="eyebrow">
+                      <Message message="instrument.sourcesHeading" />
+                    </p>
+                    {#each previewInstrument.sources as source}
+                      <a
+                        href={source.url}
+                        title={source.title}
+                        target="_blank"
+                        rel="noreferrer"
+                        >{source.publisher}<Arrow direction="up-right" /></a
+                      >
+                    {/each}
+                  </div>
                 </div>
               </div>
             {:else if previewLoading}
@@ -391,16 +451,16 @@
               <FamilyPalette families={previewFamilies} compact />
               <p class="entry-source-note">{$t("entry.previewScope")}</p>
             {/if}
-            <div class="preview-actions">
-              <Button variant="primary" on:click={returnToForm}
-                ><span>{$t("entry.previewConsult")}</span><Arrow
-                  direction="right"
-                /></Button
-              >
-              <button class="example-button" type="button" on:click={onExample}
-                >{$t("entry.previewFull")}<Arrow direction="right" /></button
-              >
-            </div>
+          </div>
+          <div class="preview-actions">
+            <Button variant="primary" on:click={returnToForm}
+              ><span>{$t("entry.previewConsult")}</span><Arrow
+                direction="right"
+              /></Button
+            >
+            <button class="example-button" type="button" on:click={onExample}
+              >{$t("entry.previewFull")}<Arrow direction="right" /></button
+            >
           </div>
         {/each}
       {/if}
@@ -672,10 +732,75 @@
     width: 100%;
     height: auto;
   }
-  .instrument-preview h2 {
+  .instrument-preview-stack {
+    display: grid;
+  }
+  .instrument-preview-shell {
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+  .instrument-preview-panel {
+    min-width: 0;
     margin: 0;
-    font-size: 24px;
-    line-height: 1.2;
+    padding: 24px;
+    border: 1px solid var(--line-strong);
+    background: var(--paper);
+  }
+  .instrument-preview-card figcaption {
+    padding: 0 0 16px;
+  }
+  .instrument-preview-card-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .instrument-preview-card-heading .eyebrow {
+    margin: 0;
+    color: var(--muted);
+  }
+  .instrument-preview-card-image img,
+  .instrument-preview-image-empty {
+    display: block;
+    width: 100%;
+    height: 136px;
+    object-fit: cover;
+    background: var(--panel);
+  }
+  .instrument-preview-image-empty {
+    display: grid;
+    place-items: center;
+    color: var(--muted);
+    font: 12px/1.5 var(--meta);
+  }
+  .instrument-preview-card-caption {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 0;
+    padding: 12px 0 0;
+    color: var(--muted);
+    font: 11px/1.5 var(--meta);
+  }
+  .instrument-preview-card-caption a {
+    color: var(--ink);
+    text-underline-offset: 3px;
+  }
+  .instrument-preview-card-caption a:hover,
+  .instrument-preview-card-caption a:focus-visible {
+    color: var(--accent-soft);
+  }
+  .instrument-preview-connector {
+    justify-self: center;
+    height: 24px;
+    border-left: 1px dotted var(--line-strong);
+  }
+  .instrument-preview-stack > .instrument-preview .instrument-preview-family {
+    margin-top: 0;
+  }
+  .instrument-preview-image-empty {
+    height: 136px;
   }
   .instrument-preview-family {
     margin: 8px 0 24px;
@@ -706,6 +831,7 @@
     color: var(--ink);
   }
   .preview-actions {
+    grid-area: 2 / 1;
     display: grid;
     gap: 8px;
     margin-top: 24px;

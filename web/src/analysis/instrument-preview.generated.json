@@ -3,6 +3,26 @@
     "slug": "sampler",
     "name": "Sampler",
     "family": "Sons sampleados",
+    "image": {
+      "url": "instruments/sampler-ricardo-abreu-01/3f82882afae0/detail.png",
+      "alt": "Controlador preto com uma grade de pads iluminados, visor, botões e cabos, visto de cima.",
+      "caption": "Controlador de pads",
+      "credit": {
+        "photographer": "Ricardo Abreu",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/ativada-a-barra-de-lancamento-digital-dZPp5ZVMcN0",
+        "photographer_url": "https://unsplash.com/@txbrown",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license",
+        "note": "Autoria, URLs e licença gratuita informadas pelo responsável pelo projeto. A fotografia mostra um controlador de pads associado à prática de sampling; não comprova um sampler autônomo."
+      },
+      "width": 1200,
+      "height": 800,
+      "tone": {
+        "shadow": "#000000",
+        "highlight": "#9EBBD1"
+      }
+    },
     "soundProduction": "Áudio armazenado é disparado, recortado, repetido ou transformado.",
     "curiosity": "O som de vidro quebrando em “Babooshka”, de Kate Bush, veio de um Fairlight CMI e é citado como um dos primeiros usos marcantes do instrumento.",
     "sources": [
@@ -17,6 +37,26 @@
     "slug": "sampler",
     "name": "Sampler",
     "family": "Sampled sounds",
+    "image": {
+      "url": "instruments/sampler-ricardo-abreu-01/3f82882afae0/detail.png",
+      "alt": "A black controller with a grid of illuminated pads, a display, buttons, and cables, viewed from above.",
+      "caption": "Controlador de pads",
+      "credit": {
+        "photographer": "Ricardo Abreu",
+        "provider": "Unsplash",
+        "photo_url": "https://unsplash.com/pt-br/fotografias/ativada-a-barra-de-lancamento-digital-dZPp5ZVMcN0",
+        "photographer_url": "https://unsplash.com/@txbrown",
+        "license": "Unsplash License",
+        "license_url": "https://unsplash.com/license",
+        "note": "Autoria, URLs e licença gratuita informadas pelo responsável pelo projeto. A fotografia mostra um controlador de pads associado à prática de sampling; não comprova um sampler autônomo."
+      },
+      "width": 1200,
+      "height": 800,
+      "tone": {
+        "shadow": "#000000",
+        "highlight": "#9EBBD1"
+      }
+    },
     "soundProduction": "Stored audio is triggered, cut, repeated, or transformed.",
     "curiosity": "The breaking-glass sound in Kate Bush's “Babooshka” came from a Fairlight CMI and is cited as one of the instrument's early notable uses.",
     "sources": [

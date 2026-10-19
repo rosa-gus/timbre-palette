@@ -12,8 +12,8 @@
     "estimated": "Estimada"
   },
   "growth": {
-    "hydration": "Ao consultar um perfil, faixas e artistas ainda não materializados podem ser consultados em segundo plano no snapshot MusicBrainz publicado. Novas evidências podem aparecer em uma visita futura.",
-    "recordings": "{count, plural, =0 {Mais # gravações com instrumentos documentados desde sua última visita neste navegador.} one {Mais # gravação com instrumentos documentados desde sua última visita neste navegador.} other {Mais # gravações com instrumentos documentados desde sua última visita neste navegador.}}",
+    "hydration": "Ao consultar um perfil, algumas faixas e artistas podem ser encontrados em segundo plano. Novas informações podem aparecer em uma próxima visita.",
+    "recordings": "{count, plural, =0 {Mais # gravações com instrumentos identificados desde sua última visita neste navegador.} one {Mais # gravação com instrumentos identificados desde sua última visita neste navegador.} other {Mais # gravações com instrumentos documentados desde sua última visita neste navegador.}}",
     "summary": "Nosso catálogo cresceu {percentage}%.",
     "title": "Crescimento do catálogo",
     "triggerLabel": "Crescimento do catálogo: +{percentage}% desde sua última visita neste navegador"

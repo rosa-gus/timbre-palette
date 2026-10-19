@@ -21,7 +21,9 @@ const LASTFM_IMAGE_HOSTS = new Set([
 export function boundedText(value: unknown, maxLength = 512): string | null {
   if (typeof value !== "string") return null;
   const text = value.trim();
-  return text && text.length <= maxLength && !text.includes("\u0000") ? text : null;
+  return text && text.length <= maxLength && !text.includes("\u0000")
+    ? text
+    : null;
 }
 
 export function safeHexColor(value: unknown): string | null {
@@ -34,7 +36,10 @@ function httpUrl(value: unknown): URL | null {
   try {
     const url = new URL(text);
     return (url.protocol === "https:" || url.protocol === "http:") &&
-      !url.username && !url.password ? url : null;
+      !url.username &&
+      !url.password
+      ? url
+      : null;
   } catch {
     return null;
   }
@@ -44,17 +49,27 @@ export function safeExternalUrl(value: unknown): string | null {
   return httpUrl(value)?.toString() ?? null;
 }
 
-export function safeLastFmProfileUrl(value: unknown, username: string): string | null {
+export function safeLastFmProfileUrl(
+  value: unknown,
+  username: string,
+): string | null {
   const name = boundedText(username, 64);
   if (!name) return null;
   const fallback = `https://www.last.fm/user/${encodeURIComponent(name)}`;
   const url = httpUrl(value);
-  if (!url || url.protocol !== "https:" ||
-      (url.hostname !== "www.last.fm" && url.hostname !== "last.fm")) return fallback;
+  if (
+    !url ||
+    url.protocol !== "https:" ||
+    (url.hostname !== "www.last.fm" && url.hostname !== "last.fm")
+  )
+    return fallback;
   const parts = url.pathname.split("/").filter(Boolean);
   try {
-    if (parts[0]?.toLowerCase() !== "user" ||
-        decodeURIComponent(parts[1] ?? "").toLowerCase() !== name.toLowerCase()) return fallback;
+    if (
+      parts[0]?.toLowerCase() !== "user" ||
+      decodeURIComponent(parts[1] ?? "").toLowerCase() !== name.toLowerCase()
+    )
+      return fallback;
   } catch {
     return fallback;
   }
@@ -63,8 +78,11 @@ export function safeLastFmProfileUrl(value: unknown, username: string): string |
 
 export function safeLastFmAvatarUrl(value: unknown): string | null {
   const url = httpUrl(value);
-  return url?.protocol === "https:" && LASTFM_IMAGE_HOSTS.has(url.hostname) &&
-    url.pathname.startsWith("/i/u/") ? url.toString() : null;
+  return url?.protocol === "https:" &&
+    LASTFM_IMAGE_HOSTS.has(url.hostname) &&
+    url.pathname.startsWith("/i/u/")
+    ? url.toString()
+    : null;
 }
 
 function assetBaseUrl(): URL {
@@ -78,9 +96,13 @@ export function safeStaticImageUrl(value: unknown): string | null {
   try {
     const url = new URL(raw, base);
     const prefix = new URL("instruments/", base);
-    return url.origin === base.origin && url.pathname.startsWith(prefix.pathname) &&
+    return url.origin === base.origin &&
+      url.pathname.startsWith(prefix.pathname) &&
       (url.protocol === "https:" || url.protocol === "http:") &&
-      !url.username && !url.password ? url.toString() : null;
+      !url.username &&
+      !url.password
+      ? url.toString()
+      : null;
   } catch {
     return null;
   }
@@ -92,12 +114,17 @@ function safePublishedImageUrl(value: unknown): string | null {
   const app = assetBaseUrl();
   const localPrefix = new URL("instruments/", app);
   const officialPrefix = "/timbre-palette/instruments/";
-  return (url.origin === app.origin && url.pathname.startsWith(localPrefix.pathname)) ||
-    (url.origin === "https://rosa-gus.github.io" && url.pathname.startsWith(officialPrefix))
-    ? url.toString() : null;
+  return (url.origin === app.origin &&
+    url.pathname.startsWith(localPrefix.pathname)) ||
+    (url.origin === "https://rosa-gus.github.io" &&
+      url.pathname.startsWith(officialPrefix))
+    ? url.toString()
+    : null;
 }
 
-function safeTone(value: unknown): { shadow: string; highlight: string } | null {
+function safeTone(
+  value: unknown,
+): { shadow: string; highlight: string } | null {
   if (!isRecord(value)) return null;
   const shadow = safeHexColor(value.shadow);
   const highlight = safeHexColor(value.highlight);
@@ -105,22 +132,47 @@ function safeTone(value: unknown): { shadow: string; highlight: string } | null 
 }
 
 function safeImage(value: InstrumentImage | null): InstrumentImage | null {
-  if (!isRecord(value) || !Array.isArray(value.variants) || !isRecord(value.credit)) return null;
+  if (
+    !isRecord(value) ||
+    !Array.isArray(value.variants) ||
+    !isRecord(value.credit)
+  )
+    return null;
   const assetId = boundedText(value.asset_id, 128);
   const depictedSlug = boundedText(value.depicted_instrument_slug, 80);
   const alt = boundedText(value.alt, 512);
   const caption = boundedText(value.caption, 512);
   const resolution = value.resolution;
-  if (!assetId || !depictedSlug || !alt || !caption ||
-      (resolution !== "exact" && resolution !== "related" && resolution !== "family")) return null;
-  const variants = value.variants.flatMap((variant) => {
-    if (!isRecord(variant)) return [];
-    const url = safePublishedImageUrl(variant.url);
-    return url && Number.isSafeInteger(variant.width) && variant.width > 0 &&
-      Number.isSafeInteger(variant.height) && variant.height > 0
-      ? [{ name: "detail" as const, url, width: variant.width, height: variant.height }]
-      : [];
-  }).slice(0, 3);
+  if (
+    !assetId ||
+    !depictedSlug ||
+    !alt ||
+    !caption ||
+    (resolution !== "exact" &&
+      resolution !== "related" &&
+      resolution !== "family")
+  )
+    return null;
+  const variants = value.variants
+    .flatMap((variant) => {
+      if (!isRecord(variant)) return [];
+      const url = safePublishedImageUrl(variant.url);
+      return url &&
+        Number.isSafeInteger(variant.width) &&
+        variant.width > 0 &&
+        Number.isSafeInteger(variant.height) &&
+        variant.height > 0
+        ? [
+            {
+              name: "detail" as const,
+              url,
+              width: variant.width,
+              height: variant.height,
+            },
+          ]
+        : [];
+    })
+    .slice(0, 3);
   if (!variants.length) return null;
   return {
     asset_id: assetId,
@@ -146,16 +198,32 @@ function safeAnalysisImage(value: AnalysisImage | null): AnalysisImage | null {
   const depictedName = boundedText(value.depicted_name, 256);
   const familyName = boundedText(value.family_name, 256);
   if (!depictedName || !familyName) return null;
-  const validated = safeImage({ ...value, alt: value.alt ?? depictedName, caption: depictedName });
+  const validated = safeImage({
+    ...value,
+    alt: value.alt ?? depictedName,
+    caption: depictedName,
+  });
   if (!validated) return null;
   const { alt: _alt, caption: _caption, ...image } = validated;
-  return { ...image, alt: boundedText(value.alt, 512), depicted_name: depictedName, family_name: familyName };
+  return {
+    ...image,
+    alt: boundedText(value.alt, 512),
+    depicted_name: depictedName,
+    family_name: familyName,
+  };
 }
 
-export function sanitizeProfileAnalysis(report: ProfileAnalysisV3): ProfileAnalysisV3 {
+export function sanitizeProfileAnalysis(
+  report: ProfileAnalysisV3,
+): ProfileAnalysisV3 {
   const profile = {
     ...report.profile,
-    profile_url: report.is_example ? null : safeLastFmProfileUrl(report.profile.profile_url, report.profile.username),
+    profile_url: report.is_example
+      ? null
+      : safeLastFmProfileUrl(
+          report.profile.profile_url,
+          report.profile.username,
+        ),
     avatar_url: safeLastFmAvatarUrl(report.profile.avatar_url),
   };
   return {
@@ -173,10 +241,12 @@ export function sanitizeProfileAnalysis(report: ProfileAnalysisV3): ProfileAnaly
         tone: safeTone(family.tone),
         image: safeAnalysisImage(family.image),
       })),
-      discovery: report.track_palette.discovery ? {
-        ...report.track_palette.discovery,
-        image: safeAnalysisImage(report.track_palette.discovery.image),
-      } : null,
+      discovery: report.track_palette.discovery
+        ? {
+            ...report.track_palette.discovery,
+            image: safeAnalysisImage(report.track_palette.discovery.image),
+          }
+        : null,
     },
     artist_vocabulary: {
       ...report.artist_vocabulary,
@@ -184,15 +254,22 @@ export function sanitizeProfileAnalysis(report: ProfileAnalysisV3): ProfileAnaly
         ...family,
         tone: safeTone(family.tone),
       })),
-      featured_artists: report.artist_vocabulary.featured_artists.map((artist) => ({
-        ...artist,
-        families: artist.families.map((family) => ({ ...family, tone: safeTone(family.tone) })),
-      })),
+      featured_artists: report.artist_vocabulary.featured_artists.map(
+        (artist) => ({
+          ...artist,
+          families: artist.families.map((family) => ({
+            ...family,
+            tone: safeTone(family.tone),
+          })),
+        }),
+      ),
     },
   };
 }
 
-export function sanitizeInstrumentResource(resource: InstrumentResource): InstrumentResource {
+export function sanitizeInstrumentResource(
+  resource: InstrumentResource,
+): InstrumentResource {
   return {
     ...resource,
     tone: safeTone(resource.tone),
@@ -201,10 +278,12 @@ export function sanitizeInstrumentResource(resource: InstrumentResource): Instru
       ...source,
       url: safeExternalUrl(source.url),
     })) as InstrumentResource["sources"],
-    further_reading: (resource.further_reading ?? []).filter(isRecord).flatMap((article) => {
-      const url = safeExternalUrl(article.url);
-      return url && boundedText(article.title) ? [{ ...article, url }] : [];
-    }) as InstrumentResource["further_reading"],
+    further_reading: (resource.further_reading ?? [])
+      .filter(isRecord)
+      .flatMap((article) => {
+        const url = safeExternalUrl(article.url);
+        return url && boundedText(article.title) ? [{ ...article, url }] : [];
+      }) as InstrumentResource["further_reading"],
   };
 }
 
@@ -217,16 +296,23 @@ function isBoundedJson(value: unknown): boolean {
   let nodes = 0;
   while (stack.length) {
     const current = stack.pop()!;
-    if (++nodes > MAX_JSON_NODES || current.depth > MAX_JSON_DEPTH) return false;
+    if (++nodes > MAX_JSON_NODES || current.depth > MAX_JSON_DEPTH)
+      return false;
     if (typeof current.value === "string") {
       if (current.value.length > MAX_JSON_STRING_LENGTH) return false;
     } else if (Array.isArray(current.value)) {
       if (current.value.length > MAX_ARRAY_LENGTH) return false;
-      for (const item of current.value) stack.push({ value: item, depth: current.depth + 1 });
+      for (const item of current.value)
+        stack.push({ value: item, depth: current.depth + 1 });
     } else if (isRecord(current.value)) {
       const entries = Object.entries(current.value);
-      if (entries.length > MAX_ARRAY_LENGTH || entries.some(([key]) => key.length > 128)) return false;
-      for (const [, item] of entries) stack.push({ value: item, depth: current.depth + 1 });
+      if (
+        entries.length > MAX_ARRAY_LENGTH ||
+        entries.some(([key]) => key.length > 128)
+      )
+        return false;
+      for (const [, item] of entries)
+        stack.push({ value: item, depth: current.depth + 1 });
     }
   }
   return true;

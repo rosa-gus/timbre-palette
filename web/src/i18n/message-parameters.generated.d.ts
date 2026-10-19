@@ -140,7 +140,6 @@ export type MessageParameters = {
   "instrument.fact": never;
   "instrument.familyBadge": never;
   "instrument.imageCatalogLabel": never;
-  "instrument.imageLabel": never;
   "instrument.imageUnavailable": never;
   "instrument.instrumentBadge": never;
   "instrument.languageLabel": never;
