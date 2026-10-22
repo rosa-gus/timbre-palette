@@ -199,7 +199,11 @@ export async function localizeAnalysis(
       statusBySlug,
     },
     profile: source.is_example
-      ? { ...source.profile, realname: t("example.displayName") }
+      ? {
+          ...source.profile,
+          username: t("example.username"),
+          realname: t("example.displayName"),
+        }
       : source.profile,
     track_palette: {
       ...source.track_palette,

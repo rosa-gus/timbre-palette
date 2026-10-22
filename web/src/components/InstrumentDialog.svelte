@@ -351,7 +351,7 @@
                                 >{$t("instrument.referencePrefix", { number: sourceNumber(citation.source_id) ||
                                   $t("instrument.referenceMissing") })}</strong
                               >
-                              {citation.locator ?? ""}{#if citation.note}<span
+                              {citation.locator ?? ""}{#if citation.note && $localeStore === "pt-BR"}<span
                                   class="inline-divider"
                                   aria-hidden="true"></span
                                 >{citation.note}{/if}

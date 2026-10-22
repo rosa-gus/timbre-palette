@@ -95,6 +95,7 @@ export type MessageParameters = {
   "example.avatarAlt": never;
   "example.badge": never;
   "example.displayName": never;
+  "example.username": never;
   "footer.by": never;
   "footer.credits": never;
   "footer.history": never;

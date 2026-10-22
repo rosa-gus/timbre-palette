@@ -27,6 +27,7 @@
   "example": {
     "avatarAlt": "ASCII drawing of a beetle",
     "badge": "<upper>Example</upper>",
-    "displayName": "Hercules Beetle"
+    "displayName": "Hercules Beetle",
+    "username": "I love Beatles!"
   }
 }

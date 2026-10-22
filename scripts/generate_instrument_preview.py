@@ -36,7 +36,7 @@ def generate(root: Path) -> None:
             "image": {
                 "url": image["publication"]["url"],
                 "alt": instrument["image"]["alt"],
-                "caption": image["depicted_name"],
+                "caption": instrument["image"]["caption"],
                 "credit": image["credit"],
                 "width": image_variant["width"],
                 "height": image_variant["height"],

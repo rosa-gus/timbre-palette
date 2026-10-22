@@ -6,6 +6,7 @@
   import type { FamilyPresence, ProfileAnalysisV3 } from "../api/types";
   import pronunciationUrl from "../assets/audio/timbrepalette.mp3";
   import { formatWaitDuration } from "../i18n/formatters";
+  import { localizeAnalysis } from "../i18n/resources";
   import Message from "../i18n/Message.svelte";
   import { translation as t, localeStore, type Locale } from "../i18n/runtime";
   import HistoryResumeNotice from "../components/HistoryResume.svelte";
@@ -140,8 +141,13 @@
     previewError = false;
     try {
       const example = await loadPreviewExample();
+      const localized = await localizeAnalysis(
+        example,
+        $localeStore,
+        previewController.signal,
+      );
       if (!previewController.signal.aborted)
-        previewFamilies = example.track_palette.families.slice(0, 3);
+        previewFamilies = localized.track_palette.families.slice(0, 3);
     } catch {
       if (!previewController.signal.aborted) previewError = true;
     } finally {
