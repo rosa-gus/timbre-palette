@@ -221,6 +221,10 @@ main {
   margin: 0 4px;
   color: var(--quiet);
 }
+.footer-byline-label {
+  font: 11px/1.5 var(--meta);
+  letter-spacing: 0.07em;
+}
 .footer-source {
   display: grid;
   gap: 6px;
@@ -407,6 +411,15 @@ main {
   display: none !important;
 }
 @media (max-width: 800px) {
+  :is(
+    .app-tooltip,
+    .color-popover,
+    .version-panel,
+    .language-panel,
+    .catalog-tooltip
+  )::before {
+    display: none !important;
+  }
   .entry-backdrop::after {
     background:
       linear-gradient(180deg,

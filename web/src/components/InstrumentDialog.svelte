@@ -239,7 +239,10 @@
                   {#if resource.image?.variants.length}
                     <figcaption class="instrument-photo-credit">
                       {#if resource.image.resolution === "exact"}<span
-                          >{$t("images.photoCaption", { caption: imageCaption(resource.image.caption) })}</span
+                          >{$t("images.photoLabel")} <span
+                            class="inline-divider"
+                            aria-hidden="true"
+                          ></span> {imageCaption(resource.image.caption)}</span
                         >{/if}
                       {#if resource.image.credit.photographer_url}<a
                           href={resource.image.credit.photographer_url}

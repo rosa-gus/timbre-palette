@@ -22,6 +22,7 @@
     VocabularyFeaturedArtist,
   } from "../api/types";
   import HistoryResumeNotice from "../components/HistoryResume.svelte";
+  import Message from "../i18n/Message.svelte";
   import type { HistoryResume } from "../analysis/history";
   import ReportView from "./ReportView.svelte";
 
@@ -289,6 +290,9 @@
     dismissedLowCoveragePeriod = period;
   }
 </script>
+
+{#snippet sourceCode(text: string)}<code class="source-value">{text}</code
+  >{/snippet}
 
 <div class="results-view">
   <div class="results-opening">
@@ -692,7 +696,17 @@
                     vocabulary.concentration,
                   ) })} </p>
                 <p>{$t("vocabulary.unresolvedIdentities", { artists: vocabulary.reach.unresolved_artists, tracks: vocabulary.reach.unresolved_tracks })} </p>
-                <p>{$t("vocabulary.snapshot", { snapshot_version: result.snapshot.snapshot_version })} <span class="inline-divider" aria-hidden="true"></span>{$t("vocabulary.methodology", { methodology_version: vocabulary.methodology_version })} </p>
+                <p>
+                  {$t("vocabulary.snapshot", {
+                    snapshot_version: result.snapshot.snapshot_version,
+                  })}
+                  <span class="inline-divider" aria-hidden="true"></span>
+                  <Message
+                    message="vocabulary.methodology"
+                    values={{ methodology_version: vocabulary.methodology_version }}
+                    wrappers={{ version: sourceCode }}
+                  />
+                </p>
               </Dropdown>
             </div>
           {/if}

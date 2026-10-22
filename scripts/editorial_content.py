@@ -73,6 +73,13 @@ def split_snapshot(sheets: list[dict[str, Any]]) -> dict[str, Any]:
     for sheet in sheets:
         for translation in sheet.get("translations", []):
             text = split_snapshot([translation])["locales"][DEFAULT_LOCALE][0]
+            text["sections"] = [
+                {
+                    **block,
+                    **({"citations": source_block["citations"]} if "citations" in source_block else {}),
+                }
+                for block, source_block in zip(text["sections"], translation["resource"]["sections"])
+            ]
             text["status"] = translation["status"]
             text["source_revision"] = translation["source_revision"]
             locales.setdefault(translation["locale"], []).append(text)
@@ -139,8 +146,14 @@ def expand_snapshot(payload: dict[str, Any]) -> list[dict[str, Any]]:
         if any(not isinstance(text.get(field), str) for field in ("name", "description", "sound_production")) or not isinstance(text.get("common_roles"), list) or any(not isinstance(role, str) for role in text["common_roles"]):
             raise ValueError(f"{locale}/{entity['slug']}: invalid translated text.")
         for block in text["sections"]:
-            if set(block) - {"id", "text", "status", "review"} or not isinstance(block.get("text"), str):
+            if set(block) - {"id", "text", "status", "review", "citations"} or not isinstance(block.get("text"), str):
                 raise ValueError(f"{locale}/{entity['slug']}: invalid block translation.")
+            if "citations" in block:
+                if not isinstance(block["citations"], list):
+                    raise ValueError(f"{locale}/{entity['slug']}/{block['id']}: citations must be an array.")
+                for citation in block["citations"]:
+                    if not isinstance(citation, dict) or set(citation) - {"source_id", "locator", "note"}:
+                        raise ValueError(f"{locale}/{entity['slug']}/{block['id']}: invalid citation.")
         base_ids = {block["id"] for block in entity["sections"]}
         translated = {block["id"]: block for block in text["sections"]}
         if len(translated) != len(text["sections"]) or (not stale and translated.keys() != base_ids):
@@ -148,7 +161,11 @@ def expand_snapshot(payload: dict[str, Any]) -> list[dict[str, Any]]:
         resource = {key: entity[key] for key in NEUTRAL_FIELDS}
         resource.update({key: text[key] for key in ("name", "description", "sound_production", "common_roles")})
         blocks = {block["id"]: block for block in entity["sections"]}
-        resource.update(sections=[{**blocks.get(block_id, dict(kind="curiosity", content_type="editorial_summary", citations=[])), **block} for block_id, block in translated.items()],
+        resource.update(sections=[{
+            **blocks.get(block_id, dict(kind="curiosity", content_type="editorial_summary", citations=[])),
+            **block,
+            "citations": block.get("citations", blocks[block_id].get("citations", [])),
+        } for block_id, block in translated.items()],
                         sources=[source_by_id[source_id] for source_id in entity["source_ids"]],
                         further_reading=entity["further_reading"], image=None)
         if entity["image"]:

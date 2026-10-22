@@ -34,7 +34,7 @@
     "lastfmUnavailable": "Não foi possível consultar o Last.fm agora.",
     "network": "Não foi possível conectar à API da paleta.",
     "protectionUnavailable": "O serviço de análise está temporariamente indisponível. Tente novamente em instantes.",
-    "rateLimited": "Você fez muitas consultas. Aguarde um minuto antes de tentar novamente.",
+    "rateLimited": "Você fez muitas consultas. Aguarde {minutes, plural, one {# minuto} other {# minutos}} antes de tentar novamente.",
     "requestTooLarge": "A solicitação excede o tamanho permitido.",
     "snapshotChanged": "O catálogo mudou durante a consulta. Tente novamente.",
     "snapshotUnavailable": "O catálogo de créditos está indisponível agora.",

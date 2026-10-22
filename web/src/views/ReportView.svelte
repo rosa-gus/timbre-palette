@@ -183,9 +183,10 @@
           </div>
           {#if family.image?.variants.length}<p class="photo-caption">
               <span class="photo-caption-text"
-                >{$t("images.photoCaption", {
-                  caption: getImageCopy(family.image, $localeStore).label,
-                })}</span
+                >{$t("images.photoLabel")} <span
+                  class="inline-divider"
+                  aria-hidden="true"
+                ></span> {getImageCopy(family.image, $localeStore).label}</span
               >{#if family.image.credit.photographer_url}<a
                   href={family.image.credit.photographer_url}
                   target="_blank"
@@ -291,10 +292,11 @@
             />
             <figcaption class="photo-caption">
               <span class="photo-caption-text"
-                >{$t("images.photoCaption", {
-                  caption: getImageCopy(report.discovery.image, $localeStore)
-                    .label,
-                })}</span
+                >{$t("images.photoLabel")} <span
+                  class="inline-divider"
+                  aria-hidden="true"
+                ></span> {getImageCopy(report.discovery.image, $localeStore)
+                  .label}</span
               >{#if report.discovery.image.credit.photographer_url}
                 <a
                   href={report.discovery.image.credit.photographer_url}
@@ -576,6 +578,8 @@
     letter-spacing: 0.035em;
   }
   .photo-caption-text {
+    display: inline-flex;
+    align-items: center;
     color: var(--quiet);
     text-transform: uppercase;
   }

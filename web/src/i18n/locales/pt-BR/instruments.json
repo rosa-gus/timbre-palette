@@ -5,7 +5,7 @@
     "sourced": "Fonte vinculada"
   },
   "images": {
-    "photoCaption": "<upper>Foto</upper> · {caption}",
+    "photoLabel": "<upper>Foto</upper>",
     "viewCredit": "Ver crédito"
   },
   "instrument": {
