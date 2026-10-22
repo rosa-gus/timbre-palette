@@ -164,7 +164,7 @@ def expand_snapshot(payload: dict[str, Any]) -> list[dict[str, Any]]:
         resource.update(sections=[{
             **blocks.get(block_id, dict(kind="curiosity", content_type="editorial_summary", citations=[])),
             **block,
-            "citations": block.get("citations", blocks[block_id].get("citations", [])),
+            "citations": block.get("citations", blocks.get(block_id, {}).get("citations", [])),
         } for block_id, block in translated.items()],
                         sources=[source_by_id[source_id] for source_id in entity["source_ids"]],
                         further_reading=entity["further_reading"], image=None)
