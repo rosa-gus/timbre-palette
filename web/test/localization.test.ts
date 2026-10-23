@@ -46,7 +46,7 @@ describe("Portuguese presentation compatibility", () => {
     expect(parts.map((part) => part.text).join("")).toBe(expected);
     expect(parts.some((part) => part.wrapper)).toBe(false);
     expect(t("report.dominantPresence", { index: 1 })).toBe("1 / PRESENÇA DOMINANTE");
-    expect(t("images.photoCaption", { caption: "João toca piano" })).toBe("FOTO · João toca piano");
+    expect(t("images.photoLabel")).toBe("FOTO");
     expect(t("sharing.previewIdentity", { listener: "Maria" })).toBe("TIMBRE PALETTE / Maria");
     expect(t("sharing.paletteHeading")).toBe("/ PALETA INSTRUMENTAL");
     expect(editorialText("catalog.heading")).toBe("01 / CATÁLOGO EDITORIAL");
@@ -76,6 +76,10 @@ describe("Portuguese presentation compatibility", () => {
   it("keeps known API error messages and cancellation behavior", () => {
     expect(getApiErrorMessage(new PaletteApiError("Diagnostic", 422, "invalid_username")))
       .toBe("Informe um perfil válido do Last.fm.");
+    expect(getApiErrorMessage(new PaletteApiError("Diagnostic", 429, "rate_limited", 1)))
+      .toBe("Você fez muitas consultas. Aguarde 1 minuto antes de tentar novamente.");
+    expect(getApiErrorMessage(new PaletteApiError("Diagnostic", 429, "rate_limited", 1_200)))
+      .toBe("Você fez muitas consultas. Aguarde 20 minutos antes de tentar novamente.");
     expect(getApiErrorMessage(new DOMException("Aborted", "AbortError"))).toBe("");
   });
 });

@@ -86,7 +86,7 @@ export type MessageParameters = {
   "errors.lastfmUnavailable": never;
   "errors.network": never;
   "errors.protectionUnavailable": never;
-  "errors.rateLimited": never;
+  "errors.rateLimited": "minutes";
   "errors.requestTooLarge": never;
   "errors.snapshotChanged": never;
   "errors.snapshotUnavailable": never;
@@ -95,6 +95,7 @@ export type MessageParameters = {
   "example.avatarAlt": never;
   "example.badge": never;
   "example.displayName": never;
+  "example.username": never;
   "footer.by": never;
   "footer.credits": never;
   "footer.history": never;
@@ -123,7 +124,7 @@ export type MessageParameters = {
   "history.loadedTracks": "periodSuffix" | "tracks";
   "history.wait": "duration";
   "history.waitWithLabel": "waitLabel";
-  "images.photoCaption": "caption";
+  "images.photoLabel": never;
   "images.viewCredit": never;
   "instrument.accessedLabel": never;
   "instrument.bibliographyLabel": never;
@@ -429,6 +430,7 @@ export type MessageParameters = {
 };
 export type PluralMessages = {
   "entry.catalogSize": "count";
+  "errors.rateLimited": "minutes";
   "growth.recordings": "count";
   "history.loadedTracks": "tracks";
   "report.playCount": "total_plays";

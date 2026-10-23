@@ -6,7 +6,7 @@ import hashlib
 import json
 import shutil
 from pathlib import Path, PurePosixPath
-from generate_instrument_preview import generate as generate_instrument_preview
+from generate_entry_preview import generate as generate_entry_preview
 
 
 def publish(manifest_path: Path) -> int:
@@ -47,7 +47,7 @@ def publish(manifest_path: Path) -> int:
         reference_package / "_curated_example_history.json",
         public_root / "profile-analysis-example.json",
     )
-    generate_instrument_preview(root)
+    generate_entry_preview(root)
     print(f"Prepared {len(prepared)} image(s) in {public_root}; generated {index.name}")
     return len(prepared)
 

@@ -859,13 +859,13 @@
           <ProductVersion />
         </div>
         <p class="footer-byline">
-          {$t("footer.by")}
+          <span class="footer-byline-label">{$t("footer.by")}</span>
           <a
             href="https://rosa-gus.github.io/portfolio"
             target="_blank"
             rel="noreferrer noopener">rosa gus</a
           > <span class="inline-divider" aria-hidden="true"></span>
-          {$t("footer.license")}
+          <span class="footer-byline-label">{$t("footer.license")}</span>
           <a
             href="https://www.gnu.org/licenses/gpl-3.0.html"
             target="_blank"

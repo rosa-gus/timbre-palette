@@ -575,6 +575,12 @@
         "id": "instrument-cavaquinho-curiosity",
         "text": "In the recording of Lapinha de Valdemar from December 8, 1972, cataloged by LABEET, the cavaquinho accompanies the pastoras singers alongside mandolin, acoustic guitar, and pandeiro. The recording documents its use in pastoril, beyond samba and choro settings.",
         "status": "draft",
+        "citations": [
+          {
+            "source_id": "ufpb-labeet-lapinha",
+            "locator": "Recordings: AFB 07; recording 08/12/1972; UFPB/BC-FR7003; T42 T43."
+          }
+        ],
         "review": {
           "source_metadata_verified": true,
           "claim_support_verified": false,
@@ -610,6 +616,12 @@
         "id": "instrument-pandeiro-curiosity",
         "text": "The pandeiro can function as a membranophone when its head is played, or as an idiophone when only its jingles sound as it is shaken. A single instrument brings together two ways of producing sound: a hybrid instrument.",
         "status": "reviewed",
+        "citations": [
+          {
+            "source_id": "a741b710-00a4-4826-9727-38944e8b8bc7",
+            "locator": "Introduction, p. 13, 2nd paragraph"
+          }
+        ],
         "review": {
           "source_metadata_verified": false,
           "claim_support_verified": true,

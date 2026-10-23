@@ -5,11 +5,13 @@
   export let type: "button" | "submit" = "button";
   export let disabled = false;
   export let terminalHover = false;
+  export let disableTransition = false;
   export let ariaLabel: string | undefined = undefined;
 </script>
 
 <button
   class={`ui-button ui-button--${variant}`}
+  class:ui-button--no-transition={disableTransition}
   class:ui-button--terminal={terminalHover}
   {type}
   {disabled}
@@ -35,6 +37,9 @@
       border-color 150ms ease,
       background-color 150ms ease,
       color 150ms ease;
+  }
+  .ui-button--no-transition {
+    transition: none;
   }
   .ui-button:disabled {
     cursor: wait;

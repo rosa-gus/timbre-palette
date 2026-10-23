@@ -34,7 +34,7 @@
     "lastfmUnavailable": "Could not query Last.fm right now.",
     "network": "Could not connect to the palette API.",
     "protectionUnavailable": "The analysis service is temporarily unavailable. Try again shortly.",
-    "rateLimited": "You made too many requests. Wait a minute before trying again.",
+    "rateLimited": "You made too many requests. Wait {minutes, plural, one {# minute} other {# minutes}} before trying again.",
     "requestTooLarge": "The request exceeds the allowed size.",
     "snapshotChanged": "The catalog changed during the lookup. Try again.",
     "snapshotUnavailable": "The credit catalog is unavailable right now.",

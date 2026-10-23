@@ -298,7 +298,9 @@ export function getApiErrorMessage(error: unknown): string {
       lastfm_key_missing: t("errors.lastfmKeyMissing"),
       lastfm_unavailable: t("errors.lastfmUnavailable"),
       lastfm_profile_not_found: t("errors.lastfmProfileNotFound"),
-      rate_limited: t("errors.rateLimited"),
+      rate_limited: t("errors.rateLimited", {
+        minutes: Math.max(1, Math.ceil((error.retryAfter ?? 60) / 60)),
+      }),
       lastfm_busy: t("errors.lastfmBusy"),
       hydration_busy: t("errors.hydrationBusy"),
       hydration_daily_budget: t("errors.hydrationDailyBudget"),

@@ -5,7 +5,7 @@
     "sourced": "Source linked"
   },
   "images": {
-    "photoCaption": "<upper>Photo</upper> · {caption}",
+    "photoLabel": "<upper>Photo</upper>",
     "viewCredit": "View credit"
   },
   "instrument": {

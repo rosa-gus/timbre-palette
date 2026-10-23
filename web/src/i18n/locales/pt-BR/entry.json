@@ -27,6 +27,7 @@
   "example": {
     "avatarAlt": "ascii de um besouro",
     "badge": "<upper>Exemplo</upper>",
-    "displayName": "Besouro Hércules"
+    "displayName": "Besouro Hércules",
+    "username": "eu adoro beatles!"
   }
 }

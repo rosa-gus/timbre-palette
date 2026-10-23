@@ -3,6 +3,7 @@
   import { fadeTransition } from "../transitions/dialog";
   import FamilyPalette from "../components/FamilyPalette.svelte";
   import instrumentPreview from "../analysis/instrument-preview.generated.json";
+  import palettePreview from "../analysis/palette-preview.generated.json";
   import type { FamilyPresence, ProfileAnalysisV3 } from "../api/types";
   import pronunciationUrl from "../assets/audio/timbrepalette.mp3";
   import { formatWaitDuration } from "../i18n/formatters";
@@ -38,9 +39,7 @@
   let pronunciationError = false;
   let previewOpen: "palette" | "instrument" | "share" | null = null;
   $: previewInstrument = instrumentPreview[$localeStore];
-  let previewLoading = false;
-  let previewError = false;
-  let previewFamilies: FamilyPresence[] = [];
+  $: previewFamilies = palettePreview[$localeStore] as FamilyPresence[];
   let previewHeading: HTMLParagraphElement;
   let usernameInput: HTMLInputElement;
   const previewController = new AbortController();
@@ -134,19 +133,6 @@
     previewOpen = kind;
     await tick();
     previewHeading?.focus();
-    if (kind !== "palette") return;
-    if (previewFamilies.length || previewLoading) return;
-    previewLoading = true;
-    previewError = false;
-    try {
-      const example = await loadPreviewExample();
-      if (!previewController.signal.aborted)
-        previewFamilies = example.track_palette.families.slice(0, 3);
-    } catch {
-      if (!previewController.signal.aborted) previewError = true;
-    } finally {
-      previewLoading = false;
-    }
   }
 
   async function returnToForm(): Promise<void> {
@@ -301,8 +287,7 @@
             class:instrument-preview-shell={previewKind === "instrument"}
             in:fadeTransition|global
             out:fadeTransition|global
-            aria-busy={(previewKind === "palette" && previewLoading) ||
-              (previewKind === "share" && sharePreviewLoading)}
+            aria-busy={previewKind === "share" && sharePreviewLoading}
           >
             {#if previewKind !== "instrument"}
               <div class="preview-heading">
@@ -373,9 +358,12 @@
                       />
                     </div>
                     <p class="instrument-preview-card-caption">
-                      {$t("images.photoCaption", {
-                        caption: previewInstrument.image.caption,
-                      })}
+                      <span class="photo-caption-text"
+                        >{$t("images.photoLabel")} <span
+                          class="inline-divider"
+                          aria-hidden="true"
+                        ></span> {previewInstrument.image.caption}</span
+                      >
                       {#if previewInstrument.image.credit.photographer_url}
                         <a
                           href={previewInstrument.image.credit.photographer_url}
@@ -438,14 +426,6 @@
                   </div>
                 </div>
               </div>
-            {:else if previewLoading}
-              <p class="entry-source-note" role="status">
-                {$t("loading.catalog")}
-              </p>
-            {:else if previewError}
-              <p class="entry-source-note" role="status">
-                {$t("entry.previewUnavailable")}
-              </p>
             {:else}
               <p class="palette-preview-intro">{$t("entry.previewIntro")}</p>
               <FamilyPalette families={previewFamilies} compact />
@@ -505,7 +485,12 @@
               onChange={(value) => onPeriodChange(value as ListeningPeriod)}
             />
           </div>
-          <Button variant="primary" type="submit" disabled={waitSeconds > 0}>
+          <Button
+            variant="primary"
+            type="submit"
+            disabled={waitSeconds > 0}
+            disableTransition
+          >
             <span
               >{resumeProgress?.pages
                 ? $t("actions.resume")
@@ -776,12 +761,17 @@
   }
   .instrument-preview-card-caption {
     display: flex;
+    align-items: center;
     flex-wrap: wrap;
     gap: 4px;
     margin: 0;
     padding: 12px 0 0;
     color: var(--muted);
     font: 11px/1.5 var(--meta);
+  }
+  .photo-caption-text {
+    display: inline-flex;
+    align-items: center;
   }
   .instrument-preview-card-caption a {
     color: var(--ink);

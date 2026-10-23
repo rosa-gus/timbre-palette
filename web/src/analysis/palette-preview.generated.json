@@ -1,0 +1,84 @@
+{
+  "pt-BR": [
+    {
+      "locale": "pt-BR",
+      "slug": "voice",
+      "name": "Voz",
+      "share": 0.42,
+      "evidence_count": 9,
+      "confidence": "documented",
+      "image": null,
+      "tone": {
+        "shadow": "#000000",
+        "highlight": "#D6A8C8"
+      }
+    },
+    {
+      "locale": "pt-BR",
+      "slug": "acoustic-keys",
+      "name": "Teclas acústicas",
+      "share": 0.2003,
+      "evidence_count": 4,
+      "confidence": "documented",
+      "image": null,
+      "tone": {
+        "shadow": "#000000",
+        "highlight": "#F29191"
+      }
+    },
+    {
+      "locale": "pt-BR",
+      "slug": "plucked-strings",
+      "name": "Cordas dedilhadas",
+      "share": 0.1322,
+      "evidence_count": 3,
+      "confidence": "documented",
+      "image": null,
+      "tone": {
+        "shadow": "#000000",
+        "highlight": "#E7AE86"
+      }
+    }
+  ],
+  "en-US": [
+    {
+      "locale": "en-US",
+      "slug": "voice",
+      "name": "Voice",
+      "share": 0.42,
+      "evidence_count": 9,
+      "confidence": "documented",
+      "image": null,
+      "tone": {
+        "shadow": "#000000",
+        "highlight": "#D6A8C8"
+      }
+    },
+    {
+      "locale": "en-US",
+      "slug": "acoustic-keys",
+      "name": "Acoustic keys",
+      "share": 0.2003,
+      "evidence_count": 4,
+      "confidence": "documented",
+      "image": null,
+      "tone": {
+        "shadow": "#000000",
+        "highlight": "#F29191"
+      }
+    },
+    {
+      "locale": "en-US",
+      "slug": "plucked-strings",
+      "name": "Plucked strings",
+      "share": 0.1322,
+      "evidence_count": 3,
+      "confidence": "documented",
+      "image": null,
+      "tone": {
+        "shadow": "#000000",
+        "highlight": "#E7AE86"
+      }
+    }
+  ]
+}

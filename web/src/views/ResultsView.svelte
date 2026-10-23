@@ -22,6 +22,7 @@
     VocabularyFeaturedArtist,
   } from "../api/types";
   import HistoryResumeNotice from "../components/HistoryResume.svelte";
+  import Message from "../i18n/Message.svelte";
   import type { HistoryResume } from "../analysis/history";
   import ReportView from "./ReportView.svelte";
 
@@ -289,6 +290,9 @@
     dismissedLowCoveragePeriod = period;
   }
 </script>
+
+{#snippet sourceCode(text: string)}<code class="source-value">{text}</code
+  >{/snippet}
 
 <div class="results-view">
   <div class="results-opening">
@@ -650,7 +654,11 @@
                               lang={instrument.locale}
                               >{instrument.name}</button
                             ><span
-                              >{$t("vocabulary.recordingCount", { count: instrument.distinct_recordings })} <span
+                              ><Message
+                                message="vocabulary.recordingCount"
+                                values={{ count: instrument.distinct_recordings }}
+                                wrappers={{ value: sourceCode }}
+                              /> <span
                                 class="inline-divider"
                                 aria-hidden="true"></span
                               >{$t("vocabulary.creditScope", { scope: instrument.evidence.scope === "track"
@@ -688,11 +696,36 @@
               <Dropdown title={$t("vocabulary.metricsTitle")}>
                 <p>{$t("vocabulary.reachDescription")} </p>
                 <p>{$t("vocabulary.shareDescription")} </p>
-                <p>{$t("vocabulary.concentration", { share: percent(
-                    vocabulary.concentration,
-                  ) })} </p>
-                <p>{$t("vocabulary.unresolvedIdentities", { artists: vocabulary.reach.unresolved_artists, tracks: vocabulary.reach.unresolved_tracks })} </p>
-                <p>{$t("vocabulary.snapshot", { snapshot_version: result.snapshot.snapshot_version })} <span class="inline-divider" aria-hidden="true"></span>{$t("vocabulary.methodology", { methodology_version: vocabulary.methodology_version })} </p>
+                <p>
+                  <Message
+                    message="vocabulary.concentration"
+                    values={{ share: percent(vocabulary.concentration) }}
+                    wrappers={{ value: sourceCode }}
+                  />
+                </p>
+                <p>
+                  <Message
+                    message="vocabulary.unresolvedIdentities"
+                    values={{
+                      artists: vocabulary.reach.unresolved_artists,
+                      tracks: vocabulary.reach.unresolved_tracks,
+                    }}
+                    wrappers={{ value: sourceCode }}
+                  />
+                </p>
+                <p>
+                  <Message
+                    message="vocabulary.snapshot"
+                    values={{ snapshot_version: result.snapshot.snapshot_version }}
+                    wrappers={{ version: sourceCode }}
+                  />
+                  <span class="inline-divider" aria-hidden="true"></span>
+                  <Message
+                    message="vocabulary.methodology"
+                    values={{ methodology_version: vocabulary.methodology_version }}
+                    wrappers={{ version: sourceCode }}
+                  />
+                </p>
               </Dropdown>
             </div>
           {/if}
