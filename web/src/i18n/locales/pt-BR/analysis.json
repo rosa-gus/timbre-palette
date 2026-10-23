@@ -151,7 +151,7 @@
     "artistDescription": "Instrumentos recorrentes em gravações documentadas deste artista.",
     "artistIndex": "{index} / <upper>Artista</upper>",
     "colorsLabel": "Cores das famílias no vocabulário: {families}",
-    "concentration": "Maior contribuição de um único artista para a pontuação: {share}.",
+    "concentration": "Maior contribuição de um único artista para a pontuação: <value>{share}</value>.",
     "creditScope": "crédito de {scope}",
     "description": "Instrumentos que recorrem em gravações documentadas dos artistas presentes na sua escuta.",
     "drawingAlt": "Desenho ASCII da família {name}, predominante no vocabulário",
@@ -180,16 +180,16 @@
     "qualifiedTracksHeading": "<upper>Faixas ligadas a artistas qualificados</upper>",
     "reachDescription": "O alcance mostra a parte do histórico ligada a artistas com instrumentos recorrentes documentados. Ele não é a cobertura da paleta das faixas.",
     "reachLabel": "Alcance do vocabulário",
-    "recordingCount": "{count, plural, =0 {# gravações distintas} one {# gravação distinta} other {# gravações distintas}}",
+    "recordingCount": "<value>{count}</value> {count, plural, =0 {gravações distintas} one {gravação distinta} other {gravações distintas}}",
     "recordingScope": "gravação",
     "recurringInstruments": "com instrumentos recorrentes",
     "shareDescription": "A participação mostra o peso relativo calculado entre as famílias deste vocabulário. Não mede volume, duração ou presença do instrumento nas faixas ouvidas.",
-    "snapshot": "Snapshot MusicBrainz {snapshot_version}",
+    "snapshot": "Snapshot MusicBrainz <version>{snapshot_version}</version>",
     "supportingArtistsCount": "{count, plural, =0 {# artistas com suporte} one {# artista com suporte} other {# artistas com suporte}}",
     "title": "Os sons documentados ao redor dos artistas.",
     "trackReach": "{coverage} das faixas",
     "trackScope": "faixa",
     "unavailableTitle": "Ainda não há um vocabulário para mostrar.",
-    "unresolvedIdentities": "{artists} {artists, plural, =0 {artistas} one {artista} other {artistas}} e {tracks} {tracks, plural, =0 {faixas} one {faixa} other {faixas}} sem identidade MusicBrainz não entram na consulta pendente."
+    "unresolvedIdentities": "<value>{artists}</value> {artists, plural, =0 {artistas} one {artista} other {artistas}} e <value>{tracks}</value> {tracks, plural, =0 {faixas} one {faixa} other {faixas}} sem identidade MusicBrainz não entram na consulta pendente."
   }
 }

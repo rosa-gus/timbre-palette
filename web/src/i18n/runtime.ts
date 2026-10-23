@@ -105,6 +105,7 @@ function interpolateUpper(
   key: MessageKey,
 ): string {
   return text
+    .replace(/<\/?(?!upper\b)[a-z]+>/g, "")
     .split(/<upper>(.*?)<\/upper>/gs)
     .map((part, index) => {
       const rendered = interpolate(part, values, key);
